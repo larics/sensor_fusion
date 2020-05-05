@@ -32,6 +32,28 @@ struct velocitiy{
   double x,y,z;
 };
 
+struct Pose_vec{
+  std::vector<double> x;
+  std::vector<double> y;
+  std::vector<double> z;
+};
+
+std::ostream& save_vector_as_matrix( const std::string& name,
+                                     Pose_vec& pose_vec)
+{
+	// stm << name_tag << name << '\n' << type_tag << '\n' << rows_tag << '\n'
+	//     << "# columns: " << matrix.size() << '\n' ;
+  std::ofstream file(name+"_x.mat");
+  std::copy( pose_vec.x.begin(), pose_vec.x.end(), std::ostream_iterator<double>( file, " " ) ) ;
+	file << "\n\n\n" ;
+  std::ofstream filey(name+"_y.mat");
+  std::copy( pose_vec.y.begin(), pose_vec.y.end(), std::ostream_iterator<double>( filey, " " ) ) ;
+	filey << "\n\n\n" ;
+  std::ofstream filez(name+"_z.mat");
+  std::copy( pose_vec.z.begin(), pose_vec.z.end(), std::ostream_iterator<double>( filez, " " ) ) ;
+	filez << "\n\n\n" ;
+}
+
 // Save vector as matrix type in Octave (.mat) stm.
 // http://www.cplusplus.com/forum/general/221958/
 
