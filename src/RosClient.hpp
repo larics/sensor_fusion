@@ -26,7 +26,7 @@ class RosClient{
   RosClient(VehicleParams params):ekf(params){
 
     std::cout << "/* message */" << motor_speed_ << '\n';
-    sensor_sub = node_handle_.subscribe("/uav/odometry", 1000,
+    sensor_sub = node_handle_.subscribe("/uav/odometry2", 1000,
                             &RosClient::callback_sensor, this);
     motor_sub = node_handle_.subscribe("/uav/motor_speed", 1000,
                             &RosClient::callback_motor, this);
@@ -36,6 +36,9 @@ class RosClient{
                         ("ekf/ekf_pose", 1);
     base_link_pose_sub = node_handle_.subscribe("/gazebo/link_states",1000,
                             &RosClient::callback_gazebo,this);
+
+    motor_speed_ << 0,0,0,0;
+    sensor << 0,0,0;
 
   }
 
@@ -87,6 +90,10 @@ class RosClient{
       pose_truth.y.push_back(pose_gazebo.y);
       pose_truth.z.push_back(pose_gazebo.z);
 
+      pose_sensor.x.push_back(sensor(0));
+      pose_sensor.y.push_back(sensor(1));
+      pose_sensor.z.push_back(sensor(2));
+
       std::cout << "Pose with model \nX: " << p.x << '\n'
                 << "Y: " << p.y << '\n'
                 << "Z: " << p.z << '\n';
@@ -101,14 +108,21 @@ class RosClient{
     save_vector_as_matrix(name,pose_ekf);
     name = "truth";
     save_vector_as_matrix(name,pose_truth);
+    name = "sensor";
+    save_vector_as_matrix(name,pose_sensor);
   }
 
 
   Eigen::Matrix<double, 1, 4> motor_speed_;
   Eigen::Matrix<double, 3, 1> sensor;
   EulerAngles Orientation_;
+
   Pose pose_gazebo;
+
+
   Pose_vec pose_truth;
   Pose_vec pose_ekf;
+  Pose_vec pose_sensor;
+
 
 };

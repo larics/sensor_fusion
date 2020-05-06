@@ -16,23 +16,13 @@ public:
     Ixx = 0.075032;
     Iyy = 0.075032;
     Izz = 0.15006;
-    // Phi << 1, 0, 0, params_.T,0,0,0,0,0,0,0,0,
-    //        0, 1, 0, 0, params_.T, 0,0,0,0,0,0,0,
-    //        0, 0, 1, 0, 0, params_.T, 0, 0, 0, 0, 0, 0,
-    //        0, 0, 0, 1, 0, 0, (params.T*U[1]*(cos(x_hat[6])*sin(x_hat[8]) - cos(x_hat[8])*sin(x_hat[6])*sin(x_hat[7])))/params_.m, (T*U[1]*cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8]))/params_.m, (params_.T*U[1]*(cos(x_hat[8])*sin(x_hat[6]) - cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8])))/params.params_.m, 0, 0, 0,
-    //        0, 0, 0, 0, 1, 0, -(params.T*U[1]*(cos(x_hat[6])*cos(x_hat[8]) + cos(x_hat[7])*sin(x_hat[6])*sin(x_hat[8])))/params_.m, -(params.T*U[1]*cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8]))/params_.m, (params.T*U[1]*(sin(x_hat[6])*sin(x_hat[8]) + cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8])))/params_.m, 0, 0, 0,
-    //        0, 0, 0, 0, 0, 1, -(params.T*U[1]*cos(x_hat[7])*sin(x_hat[6]))/params_.m, -(params.T*U[1]*cos(x_hat[6])*sin(x_hat[7]))/params_.m, 0, 0, 0, 0,
-    //        0, 0, 0, 0, 0, 0, 1, 0, 0, params.T, 0, 0,
-    //        0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params.T, 0,
-    //        0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params.T,
-    //        0, 0, 0, 0, 0, 0, 0, 0, 0, 1, K1*params.T*x_hat[11], K1*params.T*x_hat[10],
-    //        0, 0, 0, 0, 0, 0, 0, 0, 0, K1*params.T*x_hat[11], 1, K1*params.T*x_hat[9],
-    //        0, 0, 0, 0, 0, 0, 0, 0, 0, K1*params.T*x_hat[10], K1*params.T*x_hat[9], 1;
+
     std::cout << Phi << '\n';
     H = MatrixXd::Zero(3, 12);
     H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
     M = MatrixXd::Identity(3, 3);
     Theta = MatrixXd::Zero(12, 12);
+
     L(3,3) = 1;
     L(4,4) = 1;
     L(5,5) = 1;
@@ -40,9 +30,10 @@ public:
     L(10,10) = 1;
     L(11,11) = 1;
 
-    Q = L*100*params_.T;
-    R = MatrixXd::Identity(3, 3)/params_.T;
-    R(2,2) = 0.001/params_.T;
+    Q = 0.05*L*params_.T;
+    Q(5,5) = 100*Q(5,5);
+    R = 0.0025*MatrixXd::Identity(3, 3)/params_.T;
+    //R(2,2) = 0.001/params_.T;
     std::cout << " T init: \n" << params_.T << '\n';
     std::cout << " R init: \n" << R << '\n';
     P_minus = MatrixXd::Zero(12, 12);
@@ -50,58 +41,67 @@ public:
   }
 
   Pose prediction_step(Eigen::Matrix<double, 3, 1> y, Eigen::Matrix<double, 4, 1>  U){
-    double K1 = 0.0002;
-    U[1] = 0.000009119*(pow(U(0),2)+pow(U(1),2)+ //0.00000686428
-                       pow(U(2),2)+pow(U(3),2));
-    //TO DO: ovo treba bolje/ljepse
-    Phi << 1, 0, 0, params_.T,0,0,0,0,0,0,0,0,
-           0, 1, 0, 0, params_.T, 0,0,0,0,0,0,0,
-           0, 0, 1, 0, 0, params_.T, 0, 0, 0, 0, 0, 0,
-           0, 0, 0, 1, 0, 0, (params_.T*U[1]*(cos(x_hat[6])*sin(x_hat[8]) - cos(x_hat[8])*sin(x_hat[6])*sin(x_hat[7])))/params_.m, (params_.T*U[1]*cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8]))/params_.m, (params_.T*U[1]*(cos(x_hat[8])*sin(x_hat[6]) - cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8])))/params_.m, 0, 0, 0,
-           0, 0, 0, 0, 1, 0, -(params_.T*U[1]*(cos(x_hat[6])*cos(x_hat[8]) + cos(x_hat[7])*sin(x_hat[6])*sin(x_hat[8])))/params_.m, -(params_.T*U[1]*cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8]))/params_.m, (params_.T*U[1]*(sin(x_hat[6])*sin(x_hat[8]) + cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8])))/params_.m, 0, 0, 0,
-           0, 0, 0, 0, 0, 1, -(params_.T*U[1]*cos(x_hat[7])*sin(x_hat[6]))/params_.m, -(params_.T*U[1]*cos(x_hat[6])*sin(x_hat[7]))/params_.m, 0, 0, 0, 0,
-           0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0, 0,
-           0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0,
-           0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T,
-           0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (Iyy - Izz)/Ixx*params_.T*x_hat[11], (Iyy - Izz)/Ixx*params_.T*x_hat[10],
-           0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(Izz - Ixx)/Iyy, 1, (Izz - Ixx)/Iyy*params_.T*x_hat[9],
-           0, 0, 0, 0, 0, 0, 0, 0, 0, (Ixx - Iyy)/Izz*params_.T*x_hat[10], (Ixx - Iyy)/Izz*params_.T*x_hat[9], 1;
-  //   std::cout << "--------izraz----------"
-  //             << '\n' << Ixx
-  //             << '\n' << Iyy
-  //             << '\n' << Izz;
-  // std::cout << "--------izraz----------"
-  //           << '\n' << params_.T*x_hat[11] <<'\n';
-  // std::cout << "--------izraz----------"
-  //           << '\n' << params_.T*x_hat[11]*(Izz - Ixx)/Iyy <<'\n';
-
-    // std::cout << " Phi prediction: \n" << Phi << '\n';
-    x_hat = Phi*x_hat; //get prediction for x_hat
-    P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
-    // std::cout << " x_hat prediction: \n" << x_hat << '\n';
-
-    K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
-    // std::cout << " K prediction: \n" << K << '\n';
-    // std::cout << " P_minus prediction: \n" << P_minus << '\n';
-    // std::cout << " H prediction: \n" << H << '\n';
-    // std::cout << " M prediction: \n" << M << '\n';
-    // std::cout << " R prediction: \n" << R << '\n';
-    x_hat = x_hat + K*(y-H*x_hat); // measurement update
-    P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus; //measurement update
     Pose pose;
-    pose.x = x_hat[0];
-    pose.y = x_hat[1];
-    pose.z = x_hat[2];
+    U[1] = 0.00001819*(pow(U(0),2)+pow(U(1),2)+ //0.00000686428
+                       pow(U(2),2)+pow(U(3),2));
+      //TO DO: ovo treba bolje/ljepse
+      Phi << 1, 0, 0, params_.T,0,0,0,0,0,0,0,0,
+             0, 1, 0, 0, params_.T, 0,0,0,0,0,0,0,
+             0, 0, 1, 0, 0, params_.T, 0, 0, 0, 0, 0, 0,
+             0, 0, 0, 1, 0, 0, (params_.T*U[1]*(cos(x_hat[6])*sin(x_hat[8]) - cos(x_hat[8])*sin(x_hat[6])*sin(x_hat[7])))/params_.m, (params_.T*U[1]*cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8]))/params_.m, (params_.T*U[1]*(cos(x_hat[8])*sin(x_hat[6]) - cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8])))/params_.m, 0, 0, 0,
+             0, 0, 0, 0, 1, 0, -(params_.T*U[1]*(cos(x_hat[6])*cos(x_hat[8]) + cos(x_hat[7])*sin(x_hat[6])*sin(x_hat[8])))/params_.m, -(params_.T*U[1]*cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8]))/params_.m, (params_.T*U[1]*(sin(x_hat[6])*sin(x_hat[8]) + cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8])))/params_.m, 0, 0, 0,
+             0, 0, 0, 0, 0, 1, -(params_.T*U[1]*cos(x_hat[7])*sin(x_hat[6]))/params_.m, -(params_.T*U[1]*cos(x_hat[6])*sin(x_hat[7]))/params_.m, 0, 0, 0, 0,
+             0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0, 0,
+             0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0,
+             0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T,
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (Iyy - Izz)/Ixx*params_.T*x_hat[11], (Iyy - Izz)/Ixx*params_.T*x_hat[10],
+             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(Izz - Ixx)/Iyy, 1, (Izz - Ixx)/Iyy*params_.T*x_hat[9],
+             0, 0, 0, 0, 0, 0, 0, 0, 0, (Ixx - Iyy)/Izz*params_.T*x_hat[10], (Ixx - Iyy)/Izz*params_.T*x_hat[9], 1;
+    //   std::cout << "--------izraz----------"
+    //             << '\n' << Ixx
+    //             << '\n' << Iyy
+    //             << '\n' << Izz;
+    // std::cout << "--------izraz----------"
+    //           << '\n' << params_.T*x_hat[11] <<'\n';
+    // std::cout << "--------izraz----------"
+    //           << '\n' << params_.T*x_hat[11]*(Izz - Ixx)/Iyy <<'\n';
 
-    std::cout << "Motor sped " << U << '\n';
-    std::cout << "Pose with sensors \nX: " << y[0] << '\n'
-              << "Y: " << y[1] << '\n'
-              << "Z: " << y[2] << '\n';
+      // std::cout << " Phi prediction: \n" << Phi << '\n';
+      x_hat = Phi*x_hat; //get prediction for x_hat
+      P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
+      // std::cout << " x_hat prediction: \n" << x_hat << '\n';
+
+
+      K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
+      // std::cout << " K prediction: \n" << K << '\n';
+      // std::cout << " P_minus prediction: \n" << P_minus << '\n';
+      // std::cout << " H prediction: \n" << H << '\n';
+      // std::cout << " M prediction: \n" << M << '\n';
+      // std::cout << " R prediction: \n" << R << '\n';
+      x_hat = x_hat + K*(y-H*x_hat); // measurement update
+      P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus; //measurement update
+
+      model_pose.x.push_back(K(0,0));
+      model_pose.y.push_back(K(1,1));
+      model_pose.z.push_back(K(2,2));
+
+      pose.x = x_hat[0];
+      pose.y = x_hat[1];
+      pose.z = x_hat[2];
+
+    // std::cout << "Motor sped " << U << '\n';
+    // std::cout << "Pose with sensors \nX: " << y[0] << '\n'
+    //           << "Y: " << y[1] << '\n'
+    //           << "Z: " << y[2] << '\n';
     return pose;
   }
 
   void measurment_step(){
 
+  }
+  ~Ekf(){
+    std::string name = "model";
+    save_vector_as_matrix(name,model_pose);
   }
 
 private:
@@ -130,7 +130,7 @@ private:
 
     double Ixx,Iyy,Izz;
 
-
+    Pose_vec model_pose;
     VehicleParams params_;
 
 };
