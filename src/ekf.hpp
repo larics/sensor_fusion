@@ -32,7 +32,10 @@ public:
 
     Q = 0.05*L*params_.T;
     Q(5,5) = 100*Q(5,5);
-    R = 0.0025*MatrixXd::Identity(3, 3)/params_.T;
+
+    R1 = 0.0025*MatrixXd::Identity(3, 3)/params_.T;
+    R2 = 0.01*MatrixXd::Identity(3, 3)/params_.T;
+    R = R1*R1*R2*R2 * ((R1*R1+R2*R2).inverse());
     //R(2,2) = 0.001/params_.T;
     std::cout << " T init: \n" << params_.T << '\n';
     std::cout << " R init: \n" << R << '\n';
@@ -40,8 +43,12 @@ public:
     P_plus = MatrixXd::Zero(12, 12);
   }
 
-  Pose prediction_step(Eigen::Matrix<double, 3, 1> y, Eigen::Matrix<double, 4, 1>  U){
+  Pose prediction_step(Eigen::Matrix<double, 3, 1> y,
+                       Eigen::Matrix<double, 3, 1> y2,
+                       Eigen::Matrix<double, 4, 1>  U){
     Pose pose;
+
+    y = (y.transpose()*R1.inverse()+y2.transpose()*R2.inverse()) * ((R1.inverse()+R2.inverse()).inverse());
     U[1] = 0.00001819*(pow(U(0),2)+pow(U(1),2)+ //0.00000686428
                        pow(U(2),2)+pow(U(3),2));
       //TO DO: ovo treba bolje/ljepse
@@ -127,6 +134,8 @@ private:
     Eigen::Matrix<double, 12, 12>  Q;
     Eigen::Matrix<double, 3, 3>  R;
     Eigen::Matrix<double, 12, 3>  K;
+
+    Eigen::Matrix<double, 3, 3>  R1,R2;
 
     double Ixx,Iyy,Izz;
 

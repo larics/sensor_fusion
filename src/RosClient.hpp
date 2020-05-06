@@ -17,6 +17,7 @@ class RosClient{
   ros::Subscriber motor_sub;
   ros::Subscriber imu_sub;
   ros::Subscriber sensor_sub;
+  ros::Subscriber sensor_2_sub;
   ros::Subscriber base_link_pose_sub;
   ros::Publisher pose_pub;
   Ekf ekf;
@@ -28,6 +29,8 @@ class RosClient{
     std::cout << "/* message */" << motor_speed_ << '\n';
     sensor_sub = node_handle_.subscribe("/uav/odometry2", 1000,
                             &RosClient::callback_sensor, this);
+    sensor_2_sub = node_handle_.subscribe("/uav/odometry3", 1000,
+                                &RosClient::callback_sensor_2, this);
     motor_sub = node_handle_.subscribe("/uav/motor_speed", 1000,
                             &RosClient::callback_motor, this);
     imu_sub = node_handle_.subscribe("/uav/imu",1000,
@@ -61,6 +64,12 @@ class RosClient{
               msg->pose.pose.position.z;
   }
 
+  void callback_sensor_2(const nav_msgs::OdometryPtr& msg){
+  sensor_2 << msg->pose.pose.position.x,
+            msg->pose.pose.position.y,
+            msg->pose.pose.position.z;
+  }
+
   void callback_imu(const sensor_msgs::ImuPtr& msg){
       Quaternions q;
       q.x = msg->orientation.x;
@@ -76,7 +85,7 @@ class RosClient{
     while (ros::ok())
     {
       Pose p;
-      p = ekf.prediction_step(sensor,motor_speed_);
+      p = ekf.prediction_step(sensor,sensor_2,motor_speed_);
       geometry_msgs::Pose pose;
       pose.position.x = p.x;
       pose.position.y = p.y;
@@ -94,6 +103,10 @@ class RosClient{
       pose_sensor.y.push_back(sensor(1));
       pose_sensor.z.push_back(sensor(2));
 
+      pose_sensor_2.x.push_back(sensor_2(0));
+      pose_sensor_2.y.push_back(sensor_2(1));
+      pose_sensor_2.z.push_back(sensor_2(2));
+
       std::cout << "Pose with model \nX: " << p.x << '\n'
                 << "Y: " << p.y << '\n'
                 << "Z: " << p.z << '\n';
@@ -110,11 +123,14 @@ class RosClient{
     save_vector_as_matrix(name,pose_truth);
     name = "sensor";
     save_vector_as_matrix(name,pose_sensor);
+    name = "sensor2";
+    save_vector_as_matrix(name,pose_sensor_2);
   }
 
 
   Eigen::Matrix<double, 1, 4> motor_speed_;
   Eigen::Matrix<double, 3, 1> sensor;
+  Eigen::Matrix<double, 3, 1> sensor_2;
   EulerAngles Orientation_;
 
   Pose pose_gazebo;
@@ -123,6 +139,6 @@ class RosClient{
   Pose_vec pose_truth;
   Pose_vec pose_ekf;
   Pose_vec pose_sensor;
-
+  Pose_vec pose_sensor_2;
 
 };
