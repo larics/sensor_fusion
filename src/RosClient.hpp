@@ -48,6 +48,7 @@ class RosClient{
   void callback_motor(const mav_msgs::ActuatorsPtr& msg){
     motor_speed_ << msg->angular_velocities[0],msg->angular_velocities[1],
                     msg->angular_velocities[2],msg->angular_velocities[3];
+    std::cout << "motor" << '\n';
 
   }
 
@@ -62,12 +63,14 @@ class RosClient{
     sensor << msg->pose.pose.position.x,
               msg->pose.pose.position.y,
               msg->pose.pose.position.z;
+    std::cout << "sens 1" << '\n';
   }
 
   void callback_sensor_2(const nav_msgs::OdometryPtr& msg){
-  sensor_2 << msg->pose.pose.position.x,
-            msg->pose.pose.position.y,
-            msg->pose.pose.position.z;
+    sensor_2 << msg->pose.pose.position.x,
+              msg->pose.pose.position.y,
+              msg->pose.pose.position.z;
+    std::cout << "sens 2" << '\n';
   }
 
   void callback_imu(const sensor_msgs::ImuPtr& msg){

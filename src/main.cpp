@@ -3,25 +3,56 @@
 #include "ros/ros.h"
 //#include "ekf.hpp"
 #include "RosClient.hpp"
+#include "yaml-cpp/yaml.h"
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "test");
+  YAML::Node config = YAML::LoadFile("config.yaml"); //TO-DO path from rosparam
+
   VehicleParams params;
-  params.m = 2.3;
-  params.g = 9.81;
-  params.Ixx = 1;
-  params.Iyy = 1;
-  params.Izz = 1;
-  params.T = 0.04;
-  std::cout << "hello world" << std::endl;
+  params.m = config["mass"].as<double>();
+  params.g = config["g"].as<double>();
+  params.Ixx = config["Ixx"].as<double>();
+  params.Iyy = config["Iyy"].as<double>();
+  params.Izz = config["Izz"].as<double>();
+  params.T = config["T"].as<double>();
+  params.Q = config["Q"].as<double>();
+  params.Qz = config["Qz"].as<double>();
+
+  std::cout << "--Vehicle parameters--" << '\n'
+            << "mass: " << params.m << '\n'
+            << "Ixx: " << params.Ixx << '\n'
+            << "Iyy: " << params.Iyy << '\n'
+            << "Izz: " << params.Izz << '\n'
+            << "T: " << params.T  << '\n'
+            << "g: " << params.g  << '\n'
+            << "Q: " << params.Q  << '\n'
+            << "Qz: " << params.Qz  << '\n'
+            << '\n';
+  std::vector<SensorParams> sensors;
+  std::vector<std::string> id = config["Sensor_prefix"].as<std::vector<std::string>>();
+  SensorParams sensor;
+  std::vector<double> R;
+
+  std::cout << "-----Senors-----" << '\n';
+  for (size_t i = 0; i < id.size(); i++) {
+    sensor.id = id.at(i);
+    sensor.topic = config[id.at(i)+"_topic"].as<std::string>();
+    sensor.R = MatrixXd::Identity(3, 3);
+    R = config[id.at(i)+"_R"].as<std::vector<double>>();
+    sensor.R(0,0) = R[0,0];
+    sensor.R(1,1) = R[1,1];
+    sensor.R(1,1) = R[2,2];
+
+    std::cout << "id: " << sensor.id << '\n'
+              << "topic: \"" << sensor.topic << "\"\n"
+              << "R: \n" << sensor.R << "\n\n";
+  }
+
+
+
   RosClient obj2(params);
   obj2.update_dynamics();
-
-  // const std::string file_name = "test_vector.mat";
-  // std::vector<double> v = {1,2,3,4,5,6,7.7};
-  // const std::string vec_name = "x";
-  // std::ofstream file(file_name);
-  // save_vector_as_matrix( vec_name ,v , file );
 
   return 0;
 }

@@ -23,6 +23,9 @@ struct VehicleParams{
   double Iyy;
   double Izz;
   double T;
+  // correlation matrix of the model
+  double Q;
+  double Qz; //for the z axis that is a bit worse than the rest
 };
 
 struct Pose{
@@ -36,6 +39,14 @@ struct Pose_vec{
   std::vector<double> x;
   std::vector<double> y;
   std::vector<double> z;
+};
+
+struct SensorParams{
+  std::string id;
+  std::string topic;
+  // 1 if its an odom sensor, gives delta values not absolute values
+  bool is_odom;
+  Eigen::Matrix<double, 3, 3>  R; // correlation matrix of the sensor
 };
 
 std::ostream& save_vector_as_matrix( const std::string& name,
@@ -73,6 +84,7 @@ std::ostream& save_vector_as_matrix( const std::string& name, const std::vector<
     std::copy( matrix.begin(), matrix.end(), std::ostream_iterator<T>( stm, " " ) ) ;
 	return stm << "\n\n\n" ;
 }
+
 
 EulerAngles ToEulerAngles(Quaternions q) {
     EulerAngles angles;
