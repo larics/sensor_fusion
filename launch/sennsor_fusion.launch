@@ -2,6 +2,7 @@
 <param name="config_yaml"  value=" $(find sensor_fusion)/config/config.yaml" />
 <param name="motor_speed_topic"  value="/uav/motor_speed" />
 <param name="imu_topic"  value="/uav/imu" />
+<param name="plot_file_loc"  value="$(find sensor_fusion)/matlab/" />
 
 
 <node pkg="sensor_fusion" type="sensor_fusion" name="sensor_fusion" output="screen"/>
