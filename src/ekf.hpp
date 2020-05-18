@@ -30,25 +30,22 @@ public:
     L(10,10) = 1;
     L(11,11) = 1;
 
-    Q = 0.05*L*params_.T;
+    Q = 0.5*L*params_.T;
     Q(5,5) = 100*Q(5,5);
 
-    R1 = 0.0025*MatrixXd::Identity(3, 3)/params_.T;
-    R2 = 0.01*MatrixXd::Identity(3, 3)/params_.T;
-    R = R1*R1*R2*R2 * ((R1*R1+R2*R2).inverse());
+    // R1 = 0.0025*MatrixXd::Identity(3, 3)/params_.T;
+    // R2 = 0.01*MatrixXd::Identity(3, 3)/params_.T;
+    // R = R1*R1*R2*R2 * ((R1*R1+R2*R2).inverse());
     //R(2,2) = 0.001/params_.T;
     std::cout << " T init: \n" << params_.T << '\n';
-    std::cout << " R init: \n" << R << '\n';
     P_minus = MatrixXd::Zero(12, 12);
     P_plus = MatrixXd::Zero(12, 12);
   }
 
-  Pose prediction_step(Eigen::Matrix<double, 3, 1> y,
-                       Eigen::Matrix<double, 3, 1> y2,
-                       Eigen::Matrix<double, 4, 1>  U){
+  Pose prediction_step(Eigen::Matrix<double, 4, 1>  U){
     Pose pose;
 
-    y = (y.transpose()*R1.inverse()+y2.transpose()*R2.inverse()) * ((R1.inverse()+R2.inverse()).inverse());
+    //y = (y.transpose()*R1.inverse()+y2.transpose()*R2.inverse()) * ((R1.inverse()+R2.inverse()).inverse());
     U[1] = 0.00001819*(pow(U(0),2)+pow(U(1),2)+ //0.00000686428
                        pow(U(2),2)+pow(U(3),2));
       //TO DO: ovo treba bolje/ljepse
@@ -64,62 +61,37 @@ public:
              0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (Iyy - Izz)/Ixx*params_.T*x_hat[11], (Iyy - Izz)/Ixx*params_.T*x_hat[10],
              0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(Izz - Ixx)/Iyy, 1, (Izz - Ixx)/Iyy*params_.T*x_hat[9],
              0, 0, 0, 0, 0, 0, 0, 0, 0, (Ixx - Iyy)/Izz*params_.T*x_hat[10], (Ixx - Iyy)/Izz*params_.T*x_hat[9], 1;
-    //   std::cout << "--------izraz----------"
-    //             << '\n' << Ixx
-    //             << '\n' << Iyy
-    //             << '\n' << Izz;
-    // std::cout << "--------izraz----------"
-    //           << '\n' << params_.T*x_hat[11] <<'\n';
-    // std::cout << "--------izraz----------"
-    //           << '\n' << params_.T*x_hat[11]*(Izz - Ixx)/Iyy <<'\n';
 
-      // std::cout << " Phi prediction: \n" << Phi << '\n';
       x_hat = Phi*x_hat; //get prediction for x_hat
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
-      // std::cout << " x_hat prediction: \n" << x_hat << '\n';
 
-
-      K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
-      // std::cout << " K prediction: \n" << K << '\n';
-      // std::cout << " P_minus prediction: \n" << P_minus << '\n';
-      // std::cout << " H prediction: \n" << H << '\n';
-      // std::cout << " M prediction: \n" << M << '\n';
-      // std::cout << " R prediction: \n" << R << '\n';
-      x_hat = x_hat + K*(y-H*x_hat); // measurement update
-      P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus; //measurement update
-
-      model_pose.x.push_back(K(0,0));
-      model_pose.y.push_back(K(1,1));
-      model_pose.z.push_back(K(2,2));
 
       pose.x = x_hat[0];
       pose.y = x_hat[1];
       pose.z = x_hat[2];
 
-    // std::cout << "Motor sped " << U << '\n';
-    // std::cout << "Pose with sensors \nX: " << y[0] << '\n'
-    //           << "Y: " << y[1] << '\n'
-    //           << "Z: " << y[2] << '\n';
     return pose;
   }
 
-  void measurment_step(){
+  Pose measurment_update(Eigen::Matrix<double, 3, 1> y,Eigen::Matrix<double, 3, 3>  R){
 
+    R = R/params_.T;
+    K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
+    x_hat = x_hat + K*(y-H*x_hat);
+    P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus;
+
+
+    Pose pose;
+    pose.x = x_hat[0];
+    pose.y = x_hat[1];
+    pose.z = x_hat[2];
+
+    return pose;
   }
   ~Ekf(){
-    std::string name = "model";
-    save_vector_as_matrix(name,model_pose);
   }
 
 private:
-  // void init_params(VehicleParams params){
-  //   params_.m = params.m;
-  //   params_.g = params.g;
-  //   params_.Ixx = params.Ixx;
-  //   params_.Iyy = params.Iyy;
-  //   params_.Izz = params.Izz;
-  //   params_.T = params.T;
-  // }
 
     Eigen::Matrix<double, 12, 12> Phi; //matrix of estimate
     Eigen::Matrix<double, 12, 1>  x_hat; // estimate
@@ -132,7 +104,6 @@ private:
     Eigen::Matrix<double, 12, 12>  P_plus;
     Eigen::Matrix<double, 12, 1>  X_mius;
     Eigen::Matrix<double, 12, 12>  Q;
-    Eigen::Matrix<double, 3, 3>  R;
     Eigen::Matrix<double, 12, 3>  K;
 
     Eigen::Matrix<double, 3, 3>  R1,R2;

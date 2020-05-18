@@ -1,6 +1,11 @@
-#include "RosClient.hpp"
+#include <iostream>
+#include "ros/ros.h"
+#include <Eigen/Geometry>
+#include "ekf.hpp"
 
+#include "nav_msgs/Odometry.h"
 
+using namespace Eigen;
 
 class Sensor{
   ros::Subscriber sensor_sub;
@@ -15,16 +20,24 @@ class Sensor{
               << "topic: \"" <<params_.topic << "\"\n"
               << "R: \n" << params_.R << "\n\n";
   }
+
   std::string getID(){return params_.id; }
+
   std::string getTopic(){return params_.topic; }
+
+  Eigen::Matrix<double, 3, 3> getR(){return params_.R; }
+
+  Eigen::Matrix<double, 3, 1> getSensorData(){return sensor_;}
+
 
   void callback_sensor(const nav_msgs::OdometryPtr& msg){
     sensor_ << msg->pose.pose.position.x,
                msg->pose.pose.position.y,
                msg->pose.pose.position.z;
-    //ROS_INFO("stamp: %f", params_.R(0,0));
-    std::cout << "id" << params_.id << '\n';
   }
+
+
+private:
   SensorParams params_;
   Eigen::Matrix<double, 3, 1> sensor_;
   };
