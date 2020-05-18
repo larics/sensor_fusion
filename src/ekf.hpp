@@ -6,22 +6,21 @@ using std::cos;
 using std::sin;
 using std::fabs;
 using namespace Eigen;
+
 class Ekf{
 public:
   Ekf(VehicleParams params){
     std::cout << "Ekf" << '\n';
-    x_hat << 0,0,0,0,0,0,0,0,0,0,0,0;
-    //U << 0, 0, 0, 0;
+
     params_ = params;
-    Ixx = 0.075032;
-    Iyy = 0.075032;
-    Izz = 0.15006;
+    x_hat = params_.initial_state;
+
+    std::cout << "x_hat" << '\n';
 
     std::cout << Phi << '\n';
     H = MatrixXd::Zero(3, 12);
     H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
     M = MatrixXd::Identity(3, 3);
-    Theta = MatrixXd::Zero(12, 12);
 
     L(3,3) = 1;
     L(4,4) = 1;
@@ -30,13 +29,9 @@ public:
     L(10,10) = 1;
     L(11,11) = 1;
 
-    Q = 0.5*L*params_.T;
-    Q(5,5) = 100*Q(5,5);
+    Q = params_.Q*L*params_.T;
+    Q(5,5) = params_.Qz*params_.T;
 
-    // R1 = 0.0025*MatrixXd::Identity(3, 3)/params_.T;
-    // R2 = 0.01*MatrixXd::Identity(3, 3)/params_.T;
-    // R = R1*R1*R2*R2 * ((R1*R1+R2*R2).inverse());
-    //R(2,2) = 0.001/params_.T;
     std::cout << " T init: \n" << params_.T << '\n';
     P_minus = MatrixXd::Zero(12, 12);
     P_plus = MatrixXd::Zero(12, 12);
@@ -44,10 +39,15 @@ public:
 
   Pose prediction_step(Eigen::Matrix<double, 4, 1>  U){
     Pose pose;
+    double U1, U2, U3, U4;
+    U1 = params_.b*(pow(U(0),2) + pow(U(1),2)+ pow(U(2),2) + pow(U(3),2)); //0.00000686428
 
-    //y = (y.transpose()*R1.inverse()+y2.transpose()*R2.inverse()) * ((R1.inverse()+R2.inverse()).inverse());
-    U[1] = 0.00001819*(pow(U(0),2)+pow(U(1),2)+ //0.00000686428
-                       pow(U(2),2)+pow(U(3),2));
+    U2 = params_.l * params_.b*(-pow(U(1),2) + pow(U(3),2));
+
+    U3 = params_.l * params_.b*(-pow(U(0),2) + pow(U(2),2));
+
+    U4 = params_.d *(-pow(U(0),2) + pow(U(1),2)- pow(U(2),2) + pow(U(3),2));
+
       //TO DO: ovo treba bolje/ljepse
       Phi << 1, 0, 0, params_.T,0,0,0,0,0,0,0,0,
              0, 1, 0, 0, params_.T, 0,0,0,0,0,0,0,
@@ -58,11 +58,28 @@ public:
              0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0, 0,
              0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0,
              0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (Iyy - Izz)/Ixx*params_.T*x_hat[11], (Iyy - Izz)/Ixx*params_.T*x_hat[10],
-             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(Izz - Ixx)/Iyy, 1, (Izz - Ixx)/Iyy*params_.T*x_hat[9],
-             0, 0, 0, 0, 0, 0, 0, 0, 0, (Ixx - Iyy)/Izz*params_.T*x_hat[10], (Ixx - Iyy)/Izz*params_.T*x_hat[9], 1;
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[11], (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[10],
+             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(params_.Izz - params_.Ixx)/params_.Iyy, 1, (params_.Izz - params_.Ixx)/params_.Iyy*params_.T*x_hat[9],
+             0, 0, 0, 0, 0, 0, 0, 0, 0, (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[10], (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[9], 1;
 
-      x_hat = Phi*x_hat; //get prediction for x_hat
+      //TO DO ispravi
+      //x_hat = Phi*x_hat; //get prediction for x_hat
+      X_minus << x_hat(3),
+               x_hat(4),
+               x_hat(5),
+               (sin(x_hat(8))*sin(x_hat(6)) + cos(x_hat(8))*sin(x_hat(7))*cos(x_hat(6)))*U1/params_.m,
+               (-cos(x_hat(8))*sin(x_hat(6)) + sin(x_hat(8))*sin(x_hat(7))*cos(x_hat(6)))*U1/params_.m,
+               -params_.g + cos(x_hat(7))*cos(x_hat(6))*U1/params_.m,
+               x_hat(9),
+               x_hat(10),
+               x_hat(11),
+               U2/params_.Ixx,
+               U3/params_.Iyy,
+               U4/params_.Izz + x_hat[10]*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz;
+
+      x_hat = x_hat + params_.T*X_minus;
+
+
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
 
 
@@ -95,20 +112,16 @@ private:
 
     Eigen::Matrix<double, 12, 12> Phi; //matrix of estimate
     Eigen::Matrix<double, 12, 1>  x_hat; // estimate
-    // Eigen::Matrix<double, 4, 1>  U; //motor_speeds
     Eigen::Matrix<double, 3, 12>  H;
     Eigen::Matrix<double, 3, 3>  M;
     Eigen::Matrix<double, 12, 12>  L;
-    Eigen::Matrix<double, 12, 12>  Theta;
     Eigen::Matrix<double, 12, 12>  P_minus;
     Eigen::Matrix<double, 12, 12>  P_plus;
-    Eigen::Matrix<double, 12, 1>  X_mius;
+    Eigen::Matrix<double, 12, 1>  X_minus;
     Eigen::Matrix<double, 12, 12>  Q;
     Eigen::Matrix<double, 12, 3>  K;
 
     Eigen::Matrix<double, 3, 3>  R1,R2;
-
-    double Ixx,Iyy,Izz;
 
     Pose_vec model_pose;
     VehicleParams params_;

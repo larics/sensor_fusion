@@ -5,6 +5,7 @@
 #include <iterator>
 #include <numeric>
 #include <fstream>
+#include "ros/ros.h"
 //https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 
 struct Quaternions {
@@ -19,10 +20,15 @@ struct VehicleParams{
   double m; //mass
   double g; //gravity
 
+  Eigen::Matrix<double, 12, 1>  initial_state;
   double Ixx; //Inertia
   double Iyy;
   double Izz;
   double T;
+
+  double l; //arm length
+  double b; //thrust
+  double d; //drag
   // correlation matrix of the model
   double Q;
   double Qz; //for the z axis that is a bit worse than the rest
@@ -54,13 +60,16 @@ std::ostream& save_vector_as_matrix( const std::string& name,
 {
 	// stm << name_tag << name << '\n' << type_tag << '\n' << rows_tag << '\n'
 	//     << "# columns: " << matrix.size() << '\n' ;
-  std::ofstream file(name+"_x.mat");
+  ros::NodeHandle node_handle;
+  std::string file_loc;
+  node_handle.getParam("plot_file_loc", file_loc);
+  std::ofstream file(file_loc+name+"_x.mat");
   std::copy( pose_vec.x.begin(), pose_vec.x.end(), std::ostream_iterator<double>( file, " " ) ) ;
 	file << "\n\n\n" ;
-  std::ofstream filey(name+"_y.mat");
+  std::ofstream filey(file_loc+name+"_y.mat");
   std::copy( pose_vec.y.begin(), pose_vec.y.end(), std::ostream_iterator<double>( filey, " " ) ) ;
 	filey << "\n\n\n" ;
-  std::ofstream filez(name+"_z.mat");
+  std::ofstream filez(file_loc+name+"_z.mat");
   std::copy( pose_vec.z.begin(), pose_vec.z.end(), std::ostream_iterator<double>( filez, " " ) ) ;
 	filez << "\n\n\n" ;
 }

@@ -19,12 +19,11 @@ class RosClient{
   ros::Subscriber base_link_pose_sub;
   ros::Publisher pose_pub;
   Ekf ekf;
-  //VehicleDynamics vehicle;
 
   public:
   RosClient(VehicleParams params,std::vector<SensorParams> sensor_params)
   :ekf(params){
-
+    T = params.T;
     std::string motor_speed_topic,imu_topic;
     node_handle_.getParam("motor_speed_topic", motor_speed_topic);
     node_handle_.getParam("imu_topic", imu_topic);
@@ -44,7 +43,6 @@ class RosClient{
 
     sensor_obj_.reserve(3);
     for (size_t i = 0; i < sensor_params.size(); i++) {
-      //std::cout << "/* message */" << '\n';
       sensor_obj_.push_back(new Sensor(sensor_params.at(i)));
     }
     std::cout << sensor_obj_.at(0)->getID() << '\n';
@@ -63,9 +61,9 @@ class RosClient{
 
   void callback_gazebo(const gazebo_msgs::LinkStatesPtr& msg){
 
-    pose_gazebo.x = msg->pose[1].position.x;
-    pose_gazebo.y = msg->pose[1].position.y;
-    pose_gazebo.z = msg->pose[1].position.z;
+    pose_gazebo_.x = msg->pose[1].position.x;
+    pose_gazebo_.y = msg->pose[1].position.y;
+    pose_gazebo_.z = msg->pose[1].position.z;
   }
 
   void callback_imu(const sensor_msgs::ImuPtr& msg){
@@ -79,7 +77,8 @@ class RosClient{
     }
 
   void update_dynamics(){
-    ros::Rate loop_rate(50);
+    //stavi 1/T
+    ros::Rate loop_rate(1.0/T);
     while (ros::ok())
     {
       Pose p;
@@ -95,13 +94,13 @@ class RosClient{
       pose.position.y = p.y;
       pose.position.z = p.z;
 
-      pose_ekf.x.push_back(p.x);
-      pose_ekf.y.push_back(p.y);
-      pose_ekf.z.push_back(p.z);
+      pose_ekf_.x.push_back(p.x);
+      pose_ekf_.y.push_back(p.y);
+      pose_ekf_.z.push_back(p.z);
 
-      pose_truth.x.push_back(pose_gazebo.x);
-      pose_truth.y.push_back(pose_gazebo.y);
-      pose_truth.z.push_back(pose_gazebo.z);
+      pose_truth_.x.push_back(pose_gazebo_.x);
+      pose_truth_.y.push_back(pose_gazebo_.y);
+      pose_truth_.z.push_back(pose_gazebo_.z);
 
       std::cout << "Pose with model \nX: " << p.x << '\n'
                 << "Y: " << p.y << '\n'
@@ -113,21 +112,24 @@ class RosClient{
   }
 
   ~RosClient(){
+    for (size_t i = 0; i < sensor_obj_.size(); i++) {
+      sensor_obj_.at(i)->~Sensor();
+    }
     std::string name = "ekf";
-    save_vector_as_matrix(name,pose_ekf);
+    save_vector_as_matrix(name,pose_ekf_);
     name = "truth";
-    save_vector_as_matrix(name,pose_truth);
+    save_vector_as_matrix(name,pose_truth_);
   }
 
-
+  double T;
   Eigen::Matrix<double, 1, 4> motor_speed_;
   EulerAngles Orientation_;
 
-  Pose pose_gazebo;
+  Pose pose_gazebo_;
 
   std::vector<Sensor*> sensor_obj_;
 
-  Pose_vec pose_truth;
-  Pose_vec pose_ekf;
+  Pose_vec pose_truth_;
+  Pose_vec pose_ekf_;
 
 };

@@ -19,6 +19,7 @@ class Sensor{
     std::cout << "id: " <<params_.id << '\n'
               << "topic: \"" <<params_.topic << "\"\n"
               << "R: \n" << params_.R << "\n\n";
+   sensor_ << 0,0,0;
   }
 
   std::string getID(){return params_.id; }
@@ -34,10 +35,19 @@ class Sensor{
     sensor_ << msg->pose.pose.position.x,
                msg->pose.pose.position.y,
                msg->pose.pose.position.z;
+    pose_sensor_.x.push_back(sensor_(0));
+    pose_sensor_.y.push_back(sensor_(1));
+    pose_sensor_.z.push_back(sensor_(2));
+  }
+  ~Sensor(){
+    std::cout << "SENSOR DESTRUCTOR" << '\n';
+    std::string name = "sensor_"+params_.id;
+    save_vector_as_matrix(name,pose_sensor_);
   }
 
 
 private:
   SensorParams params_;
+  Pose_vec pose_sensor_;
   Eigen::Matrix<double, 3, 1> sensor_;
   };

@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
   ros::NodeHandle node_handle;
   std::string config_file;
   node_handle.getParam("config_yaml", config_file);
-  
+
   YAML::Node config = YAML::LoadFile(config_file); //TO-DO path from rosparam
 
   VehicleParams params;
@@ -21,6 +21,14 @@ int main(int argc, char **argv) {
   params.T = config["T"].as<double>();
   params.Q = config["Q"].as<double>();
   params.Qz = config["Qz"].as<double>();
+  params.l = config["l"].as<double>();
+  params.b = config["b"].as<double>();
+  params.d = config["d"].as<double>();
+
+  std::vector<double> init_state = config["initial_state"].as<std::vector<double>>();
+  for (size_t i = 0; i < init_state.size(); i++) {
+    params.initial_state(i) = init_state.at(i);
+  }
 
   std::cout << "--Vehicle parameters--" << '\n'
             << "mass: " << params.m << '\n'
@@ -31,6 +39,7 @@ int main(int argc, char **argv) {
             << "g: " << params.g  << '\n'
             << "Q: " << params.Q  << '\n'
             << "Qz: " << params.Qz  << '\n'
+            << "X_0: " << params.initial_state << '\n'
             << '\n';
   std::vector<SensorParams> sensors;
   std::vector<std::string> id = config["Sensor_prefix"].as<std::vector<std::string>>();
