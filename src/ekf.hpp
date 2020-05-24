@@ -10,13 +10,10 @@ using namespace Eigen;
 class Ekf{
 public:
   Ekf(VehicleParams params){
-    std::cout << "Ekf" << '\n';
 
     params_ = params;
     x_hat = params_.initial_state;
-
-    std::cout << "x_hat" << '\n';
-
+    J_tp_ = 0.0002;
     std::cout << Phi << '\n';
     H = MatrixXd::Zero(3, 12);
     H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
@@ -39,7 +36,7 @@ public:
 
   Pose prediction_step(Eigen::Matrix<double, 4, 1>  U){
     Pose pose;
-    double U1, U2, U3, U4;
+    double U1, U2, U3, U4, omega;
     U1 = params_.b*(pow(U(0),2) + pow(U(1),2)+ pow(U(2),2) + pow(U(3),2)); //0.00000686428
 
     U2 = params_.l * params_.b*(-pow(U(1),2) + pow(U(3),2));
@@ -47,6 +44,8 @@ public:
     U3 = params_.l * params_.b*(-pow(U(0),2) + pow(U(2),2));
 
     U4 = params_.d *(-pow(U(0),2) + pow(U(1),2)- pow(U(2),2) + pow(U(3),2));
+
+    omega = -U(0) + U(1) - U(2) + U(3);
 
       //TO DO: ovo treba bolje/ljepse
       Phi << 1, 0, 0, params_.T,0,0,0,0,0,0,0,0,
@@ -73,15 +72,14 @@ public:
                x_hat(9),
                x_hat(10),
                x_hat(11),
-               U2/params_.Ixx,
-               U3/params_.Iyy,
+               U2/params_.Ixx + (params_.Iyy - params_.Izz)/params_.Ixx*x_hat[11]*x_hat[10] - omega*x_hat[10]*J_tp_/params_.Ixx,
+               U3/params_.Iyy + x_hat[11]*x_hat[9]*(params_.Izz - params_.Ixx)/params_.Iyy + omega*x_hat[9]*J_tp_/params_.Iyy,
                U4/params_.Izz + x_hat[10]*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz;
 
       x_hat = x_hat + params_.T*X_minus;
-
-
+      
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
-
+    if (x_hat(2) < 0) x_hat(2) = 0;
 
       pose.x = x_hat[0];
       pose.y = x_hat[1];
@@ -122,6 +120,7 @@ private:
     Eigen::Matrix<double, 12, 3>  K;
 
     Eigen::Matrix<double, 3, 3>  R1,R2;
+    double J_tp_;
 
     Pose_vec model_pose;
     VehicleParams params_;
