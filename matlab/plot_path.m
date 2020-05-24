@@ -35,19 +35,19 @@ plot3(x_sensor2,y_sensor2,z_sensor2,'--k');
 %plot3(x_model,y_model,z_model);
 legend("Ekf","Istina","Sensor","Sensor2");
 % 
-% size = size(x);
-% figure(2)
-% hold on;
-% grid on;
-% title("Kvadratna greska")
-% xlabel("step")
-% xlim([100,250])
-% ylabel("kvadratno odstupanje")
-% plot(1:size(2),(x-x_truth).^2,'LineWidth',2.5);
-% plot(1:size(2),(x_sensor-x_truth).^2,'r','LineWidth',1.5);
-% plot(1:size(2),(x_sensor2-x_truth).^2);
-% legend("Ekf","Sensor","Sensor2")
-% 
+size = size(x);
+figure
+hold on;
+grid on;
+title("Kvadratna greska")
+xlabel("step")
+xlim([100,250])
+ylabel("kvadratno odstupanje")
+plot(1:size(2),sqrt((x-x_truth).^2),'LineWidth',2.5);
+plot(1:size(2),sqrt((x_sensor-x_truth).^2),'r','LineWidth',1.5);
+plot(1:size(2),sqrt((x_sensor2-x_truth).^2));
+legend("Ekf","Sensor","Sensor2")
+
 % figure(3)
 % grid on;
 % hold on;
@@ -55,8 +55,8 @@ legend("Ekf","Istina","Sensor","Sensor2");
 % plot(1:size(2),y_model)
 % plot(1:size(2),z_model)
 % legend("x","y","z")
-% error_ekf = [sum((x-x_truth).^2)/size(2) sum((y-y_truth).^2)/size(2),sum((z-z_truth).^2)/size(2)]
-% error_sensor = [sum((x_sensor-x_truth).^2)/size(2), sum((y_sensor-y_truth).^2)/size(2), sum((z_sensor-z_truth).^2)/size(2)]
+error_ekf = [sum((x-x_truth).^2)/size(2) sum((y-y_truth).^2)/size(2),sum((z-z_truth).^2)/size(2)]
+error_sensor = [sum((x_sensor-x_truth).^2)/size(2), sum((y_sensor-y_truth).^2)/size(2), sum((z_sensor-z_truth).^2)/size(2)]
 
 
 
