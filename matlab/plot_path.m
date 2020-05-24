@@ -43,7 +43,7 @@ title("Kvadratna greska")
 xlabel("step")
 xlim([100,250])
 ylabel("kvadratno odstupanje")
-plot(1:size(2),sqrt((x-x_truth).^2),'LineWidth',2.5);
+plot(1:size(2),sqrt((x-x_truth).^2)),'LineWidth',2.5);
 plot(1:size(2),sqrt((x_sensor-x_truth).^2),'r','LineWidth',1.5);
 plot(1:size(2),sqrt((x_sensor2-x_truth).^2));
 legend("Ekf","Sensor","Sensor2")
