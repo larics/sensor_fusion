@@ -39,6 +39,7 @@ class RosClient{
                             &RosClient::callback_gazebo,this);
 
     motor_speed_ << 0,0,0,0;
+    old_pose_for_odom_ << 0,0,0;
 
 
     sensor_obj_.reserve(3);
@@ -77,7 +78,6 @@ class RosClient{
     }
 
   void update_dynamics(){
-    //stavi 1/T
     ros::Rate loop_rate(1.0/T);
     while (ros::ok())
     {
@@ -86,17 +86,25 @@ class RosClient{
       p = ekf.prediction_step(motor_speed_);
 
       for (size_t i = 0; i < sensor_obj_.size(); i++) {
-        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
-                                  sensor_obj_.at(i)->getR());
-      }
-      geometry_msgs::Pose pose;
-      pose.position.x = p.x;
-      pose.position.y = p.y;
-      pose.position.z = p.z;
 
-      pose_ekf_.x.push_back(p.x);
-      pose_ekf_.y.push_back(p.y);
-      pose_ekf_.z.push_back(p.z);
+          if (sensor_obj_.at(i)->isOdomSensor()){
+            p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
+                                      sensor_obj_.at(i)->getR());
+          }
+          else{
+            p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
+                                      sensor_obj_.at(i)->getR());
+          }
+
+        }
+      old_pose_for_odom_ << p.x,p.y,p.z;
+      ekf_pose_.position.x = p.x;
+      ekf_pose_.position.y = p.y;
+      ekf_pose_.position.z = p.z;
+
+      poses_ekf_.x.push_back(p.x);
+      poses_ekf_.y.push_back(p.y);
+      poses_ekf_.z.push_back(p.z);
 
       pose_truth_.x.push_back(pose_gazebo_.x);
       pose_truth_.y.push_back(pose_gazebo_.y);
@@ -105,7 +113,7 @@ class RosClient{
       std::cout << "Pose with model \nX: " << p.x << '\n'
                 << "Y: " << p.y << '\n'
                 << "Z: " << p.z << '\n';
-      pose_pub.publish(pose);
+      pose_pub.publish(ekf_pose_);
       ros::spinOnce();
       loop_rate.sleep();
     }
@@ -116,7 +124,7 @@ class RosClient{
       sensor_obj_.at(i)->~Sensor();
     }
     std::string name = "ekf";
-    save_vector_as_matrix(name,pose_ekf_);
+    save_vector_as_matrix(name,poses_ekf_);
     name = "truth";
     save_vector_as_matrix(name,pose_truth_);
   }
@@ -128,8 +136,9 @@ class RosClient{
   Pose pose_gazebo_;
 
   std::vector<Sensor*> sensor_obj_;
-
+  geometry_msgs::Pose ekf_pose_;
+  Eigen::Matrix<double, 3, 1> old_pose_for_odom_;
   Pose_vec pose_truth_;
-  Pose_vec pose_ekf_;
+  Pose_vec poses_ekf_;
 
 };
