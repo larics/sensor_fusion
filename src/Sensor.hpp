@@ -28,16 +28,21 @@ class Sensor{
 
   Eigen::Matrix<double, 3, 3> getR(){return params_.R; }
 
-  Eigen::Matrix<double, 3, 1> getSensorData(){return sensor_;}
+  Eigen::Matrix<double, 3, 1> getSensorData(){
+    pose_sensor_.x.push_back(sensor_(0));
+    pose_sensor_.y.push_back(sensor_(1));
+    pose_sensor_.z.push_back(sensor_(2));
+    
+    return sensor_;}
+
+  bool isOdomSensor(){
+    return params_.is_odom;}
 
 
   void callback_sensor(const nav_msgs::OdometryPtr& msg){
     sensor_ << msg->pose.pose.position.x,
                msg->pose.pose.position.y,
                msg->pose.pose.position.z;
-    pose_sensor_.x.push_back(sensor_(0));
-    pose_sensor_.y.push_back(sensor_(1));
-    pose_sensor_.z.push_back(sensor_(2));
   }
   ~Sensor(){
     std::cout << "SENSOR DESTRUCTOR" << '\n';
