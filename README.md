@@ -42,7 +42,7 @@ T: 0.02 # set the freq for the EKF
 Q: 0.001 # How much we trust the model
 Qz: 1  #we trust the z axis a bit less than the rest
 
-#define the sensor we are using and give them a prefix
+#define the sensors we are using and give them a prefix
 Sensor_prefix: [front,back] 
 #front sensor, Give each element a prefix front
 
@@ -57,7 +57,7 @@ back_R: [0.0049, 0.0049, 0.0049] # correlation matrix of the sensor
 back_odom: 0
 back_topic: /uav/odometry3
 ```
-## Run
+## Run simulation
  
  Note: if you are using more than one sesnor you should add a sensor (odometry plugin) to the file 
  ```uav.gazebo.xacro``` in the mmuav_gazebo package (https://github.com/larics/mmuav_gazebo)
@@ -68,7 +68,7 @@ To run a simulation with a small trajectory run the following commands
  
 ```roslaunch mmuav_gazebo uav_trajectory.launch```
 
-```rosrun sensor_fusion sensor_fusion```
+```roslaunch sensor_fusion sensor_fusion```
 
 ## Plot
 
@@ -80,20 +80,15 @@ Pose with model
 X: 0
 Y: 0
 Z: 0
-U1 0
-sila up 0
 Pose with model
 X: 0
 Y: 0
 Z: 0
 U1 0
-sila up 0
 Pose with model
 X: 0
 Y: 0
 Z: 0
-U1 0
-sila up 0
 Pose with model
 X: 0
 Y: 0
