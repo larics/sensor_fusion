@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
   std::string config_file;
   node_handle.getParam("config_yaml", config_file);
 
-  YAML::Node config = YAML::LoadFile(config_file); //TO-DO path from rosparam
+  YAML::Node config = YAML::LoadFile(config_file);
 
   VehicleParams params;
   params.m = config["mass"].as<double>();

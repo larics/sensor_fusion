@@ -61,8 +61,6 @@ public:
              0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(params_.Izz - params_.Ixx)/params_.Iyy, 1, (params_.Izz - params_.Ixx)/params_.Iyy*params_.T*x_hat[9],
              0, 0, 0, 0, 0, 0, 0, 0, 0, (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[10], (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[9], 1;
 
-      //TO DO ispravi
-      //x_hat = Phi*x_hat; //get prediction for x_hat
       X_minus << x_hat(3),
                x_hat(4),
                x_hat(5),
@@ -119,7 +117,6 @@ private:
     Eigen::Matrix<double, 12, 12>  Q;
     Eigen::Matrix<double, 12, 3>  K;
 
-    Eigen::Matrix<double, 3, 3>  R1,R2;
     double J_tp_;
 
     Pose_vec model_pose;

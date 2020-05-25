@@ -13,7 +13,6 @@ class RosClient{
 
   ros::NodeHandle node_handle_;
   ros::Subscriber motor_sub;
-  ros::Subscriber imu_sub;
   ros::Subscriber sensor_sub;
   ros::Subscriber sensor_2_sub;
   ros::Subscriber base_link_pose_sub;
@@ -23,7 +22,7 @@ class RosClient{
   public:
   RosClient(VehicleParams params,std::vector<SensorParams> sensor_params)
   :ekf(params){
-    T = params.T;
+    T_ = params.T;
     std::string motor_speed_topic,imu_topic;
     node_handle_.getParam("motor_speed_topic", motor_speed_topic);
     node_handle_.getParam("imu_topic", imu_topic);
@@ -31,8 +30,6 @@ class RosClient{
 
     motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
                             &RosClient::callback_motor, this);
-    imu_sub = node_handle_.subscribe("/uav/imu",1000,
-                            &RosClient::callback_imu,this);
     pose_pub = node_handle_.advertise<geometry_msgs::Pose>
                         ("ekf/ekf_pose", 1);
     base_link_pose_sub = node_handle_.subscribe("/gazebo/link_states",1000,
@@ -67,18 +64,8 @@ class RosClient{
     pose_gazebo_.z = msg->pose[1].position.z;
   }
 
-  void callback_imu(const sensor_msgs::ImuPtr& msg){
-      Quaternions q;
-      q.x = msg->orientation.x;
-      q.y = msg->orientation.y;
-      q.z = msg->orientation.z;
-      q.w = msg->orientation.w;
-
-      Orientation_ = ToEulerAngles(q);
-    }
-
   void update_dynamics(){
-    ros::Rate loop_rate(1.0/T);
+    ros::Rate loop_rate(1.0/T_);
     while (ros::ok())
     {
       Pose p;
@@ -129,9 +116,8 @@ class RosClient{
     save_vector_as_matrix(name,pose_truth_);
   }
 
-  double T;
+  double T_;
   Eigen::Matrix<double, 1, 4> motor_speed_;
-  EulerAngles Orientation_;
 
   Pose pose_gazebo_;
 
