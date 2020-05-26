@@ -3,6 +3,7 @@
 <param name="motor_speed_topic"  value="/uav/motor_speed" />
 <param name="imu_topic"  value="/uav/imu" />
 <param name="plot_file_loc"  value="$(find sensor_fusion)/matlab/" />
+<param name="/use_sim_time" value="true"/>
 
 
 <node pkg="sensor_fusion" type="sensor_fusion" name="sensor_fusion" output="screen"/>

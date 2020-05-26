@@ -4,7 +4,7 @@ initial_state: [0,0,0,0,0,0,0,0,0,0,0,0]
 mass: 2.33 #from sim can be a bit off
 g: 9.81
 
-b: 0.000005 #0.00001819 #thrust
+b: 0.00001 #0.00001819 #thrust
 d: 0.0000806428 #drag
 l: 0.314 #arm length
 
@@ -13,9 +13,9 @@ Ixx: 0.075032
 Iyy: 0.075032
 Izz: 0.15006
 
-T: 0.02 #freq 25hz
+T: 0.05 #freq 20hz
 # correlation matrix of the model
-Q: 0.001 #0.005
+Q: 0.01 #0.005
 Qz: 1  #for the z axis that is a bit worse than the rest
 
 
