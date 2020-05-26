@@ -92,6 +92,7 @@ public:
     K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
     x_hat = x_hat + K*(y-H*x_hat);
     P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus;
+    P_minus = P_plus;  // ovo se radi jer ocekujemo vise od jednog measuremnt update poziva prilikom rada EKF-a
 
 
     Pose pose;
