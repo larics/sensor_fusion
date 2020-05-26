@@ -70,9 +70,9 @@ public:
                x_hat(9),
                x_hat(10),
                x_hat(11),
-               U2/params_.Ixx + (params_.Iyy - params_.Izz)/params_.Ixx*x_hat[11]*x_hat[10] - omega*x_hat[10]*J_tp_/params_.Ixx,
-               U3/params_.Iyy + x_hat[11]*x_hat[9]*(params_.Izz - params_.Ixx)/params_.Iyy + omega*x_hat[9]*J_tp_/params_.Iyy,
-               U4/params_.Izz + x_hat[10]*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz;
+              2*x_hat[11]*x_hat[10]*(params_.Iyy - params_.Izz)/params_.Ixx,
+              2*x_hat[11]*x_hat[9]*(params_.Izz - params_.Ixx)/params_.Iyy,
+              2*x_hat[10]*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz;
 
       x_hat = x_hat + params_.T*X_minus;
       
