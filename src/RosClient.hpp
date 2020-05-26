@@ -17,6 +17,7 @@ class RosClient{
   ros::Subscriber sensor_2_sub;
   ros::Subscriber base_link_pose_sub;
   ros::Publisher pose_pub;
+  ros::Timer update_timer;
   Ekf ekf;
 
   public:
@@ -31,10 +32,11 @@ class RosClient{
     motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
                             &RosClient::callback_motor, this);
     pose_pub = node_handle_.advertise<geometry_msgs::Pose>
-                        ("ekf/ekf_pose", 1);
+                        ("ekf/ekf_pose", 1000);
     base_link_pose_sub = node_handle_.subscribe("/gazebo/link_states",1000,
                             &RosClient::callback_gazebo,this);
 
+    update_timer = node_handle_.createTimer(ros::Duration(T_), &RosClient::update_dynamics,this);
     motor_speed_ << 0,0,0,0;
     old_pose_for_odom_ << 0,0,0;
 
@@ -43,11 +45,6 @@ class RosClient{
     for (size_t i = 0; i < sensor_params.size(); i++) {
       sensor_obj_.push_back(new Sensor(sensor_params.at(i)));
     }
-    std::cout << sensor_obj_.at(0)->getID() << '\n';
-    std::cout << sensor_obj_.at(1)->getID() << '\n';
-
-    std::cout << sensor_obj_.at(0)->getTopic() << '\n';
-    std::cout << sensor_obj_.at(1)->getTopic() << '\n';
 
   }
 
@@ -64,46 +61,43 @@ class RosClient{
     pose_gazebo_.z = msg->pose[1].position.z;
   }
 
-  void update_dynamics(){
-    ros::Rate loop_rate(1.0/T_);
-    while (ros::ok())
-    {
-      Pose p;
+  void update_dynamics(const ros::TimerEvent& msg){
+    Pose p;
 
-      p = ekf.prediction_step(motor_speed_);
+    p = ekf.prediction_step(motor_speed_);
 
-      for (size_t i = 0; i < sensor_obj_.size(); i++) {
+    for (size_t i = 0; i < sensor_obj_.size(); i++) {
 
-          if (sensor_obj_.at(i)->isOdomSensor()){
-            p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
-                                      sensor_obj_.at(i)->getR());
-          }
-          else{
-            p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
-                                      sensor_obj_.at(i)->getR());
-          }
+      if (sensor_obj_.at(i)->isOdomSensor()){
+        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
+                                  sensor_obj_.at(i)->getR());
+      }
+      else{
+        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
+                                  sensor_obj_.at(i)->getR());
+      }
 
-        }
-      old_pose_for_odom_ << p.x,p.y,p.z;
-      ekf_pose_.position.x = p.x;
-      ekf_pose_.position.y = p.y;
-      ekf_pose_.position.z = p.z;
-
-      poses_ekf_.x.push_back(p.x);
-      poses_ekf_.y.push_back(p.y);
-      poses_ekf_.z.push_back(p.z);
-
-      pose_truth_.x.push_back(pose_gazebo_.x);
-      pose_truth_.y.push_back(pose_gazebo_.y);
-      pose_truth_.z.push_back(pose_gazebo_.z);
-
-      std::cout << "Pose with model \nX: " << p.x << '\n'
-                << "Y: " << p.y << '\n'
-                << "Z: " << p.z << '\n';
-      pose_pub.publish(ekf_pose_);
-      ros::spinOnce();
-      loop_rate.sleep();
     }
+    old_pose_for_odom_ << p.x,p.y,p.z;
+    ekf_pose_.position.x = p.x;
+    ekf_pose_.position.y = p.y;
+    ekf_pose_.position.z = p.z;
+
+    poses_ekf_.x.push_back(p.x);
+    poses_ekf_.y.push_back(p.y);
+    poses_ekf_.z.push_back(p.z);
+
+    pose_truth_.x.push_back(pose_gazebo_.x);
+    pose_truth_.y.push_back(pose_gazebo_.y);
+    pose_truth_.z.push_back(pose_gazebo_.z);
+
+    std::cout << "Pose with model \nX: " << p.x << '\n'
+              << "Y: " << p.y << '\n'
+              << "Z: " << p.z << '\n';
+
+    pose_pub.publish(ekf_pose_);
+
+
   }
 
   ~RosClient(){

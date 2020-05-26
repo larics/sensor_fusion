@@ -63,7 +63,8 @@ int main(int argc, char **argv) {
   }
 
   RosClient obj2(params,sensors);
-  obj2.update_dynamics();
+  //obj2.update_dynamics();
+  ros::spin();
 
   return 0;
 }
