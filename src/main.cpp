@@ -24,6 +24,7 @@ int main(int argc, char **argv) {
   params.l = config["l"].as<double>();
   params.b = config["b"].as<double>();
   params.d = config["d"].as<double>();
+  params.J_tp = config["J_tp"].as<double>();
 
   std::vector<double> init_state = config["initial_state"].as<std::vector<double>>();
   for (size_t i = 0; i < init_state.size(); i++) {

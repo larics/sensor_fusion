@@ -29,6 +29,7 @@ struct VehicleParams{
   double l; //arm length
   double b; //thrust
   double d; //drag
+  double J_tp;
   // correlation matrix of the model
   double Q;
   double Qz; //for the z axis that is a bit worse than the rest

@@ -13,8 +13,7 @@ public:
 
     params_ = params;
     x_hat = params_.initial_state;
-    J_tp_ = 0.0002;
-    std::cout << Phi << '\n';
+
     H = MatrixXd::Zero(3, 12);
     H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
     M = MatrixXd::Identity(3, 3);
@@ -57,8 +56,8 @@ public:
              0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0, 0,
              0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0,
              0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[11], (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[10],
-             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(params_.Izz - params_.Ixx)/params_.Iyy, 1, (params_.Izz - params_.Ixx)/params_.Iyy*params_.T*x_hat[9],
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[11] - params_.T*omega*params_.J_tp/params_.Ixx, (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[10],
+             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(params_.Izz - params_.Ixx)/params_.Iyy + params_.T*omega*params_.J_tp/params_.Iyy, 1, (params_.Izz - params_.Ixx)/params_.Iyy*params_.T*x_hat[9],
              0, 0, 0, 0, 0, 0, 0, 0, 0, (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[10], (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[9], 1;
 
       X_minus << x_hat(3),
@@ -70,12 +69,12 @@ public:
                x_hat(9),
                x_hat(10),
                x_hat(11),
-              2*x_hat[11]*x_hat[10]*(params_.Iyy - params_.Izz)/params_.Ixx,
-              2*x_hat[11]*x_hat[9]*(params_.Izz - params_.Ixx)/params_.Iyy,
-              2*x_hat[10]*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz;
+               U2/params_.Ixx + (params_.Iyy - params_.Izz)/params_.Ixx*x_hat[11]*x_hat[10] - omega*x_hat[10]*params_.J_tp/params_.Ixx,
+               U3/params_.Iyy + x_hat[11]*x_hat[9]*(params_.Izz - params_.Ixx)/params_.Iyy + omega*x_hat[9]*params_.J_tp/params_.Iyy,
+               U4/params_.Izz + x_hat[10]*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz;
 
       x_hat = x_hat + params_.T*X_minus;
-      
+      //x_hat = Phi*x_hat;
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
     if (x_hat(2) < 0) x_hat(2) = 0;
 
@@ -93,7 +92,6 @@ public:
     x_hat = x_hat + K*(y-H*x_hat);
     P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus;
     P_minus = P_plus;  // ovo se radi jer ocekujemo vise od jednog measuremnt update poziva prilikom rada EKF-a
-
 
     Pose pose;
     pose.x = x_hat[0];
@@ -117,8 +115,6 @@ private:
     Eigen::Matrix<double, 12, 1>  X_minus;
     Eigen::Matrix<double, 12, 12>  Q;
     Eigen::Matrix<double, 12, 3>  K;
-
-    double J_tp_;
 
     Pose_vec model_pose;
     VehicleParams params_;
