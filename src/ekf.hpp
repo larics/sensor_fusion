@@ -13,7 +13,7 @@ public:
 
     params_ = params;
     x_hat = params_.initial_state;
-
+    std::cout << "ovo je L" << params_.l;
     H = MatrixXd::Zero(3, 12);
     H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
     M = MatrixXd::Identity(3, 3);
@@ -50,15 +50,28 @@ public:
       Phi << 1, 0, 0, params_.T,0,0,0,0,0,0,0,0,
              0, 1, 0, 0, params_.T, 0,0,0,0,0,0,0,
              0, 0, 1, 0, 0, params_.T, 0, 0, 0, 0, 0, 0,
-             0, 0, 0, 1, 0, 0, (params_.T*U[1]*(cos(x_hat[6])*sin(x_hat[8]) - cos(x_hat[8])*sin(x_hat[6])*sin(x_hat[7])))/params_.m, (params_.T*U[1]*cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8]))/params_.m, (params_.T*U[1]*(cos(x_hat[8])*sin(x_hat[6]) - cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8])))/params_.m, 0, 0, 0,
-             0, 0, 0, 0, 1, 0, -(params_.T*U[1]*(cos(x_hat[6])*cos(x_hat[8]) + cos(x_hat[7])*sin(x_hat[6])*sin(x_hat[8])))/params_.m, -(params_.T*U[1]*cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8]))/params_.m, (params_.T*U[1]*(sin(x_hat[6])*sin(x_hat[8]) + cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8])))/params_.m, 0, 0, 0,
-             0, 0, 0, 0, 0, 1, -(params_.T*U[1]*cos(x_hat[7])*sin(x_hat[6]))/params_.m, -(params_.T*U[1]*cos(x_hat[6])*sin(x_hat[7]))/params_.m, 0, 0, 0, 0,
+             0, 0, 0, 1, 0, 0, (params_.T*U1*(cos(x_hat[6])*sin(x_hat[8]) - cos(x_hat[8])*sin(x_hat[6])*sin(x_hat[7])))/params_.m,
+             params_.T*U1*(cos(x_hat[6])*cos(x_hat[7])*cos(x_hat[8]))/params_.m,
+             (params_.T*U1*(cos(x_hat[8])*sin(x_hat[6]) - cos(x_hat[6])*sin(x_hat[7])*sin(x_hat[8])))/params_.m, 0, 0, 0,
+
+             0, 0, 0, 0, 1, 0, -(params_.T*U1*(cos(x_hat[6])*cos(x_hat[8]) + sin(x_hat[7])*sin(x_hat[6])*sin(x_hat[8])))/params_.m,
+             (params_.T*U1*cos(x_hat[6])*cos(x_hat[7])*sin(x_hat[8]))/params_.m,
+             (params_.T*U1*(sin(x_hat[6])*sin(x_hat[8]) + cos(x_hat[6])*sin(x_hat[7])*cos(x_hat[8])))/params_.m, 0, 0, 0,
+
+             0, 0, 0, 0, 0, 1, -(params_.T*U1*cos(x_hat[7])*sin(x_hat[6]))/params_.m,
+             -(params_.T*U1*cos(x_hat[6])*sin(x_hat[7]))/params_.m, 0, 0, 0, 0,
+
              0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0, 0,
              0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T, 0,
              0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, params_.T,
-             0, 0, 0, 0, 0, 0, 0, 0, 0, 1, (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[11] - params_.T*omega*params_.J_tp/params_.Ixx, (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[10],
-             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(params_.Izz - params_.Ixx)/params_.Iyy + params_.T*omega*params_.J_tp/params_.Iyy, 1, (params_.Izz - params_.Ixx)/params_.Iyy*params_.T*x_hat[9],
-             0, 0, 0, 0, 0, 0, 0, 0, 0, (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[10], (params_.Ixx - params_.Iyy)/params_.Izz*params_.T*x_hat[9], 1;
+             0, 0, 0, 0, 0, 0, 0, 0, 0, 1,params_.T*x_hat[11] * (params_.Iyy - params_.Izz)/params_.Ixx - params_.T*omega*params_.J_tp/params_.Ixx,
+             (params_.Iyy - params_.Izz)/params_.Ixx*params_.T*x_hat[10],
+
+             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[11]*(params_.Izz - params_.Ixx)/params_.Iyy + params_.T*omega*params_.J_tp/params_.Iyy, 1,
+              params_.T*x_hat[9]*(params_.Izz - params_.Ixx)/params_.Iyy,
+
+             0, 0, 0, 0, 0, 0, 0, 0, 0, params_.T*x_hat[10]*(params_.Ixx - params_.Iyy)/params_.Izz,
+              params_.T*x_hat[9]*(params_.Ixx - params_.Iyy)/params_.Izz, 1;
 
       X_minus << x_hat(3),
                x_hat(4),

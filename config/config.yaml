@@ -1,10 +1,10 @@
 #Vehicle params
 
 initial_state: [0,0,0,0,0,0,0,0,0,0,0,0]
-mass: 2.4 #2.426 #2.33 #from sim can be a bit off
+mass: 2.426 #2.426 #2.33 #from sim can be a bit off
 g: 9.81
 
-b: 0.0000015 #0.000000931 ovo je izracunato  #0.000007 #0.00001819 #thrust
+b: 0.000009504 #0.000000931 x10 ovo je izracunato  #0.000007 #0.00001819 #thrust
 d: 0.0000806428 #drag
 l: 0.314 #arm length
 J_tp: 0.000078220 #rotor moment of inertia around the z axis
@@ -16,22 +16,22 @@ Izz: 0.16 #0.15006
 
 T: 0.05 #freq 20hz
 # correlation matrix of the model
-Q: 0.0005 #0.005
-Qz: 100 #1  #for the z axis that is a bit worse than the rest
+Q: 1  #0.005
+Qz: 10 #1  #for the z axis that is a bit worse than the rest
 
 
 number_of_sensors: 3
 Sensor_prefix: [front,back,mid]
 #front
-front_R: [0.0025, 0.0025, 0.0025] # correlation matrix of the sensor
+front_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
 front_odom: 0
 front_topic: /uav/odometry2
 
 #back
-back_R: [0.0025, 0.0025, 0.0025] # correlation matrix of the sensor
+back_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
 back_odom: 0
 back_topic: /uav/odometry3
 #mid
-mid_R: [0.0025, 0.0025, 0.0025] # correlation matrix of the sensor
+mid_R: [0.003, 0.0025, 0.0025] # correlation matrix of the sensor
 mid_odom: 0
 mid_topic: /uav/odometry4
