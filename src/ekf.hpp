@@ -103,8 +103,12 @@ public:
     R = R/params_.T;
     K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
     x_hat = x_hat + K*(y-H*x_hat);
-    P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus;
-    P_minus = P_plus;  // ovo se radi jer ocekujemo vise od jednog measuremnt update poziva prilikom rada EKF-a
+    P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus*(MatrixXd::Identity(12, 12)-K*H).transpose()
+    				+ K*R*K.transpose();
+
+		// ovo se radi jer ocekujemo vise od jednog measuremnt update poziva prilikom rada EKF-a
+		// ovo je zapravo fuzija vise mjerenja
+    P_minus = P_plus;
 
     Pose pose;
     pose.x = x_hat[0];
