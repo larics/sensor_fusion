@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
   std::vector<SensorParams> sensors;
   std::vector<std::string> id = config["Sensor_prefix"].as<std::vector<std::string>>();
   SensorParams sensor;
-  std::vector<double> R;
+  std::vector<double> R, rotation, translation;
 
   std::cout << "-----Senors-----" << '\n';
   for (size_t i = 0; i < id.size(); i++) {
@@ -56,6 +56,16 @@ int main(int argc, char **argv) {
     sensor.R(0,0) = R[0,0];
     sensor.R(1,1) = R[1,1];
     sensor.R(2,2) = R[2,2];
+
+    rotation = config[id.at(i)+"_rotation"].as<std::vector<double>>();
+		sensor.w_x = rotation.at(0);
+		sensor.w_y = rotation.at(1);
+		sensor.w_z = rotation.at(2);
+
+		translation = config[id.at(i)+"_translation"].as<std::vector<double>>();
+		sensor.d_x = translation.at(0);
+		sensor.d_y = translation.at(1);
+		sensor.d_z = translation.at(2);
 
     std::cout << "id: " << sensor.id << '\n'
               << "topic: \"" << sensor.topic << "\"\n"

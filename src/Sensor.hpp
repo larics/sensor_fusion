@@ -16,6 +16,10 @@ class Sensor{
     params_ = params;
     sensor_sub = node_handle_.subscribe(params_.topic, 1000,
                             &Sensor::callback_sensor, this);
+
+    rotation_ = RotationMatrix(params.w_x, params.w_y, params.w_z);
+    translation_ << params.d_x, params.d_y, params.d_z;
+
     std::cout << "id: " <<params_.id << '\n'
               << "topic: \"" <<params_.topic << "\"\n"
               << "R: \n" << params_.R << "\n\n";
@@ -32,8 +36,16 @@ class Sensor{
     pose_sensor_.x.push_back(sensor_(0));
     pose_sensor_.y.push_back(sensor_(1));
     pose_sensor_.z.push_back(sensor_(2));
-    
-    return sensor_;}
+
+//    std::cout << rotation_ << "\n-------\n" << translation_ << "\n";
+//    std::cout << sensor_ << "\n-------\n" << rotation_*sensor_ + translation_ << "\n";
+    return rotation_*sensor_ + translation_;
+  }
+
+		Eigen::Matrix<double, 3, 1> getRawSensorData(){
+  		// Sensor data in the sensor coordinate system
+			return sensor_;
+		}
 
   bool isOdomSensor(){
     return params_.is_odom;}
@@ -55,4 +67,7 @@ private:
   SensorParams params_;
   Pose_vec pose_sensor_;
   Eigen::Matrix<double, 3, 1> sensor_;
+  Eigen::Matrix<double, 3, 3> rotation_;
+  Eigen::Matrix<double, 3, 1> translation_;
+
   };

@@ -24,7 +24,7 @@ struct VehicleParams{
   double Ixx; //Inertia
   double Iyy;
   double Izz;
-  double T;
+  double T;	// Discretization time
 
   double l; //arm length
   double b; //thrust
@@ -53,6 +53,10 @@ struct SensorParams{
   std::string topic;
   // 1 if its an odom sensor, gives delta values not absolute values
   bool is_odom;
+
+  double w_x, w_y, w_z; // rotation
+  double d_x, d_y, d_z; // translation
+
   Eigen::Matrix<double, 3, 3>  R; // correlation matrix of the sensor
 };
 
@@ -117,4 +121,14 @@ EulerAngles ToEulerAngles(Quaternions q) {
     angles.yaw = std::atan2(siny_cosp, cosy_cosp);
 
     return angles;
+}
+
+Eigen::Matrix<double, 3, 3> RotationMatrix(double w_x, double w_y, double w_z){
+
+	Eigen::Matrix<double, 3, 3> R;
+	R << cos(w_z)*cos(w_y), cos(w_z)*sin(w_y)*sin(w_x)-sin(w_z)*cos(w_x), cos(w_z)*sin(w_y)*cos(w_x)+sin(w_z)*sin(w_x),
+	sin(w_z)*cos(w_y), sin(w_z)*sin(w_y)*sin(w_x)+cos(w_z)*cos(w_x), sin(w_z)*sin(w_y)*cos(w_x)-cos(w_z)*sin(w_x),
+	-sin(w_y), cos(w_y)*sin(w_x), cos(w_x)*cos(w_y);
+
+	return R;
 }

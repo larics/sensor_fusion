@@ -19,19 +19,25 @@ T: 0.05 #freq 20hz
 Q: 1  #0.005
 Qz: 10 #1  #for the z axis that is a bit worse than the rest
 
-
+#sensor params
 number_of_sensors: 3
 Sensor_prefix: [front,back,mid]
 #front
 front_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
 front_odom: 0
 front_topic: /uav/odometry2
+front_rotation: [0.0, 0.0, 0.0] # rotation around x,y and z axis in comparison to base link in rad
+front_translation: [0.0, 0.0, 0.0] # translation in comparison to base link [x,y,z] in m
 
 #back
 back_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
 back_odom: 0
 back_topic: /uav/odometry3
+back_rotation: [0.0, 0.0, 0.0] # rotation around x,y and z axis in comparison to base link
+back_translation: [0.0, 0.0,  0.0] # translation in comparison to base link [x,y,z]
 #mid
 mid_R: [0.003, 0.0025, 0.0025] # correlation matrix of the sensor
 mid_odom: 0
 mid_topic: /uav/odometry4
+mid_rotation: [0.0, 0.0, 0.0] # rotation around x,y and z axis in comparison to base link
+mid_translation: [0.0,  0.0, 0.0] # translation in comparison to base link [x,y,z]
