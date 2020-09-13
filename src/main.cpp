@@ -67,6 +67,8 @@ int main(int argc, char **argv) {
 		sensor.d_y = translation.at(1);
 		sensor.d_z = translation.at(2);
 
+		sensor.is_odom = config[id.at(i)+"_odom"].as<int>();
+
     std::cout << "id: " << sensor.id << '\n'
               << "topic: \"" << sensor.topic << "\"\n"
               << "R: \n" << sensor.R << "\n\n";

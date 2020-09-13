@@ -123,6 +123,7 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ${Eigen_INCLUDE_DIRS}
+  src/
 )
 if(YAMLCPP_STATIC_LIBRARY)
     set(YAMLCPP_STATIC libyaml-cpp.a)
@@ -185,11 +186,12 @@ add_executable(sensor_fusion src/main.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+add_library(ekf src/ekf_imu.h src/ekf_imu.cpp)
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sensor_fusion
   ${catkin_LIBRARIES}
   ${YAMLCPP_LIBRARY}
+  ekf
 )
 
 #############

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "ros/ros.h"
 #include <Eigen/Geometry>
-#include "ekf.hpp"
+#include "ekf_imu.h"
 
 #include "nav_msgs/Odometry.h"
 
@@ -21,6 +21,7 @@ class Sensor{
     translation_ << params.d_x, params.d_y, params.d_z;
 
     std::cout << "id: " <<params_.id << '\n'
+						  << "odom: " <<params_.is_odom << '\n'
               << "topic: \"" <<params_.topic << "\"\n"
               << "R: \n" << params_.R << "\n\n";
    sensor_ << 0,0,0;
