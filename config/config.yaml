@@ -1,6 +1,6 @@
 #Vehicle params
 
-initial_state: [0,0,0,0,0,0,0,0,0,0,0,0]
+initial_state: [0,0,0,0,0,0]
 mass: 2.426 #2.426 #2.33 #from sim can be a bit off
 g: 9.81
 
@@ -16,8 +16,12 @@ Izz: 0.16 #0.15006
 
 T: 0.05 #freq 20hz
 # correlation matrix of the model
-Q: 1  #0.005
-Qz: 10 #1  #for the z axis that is a bit worse than the rest
+Qx: 1  #0.005
+Qy: 1
+Qz: 10 #for the z axis that is a bit worse than the rest
+Qx_dot: 1  #0.005
+Qy_dot: 1
+Qz_dot: 10 #for the z axis that is a bit worse than the rest
 
 #sensor params
 number_of_sensors: 3

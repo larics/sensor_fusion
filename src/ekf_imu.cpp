@@ -6,7 +6,7 @@
 
 //Constructor using params
 EkfImu::EkfImu(VehicleParams params) {
-	state << 0, 0, 0, 0, 0, 0;
+	state = params.initial_state;
 
 	phi = MatrixXd::Identity(6, 6);
 	phi.topRightCorner(3,3) = MatrixXd::Identity(3, 3)*params.T;
@@ -20,7 +20,9 @@ EkfImu::EkfImu(VehicleParams params) {
 	std::cout << "PHI \n" << phi << "\n";
 	std::cout << "Gamma \n" << gamma << "\n";
 
-	Q = MatrixXd::Identity(6,6)*100;
+	Q = MatrixXd::Identity(6,6);
+	Q(0,0) = params.Qx; Q(1,1) = params.Qy; Q(2,2) = params.Qz;
+	Q(3,3) = params.Qx_dot; Q(4,4) = params.Qy_dot; Q(5,5) = params.Qz_dot;
 	H = MatrixXd::Zero(3,6);
 	H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
 	P = MatrixXd::Zero(6, 6);

@@ -20,7 +20,7 @@ struct VehicleParams{
   double m; //mass
   double g; //gravity
 
-  Eigen::Matrix<double, 12, 1>  initial_state;
+  Eigen::Matrix<double, 6, 1>  initial_state;
   double Ixx; //Inertia
   double Iyy;
   double Izz;
@@ -31,8 +31,8 @@ struct VehicleParams{
   double d; //drag
   double J_tp;
   // correlation matrix of the model
-  double Q;
-  double Qz; //for the z axis that is a bit worse than the rest
+  double Qx,Qy,Qz;
+  double Qx_dot,Qy_dot,Qz_dot; //for the z axis that is a bit worse than the rest
 };
 
 struct Pose{

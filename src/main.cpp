@@ -19,8 +19,12 @@ int main(int argc, char **argv) {
   params.Iyy = config["Iyy"].as<double>();
   params.Izz = config["Izz"].as<double>();
   params.T = config["T"].as<double>();
-  params.Q = config["Q"].as<double>();
-  params.Qz = config["Qz"].as<double>();
+  params.Qx = config["Qx"].as<double>();
+	params.Qy = config["Qy"].as<double>();
+	params.Qz = config["Qz"].as<double>();
+	params.Qx_dot = config["Qx_dot"].as<double>();
+	params.Qy_dot = config["Qy_dot"].as<double>();
+  params.Qz_dot = config["Qz_dot"].as<double>();
   params.l = config["l"].as<double>();
   params.b = config["b"].as<double>();
   params.d = config["d"].as<double>();
@@ -38,7 +42,7 @@ int main(int argc, char **argv) {
             << "Izz: " << params.Izz << '\n'
             << "T: " << params.T  << '\n'
             << "g: " << params.g  << '\n'
-            << "Q: " << params.Q  << '\n'
+            << "Q: " << params.Qx  << '\n'
             << "Qz: " << params.Qz  << '\n'
             << "X_0: " << params.initial_state << '\n'
             << '\n';
