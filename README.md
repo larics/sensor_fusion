@@ -94,3 +94,13 @@ X: 0
 Y: 0
 Z: 0
 ```
+
+### on uav
+
+```
+tmux
+roscore
+roslaunch erl_drone apm2.launch
+roslaunch ear_drone slam_with_starter.lauch
+```
+
