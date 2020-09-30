@@ -5,3 +5,4 @@ cmake*
 matlab
 *.bag
 optimization/
+config
