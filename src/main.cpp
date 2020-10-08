@@ -7,8 +7,9 @@
 int main(int argc, char **argv) {
   ros::init(argc, argv, "test");
   ros::NodeHandle node_handle;
+  ros::NodeHandle nh_private("~");
   std::string config_file;
-  node_handle.getParam("config_yaml", config_file);
+  nh_private.getParam("config_yaml", config_file);
 
   YAML::Node config = YAML::LoadFile(config_file);
 
@@ -82,7 +83,7 @@ int main(int argc, char **argv) {
    sensors.push_back(sensor);
   }
 
-  RosClient obj2(params,sensors);
+  RosClient obj2(params,sensors, nh_private);
   //obj2.update_dynamics();
   ros::spin();
 

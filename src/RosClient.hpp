@@ -12,6 +12,7 @@ using std::sin;
 
 class RosClient{
 
+  ros::NodeHandle nh_private_;
   ros::NodeHandle node_handle_;
   ros::Subscriber motor_sub;
   ros::Subscriber sensor_sub;
@@ -25,13 +26,13 @@ class RosClient{
   //EkfImu ekf_imu;
 
   public:
-  RosClient(VehicleParams params,std::vector<SensorParams> sensor_params)
-  :ekf(params){
+  RosClient(VehicleParams params,std::vector<SensorParams> sensor_params, ros::NodeHandle& nh_private)
+  :ekf(params), nh_private_(nh_private) {
     T_ = params.T;
     std::string motor_speed_topic,imu_topic;
-    node_handle_.getParam("motor_speed_topic", motor_speed_topic);
-    node_handle_.getParam("imu_topic", imu_topic);
-    node_handle_.getParam("motor_speed_topic", motor_speed_topic);
+    nh_private_.getParam("motor_speed_topic", motor_speed_topic);
+    nh_private_.getParam("imu_topic", imu_topic);
+    nh_private_.getParam("motor_speed_topic", motor_speed_topic);
 
     motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
                             &RosClient::callback_motor, this);
@@ -110,7 +111,7 @@ class RosClient{
 				ekf_pose_.twist.twist.linear.x = p.x_dot;
 				ekf_pose_.twist.twist.linear.y = p.y_dot;
 				ekf_pose_.twist.twist.linear.z = p.z_dot;
-
+        ekf_pose_.header.stamp = ros::Time::now();
 				pose_pub.publish(ekf_pose_);
     	}
     }
