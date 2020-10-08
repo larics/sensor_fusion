@@ -15,7 +15,15 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   cmake_modules
 )
-find_package(Eigen REQUIRED)
+
+find_package(Eigen3)
+if(NOT EIGEN3_FOUND)
+  # Fallback to cmake_modules
+  find_package(cmake_modules REQUIRED)
+  find_package(Eigen REQUIRED)
+  set(EIGEN3_INCLUDE_DIRS ${EIGEN_INCLUDE_DIRS})
+  set(EIGEN3_LIBRARIES ${EIGEN_LIBRARIES})
+endif()
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -106,11 +114,9 @@ find_package(Eigen REQUIRED)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include ${Eigen_INCLUDE_DIRS}
+  INCLUDE_DIRS ${EIGEN3_INCLUDE_DIRS}
 #  LIBRARIES sensor_fusion2
-  CATKIN_DEPENDS geometry_msgs mav_msgs
-                  nav_msgs roscpp sensor_msgs
-  DEPENDS Eigen
+  DEPENDS EIGEN3
 )
 
 ###########
@@ -122,7 +128,7 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
-  ${Eigen_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
   src/
 )
 if(YAMLCPP_STATIC_LIBRARY)
