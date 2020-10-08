@@ -14,6 +14,7 @@ class Sensor{
   public:
   Sensor(SensorParams params){
     params_ = params;
+    new_data = false;
     sensor_sub = node_handle_.subscribe(params_.topic, 1000,
                             &Sensor::callback_sensor, this);
 
@@ -30,21 +31,36 @@ class Sensor{
   std::string getID(){return params_.id; }
 
   std::string getTopic(){return params_.topic; }
+  bool freshMeasurement(){return new_data; }
 
-  Eigen::Matrix<double, 3, 3> getR(){return params_.R; }
+  Eigen::Matrix<double, 6, 6> getR(){return params_.R; }
 
-  Eigen::Matrix<double, 3, 1> getSensorData(){
+  Eigen::Matrix<double, 6, 1> getSensorData(){
     pose_sensor_.x.push_back(sensor_(0));
     pose_sensor_.y.push_back(sensor_(1));
     pose_sensor_.z.push_back(sensor_(2));
-
-//    std::cout << rotation_ << "\n-------\n" << translation_ << "\n";
-//    std::cout << sensor_ << "\n-------\n" << rotation_*sensor_ + translation_ << "\n";
-    return rotation_*sensor_ + translation_;
+		double T = sensor_data_.header.stamp.toSec() - old_sensor_data_.header.stamp.toSec();
+		std::cout << "time " << T << std::endl;
+		Eigen::Matrix<double, 3, 1> old_sensor;
+		old_sensor << old_sensor_data_.pose.pose.position.x,
+									old_sensor_data_.pose.pose.position.y,
+									old_sensor_data_.pose.pose.position.z;
+		Eigen::Matrix<double, 3, 1> speed = (sensor_-old_sensor)/T;
+		if (T == 0) speed << 0,0,0;
+		old_sensor_data_ = sensor_data_;
+		Eigen::Matrix<double, 6, 1> data;
+		data << sensor_data_.pose.pose.position.x,
+						sensor_data_.pose.pose.position.y,
+						sensor_data_.pose.pose.position.z,
+						speed[0],speed[1],speed[2];
+		new_data = false;
+    //return rotation_*sensor_ + translation_;
+    return data;
   }
 
 		Eigen::Matrix<double, 3, 1> getRawSensorData(){
   		// Sensor data in the sensor coordinate system
+
 			return sensor_;
 		}
 
@@ -56,7 +72,9 @@ class Sensor{
     sensor_ << msg->pose.pose.position.x,
                msg->pose.pose.position.y,
                msg->pose.pose.position.z;
-    sensor_data = *msg;
+    sensor_data_ = *msg;
+    new_data = true;
+    std::cout << "SENSOR" << std::endl;
   }
   ~Sensor(){
     std::cout << "SENSOR DESTRUCTOR" << '\n';
@@ -68,9 +86,10 @@ class Sensor{
 private:
   SensorParams params_;
   Pose_vec pose_sensor_;
-  nav_msgs::Odometry sensor_data;
+  nav_msgs::Odometry sensor_data_, old_sensor_data_;
   Eigen::Matrix<double, 3, 1> sensor_;
   Eigen::Matrix<double, 3, 3> rotation_;
   Eigen::Matrix<double, 3, 1> translation_;
+  bool new_data;
 
   };

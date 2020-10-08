@@ -63,7 +63,7 @@ struct SensorParams{
   double w_x, w_y, w_z; // rotation
   double d_x, d_y, d_z; // translation
 
-  Eigen::Matrix<double, 3, 3>  R; // correlation matrix of the sensor
+  Eigen::Matrix<double, 6, 6>  R; // correlation matrix of the sensor
 };
 
 std::ostream& save_vector_as_matrix( const std::string& name,

@@ -16,8 +16,8 @@ public:
     params_ = params;
     x_hat = params_.initial_state;
     std::cout << "ovo je L" << params_.l;
-    H = MatrixXd::Zero(3, 12);
-    H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
+    H = MatrixXd::Zero(6, 12);
+    H.topLeftCorner(6,6) = MatrixXd::Identity(6, 6);
     M = MatrixXd::Identity(3, 3);
 
     L(3,3) = 1;
@@ -146,17 +146,17 @@ public:
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
     if (x_hat(2) < 0) x_hat(2) = 0;
 
-      pose.x = x_hat[0];
-      pose.y = x_hat[1];
-      pose.z = x_hat[2];
+		pose.x = x_hat[0];
+		pose.y = x_hat[1];
+		pose.z = x_hat[2];
 
     return pose;
   }
 
-  Pose measurment_update(Eigen::Matrix<double, 3, 1> y,Eigen::Matrix<double, 3, 3>  R){
+  Pose measurment_update(Eigen::Matrix<double, 6, 1> y,Eigen::Matrix<double, 6, 6>  R){
 
     R = R/params_.T;
-    K = P_minus*H.transpose()*(H*P_minus*H.transpose()+M*R*M.transpose()).inverse();
+    K = P_minus*H.transpose()*(H*P_minus*H.transpose()+R).inverse();
     x_hat = x_hat + K*(y-H*x_hat);
     P_plus = (MatrixXd::Identity(12, 12)-K*H)*P_minus*(MatrixXd::Identity(12, 12)-K*H).transpose()
     				+ K*R*K.transpose();
@@ -181,14 +181,14 @@ private:
 
     Eigen::Matrix<double, 12, 12> Phi; //matrix of estimate
     Eigen::Matrix<double, 12, 1>  x_hat; // estimate
-    Eigen::Matrix<double, 3, 12>  H;
+    Eigen::Matrix<double, 6, 12>  H;
     Eigen::Matrix<double, 3, 3>  M;
     Eigen::Matrix<double, 12, 12>  L;
     Eigen::Matrix<double, 12, 12>  P_minus;
     Eigen::Matrix<double, 12, 12>  P_plus;
     Eigen::Matrix<double, 12, 1>  X_minus;
     Eigen::Matrix<double, 12, 12>  Q;
-    Eigen::Matrix<double, 12, 3>  K;
+    Eigen::Matrix<double, 12, 6>  K;
 
     Pose_vec model_pose;
     VehicleParams params_;

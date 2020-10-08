@@ -79,24 +79,27 @@ class RosClient{
 
     for (size_t i = 0; i < sensor_obj_.size(); i++) {
 
-      if (sensor_obj_.at(i)->isOdomSensor()){
-        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
-                                  sensor_obj_.at(i)->getR());
-      }
-      else{
+    	if (sensor_obj_.at(i)->freshMeasurement()){
+				//if (sensor_obj_.at(i)->isOdomSensor()){
+				//  p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
+				//                            sensor_obj_.at(i)->getR());
+				//}
+				//else{
 
-        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
-                                  sensor_obj_.at(i)->getR());
-      }
+					p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
+																		sensor_obj_.at(i)->getR());
+				//}
+				old_pose_for_odom_ << p.x,p.y,p.z;
+				ekf_pose_.pose.pose.position.x = p.x;
+				ekf_pose_.pose.pose.position.y = p.y;
+				ekf_pose_.pose.pose.position.z = p.z;
+				ekf_pose_.twist.twist.linear.x = p.x_dot;
+				ekf_pose_.twist.twist.linear.y = p.y_dot;
+				ekf_pose_.twist.twist.linear.z = p.z_dot;
 
+				pose_pub.publish(ekf_pose_);
+    	}
     }
-    old_pose_for_odom_ << p.x,p.y,p.z;
-    ekf_pose_.pose.pose.position.x = p.x;
-    ekf_pose_.pose.pose.position.y = p.y;
-    ekf_pose_.pose.pose.position.z = p.z;
-    ekf_pose_.twist.twist.linear.x = p.x_dot;
-		ekf_pose_.twist.twist.linear.y = p.y_dot;
-		ekf_pose_.twist.twist.linear.z = p.z_dot;
 
     poses_ekf_.x.push_back(p.x);
     poses_ekf_.y.push_back(p.y);
@@ -109,8 +112,6 @@ class RosClient{
     std::cout << "Pose with model \nX: " << p.x << '\n'
               << "Y: " << p.y << '\n'
               << "Z: " << p.z << '\n';
-
-    pose_pub.publish(ekf_pose_);
 
 
   }

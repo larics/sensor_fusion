@@ -57,9 +57,12 @@ int main(int argc, char **argv) {
     sensor.topic = config[id.at(i)+"_topic"].as<std::string>();
     sensor.R = MatrixXd::Identity(3, 3);
     R = config[id.at(i)+"_R"].as<std::vector<double>>();
-    sensor.R(0,0) = R[0,0];
-    sensor.R(1,1) = R[1,1];
-    sensor.R(2,2) = R[2,2];
+    sensor.R(0,0) = R[0];
+    sensor.R(1,1) = R[1];
+    sensor.R(2,2) = R[2];
+		sensor.R(3,3) = R[3];
+		sensor.R(4,4) = R[4];
+		sensor.R(5,5) = R[5];
 
     rotation = config[id.at(i)+"_rotation"].as<std::vector<double>>();
 		sensor.w_x = rotation.at(0);
