@@ -1,4 +1,8 @@
 #define _USE_MATH_DEFINES
+
+#ifndef SENSOR_FUSION_UTILS_H
+#define SENSOR_FUSION_UTILS_H
+
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -20,7 +24,8 @@ struct VehicleParams{
   double m; //mass
   double g; //gravity
 
-  Eigen::Matrix<double, 6, 1>  initial_state;
+  Eigen::Matrix<double, 6, 1>  initial_state_imu;
+	Eigen::Matrix<double, 12, 1>  initial_state;
   double Ixx; //Inertia
   double Iyy;
   double Izz;
@@ -37,6 +42,7 @@ struct VehicleParams{
 
 struct Pose{
   double x,y,z;
+  double x_dot,y_dot,z_dot;
 };
 struct velocitiy{
   double x,y,z;
@@ -132,3 +138,5 @@ Eigen::Matrix<double, 3, 3> RotationMatrix(double w_x, double w_y, double w_z){
 
 	return R;
 }
+
+#endif //SENSOR_FUSION_UTILS_H

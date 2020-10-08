@@ -1,32 +1,32 @@
 #Vehicle params
-initial_state: [-4.38,-1.144,20.044,-0.97,1.49,0.04]
-mass: 2.426 #2.426 #2.33 #from sim can be a bit off
+initial_state: [-4.38,-1.144,20.044,-0.97,1.49,-0.05,-0.0174, 0.0264, 0.0122, -0.0206, 0.0329, -0.0463]
+mass: 1 #2.426 #2.33 #from sim can be a bit off
 g: 9.81
 
-b: 0.000009504 #0.000000931 x10 ovo je izracunato  #0.000007 #0.00001819 #thrust
-d: 0.0000806428 #drag
-l: 0.314 #arm length
-J_tp: 0.000078220 #rotor moment of inertia around the z axis
+b: 0.00000126 #0.000009504 #0.000000931 x10 ovo je izracunato  #0.000007 #0.00001819 #thrust
+d: 0.00000008099 #drag
+l: 0.0000002515 #u ovom slucaju konstanta za U2 i U3
+J_tp: 0 #0.000078220 #rotor moment of inertia around the z axis
 
 #moments of inertia
-Ixx: 0.08 #0.075032
-Iyy: 0.08 #0.075032
-Izz: 0.16 #0.15006
+Ixx: 1.75655 #0.075032
+Iyy: 1.75655 #0.075032
+Izz: 2.21 #0.15006
 
 T: 0.05 #freq 20hz
 # correlation matrix of the model
-Qx: 1  #0.005
-Qy: 1
-Qz: 1 #for the z axis that is a bit worse than the rest
-Qx_dot: 1  #0.005
-Qy_dot: 1
-Qz_dot: 1 #for the z axis that is a bit worse than the rest
+Qx: 100  #0.005
+Qy: 100
+Qz: 100 #for the z axis that is a bit worse than the rest
+Qx_dot: 100  #0.005
+Qy_dot: 100
+Qz_dot: 100 #for the z axis that is a bit worse than the rest
 
 #sensor params
 number_of_sensors: 1
 Sensor_prefix: [front]
 #front
-front_R: [10, 10, 1] # correlation matrix of the sensor
+front_R: [0.01, 0.01, 0.01] # correlation matrix of the sensor
 front_odom: 0
 front_topic: /red/mavros/global_position/local
 front_rotation: [0.0, 0.0, 0.0] # rotation around x,y and z axis in comparison to base link in rad

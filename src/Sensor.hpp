@@ -56,6 +56,7 @@ class Sensor{
     sensor_ << msg->pose.pose.position.x,
                msg->pose.pose.position.y,
                msg->pose.pose.position.z;
+    sensor_data = *msg;
   }
   ~Sensor(){
     std::cout << "SENSOR DESTRUCTOR" << '\n';
@@ -67,6 +68,7 @@ class Sensor{
 private:
   SensorParams params_;
   Pose_vec pose_sensor_;
+  nav_msgs::Odometry sensor_data;
   Eigen::Matrix<double, 3, 1> sensor_;
   Eigen::Matrix<double, 3, 3> rotation_;
   Eigen::Matrix<double, 3, 1> translation_;

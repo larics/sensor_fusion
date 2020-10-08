@@ -4,7 +4,8 @@
 #include "geometry_msgs/Pose.h"
 #include <sensor_msgs/Imu.h>
 #include <gazebo_msgs/LinkStates.h>
-#include "ekf_imu.h"
+#include "ekf.hpp"
+#include "mavros_msgs/RCOut.h"
 
 using std::cos;
 using std::sin;
@@ -19,13 +20,13 @@ class RosClient{
   ros::Subscriber base_link_pose_sub;
   ros::Publisher pose_pub;
   ros::Timer update_timer;
-  //Ekf ekf;
+  Ekf ekf;
 
-  EkfImu ekf_imu;
+  //EkfImu ekf_imu;
 
   public:
   RosClient(VehicleParams params,std::vector<SensorParams> sensor_params)
-  :ekf_imu(params){
+  :ekf(params){
     T_ = params.T;
     std::string motor_speed_topic,imu_topic;
     node_handle_.getParam("motor_speed_topic", motor_speed_topic);
@@ -34,7 +35,7 @@ class RosClient{
 
     motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
                             &RosClient::callback_motor, this);
-    pose_pub = node_handle_.advertise<geometry_msgs::Pose>
+    pose_pub = node_handle_.advertise<nav_msgs::Odometry>
                         ("ekf/ekf_pose", 1000);
 		imu_sub = node_handle_.subscribe(imu_topic, 1000,
 																		 &RosClient::callback_imu, this);
@@ -58,9 +59,9 @@ class RosClient{
 		acc_[2] = msg.linear_acceleration.z - 9.81;
   }
 
-  void callback_motor(const mav_msgs::ActuatorsPtr& msg){
-    motor_speed_ << msg->angular_velocities[0],msg->angular_velocities[1],
-                    msg->angular_velocities[2],msg->angular_velocities[3];
+  void callback_motor(const mavros_msgs::RCOutPtr& msg){
+    motor_speed_ << msg->channels[0],msg->channels[1],
+                    msg->channels[2],msg->channels[3];
 
   }
 
@@ -74,25 +75,28 @@ class RosClient{
   void update_dynamics(const ros::TimerEvent& msg){
     Pose p;
 
-    ekf_imu.predictionStep(acc_);
+    ekf.prediction_step(motor_speed_);
 
     for (size_t i = 0; i < sensor_obj_.size(); i++) {
 
       if (sensor_obj_.at(i)->isOdomSensor()){
-        p = ekf_imu.measurmentUpdate(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
+        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData() + old_pose_for_odom_,
                                   sensor_obj_.at(i)->getR());
       }
       else{
 
-        p = ekf_imu.measurmentUpdate(sensor_obj_.at(i)->getSensorData(),
+        p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
                                   sensor_obj_.at(i)->getR());
       }
 
     }
     old_pose_for_odom_ << p.x,p.y,p.z;
-    ekf_pose_.position.x = p.x;
-    ekf_pose_.position.y = p.y;
-    ekf_pose_.position.z = p.z;
+    ekf_pose_.pose.pose.position.x = p.x;
+    ekf_pose_.pose.pose.position.y = p.y;
+    ekf_pose_.pose.pose.position.z = p.z;
+    ekf_pose_.twist.twist.linear.x = p.x_dot;
+		ekf_pose_.twist.twist.linear.y = p.y_dot;
+		ekf_pose_.twist.twist.linear.z = p.z_dot;
 
     poses_ekf_.x.push_back(p.x);
     poses_ekf_.y.push_back(p.y);
@@ -127,7 +131,7 @@ class RosClient{
   Pose pose_gazebo_;
 
   std::vector<Sensor*> sensor_obj_;
-  geometry_msgs::Pose ekf_pose_;
+  nav_msgs::Odometry ekf_pose_;
   Eigen::Matrix<double, 3, 1> old_pose_for_odom_, acc_;
   Pose_vec pose_truth_;
   Pose_vec poses_ekf_;
