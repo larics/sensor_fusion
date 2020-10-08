@@ -34,7 +34,11 @@ public:
     P_minus = MatrixXd::Zero(12, 12);
     P_plus = MatrixXd::Zero(12, 12);
   }
+	void setInitialState(Eigen::Matrix<double, 12, 1> state){
+  	x_hat = state;
 
+  	std::cout << " \nstate ->\n" << state << std::endl;
+  }
   Pose prediction_step(Eigen::Matrix<double, 4, 1>  U){
     Pose pose;
     double U1, U2, U3, U4, omega;

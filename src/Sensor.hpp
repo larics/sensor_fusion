@@ -2,7 +2,7 @@
 #include "ros/ros.h"
 #include <Eigen/Geometry>
 #include "ekf_imu.h"
-
+#include "tf/transform_datatypes.h"
 #include "nav_msgs/Odometry.h"
 
 using namespace Eigen;
@@ -34,6 +34,31 @@ class Sensor{
   bool freshMeasurement(){return new_data; }
 
   Eigen::Matrix<double, 6, 6> getR(){return params_.R; }
+
+  Eigen::Matrix<double, 12, 1> getInitialState(){
+		// the incoming geometry_msgs::Quaternion is transformed to a tf::Quaterion
+		tf::Quaternion quat;
+		tf::quaternionMsgToTF(sensor_data_.pose.pose.orientation, quat);
+
+		// the tf::Quaternion has a method to acess roll pitch and yaw
+		double roll, pitch, yaw;
+		tf::Matrix3x3(quat).getRPY(roll, pitch, yaw);
+
+		Eigen::Matrix<double, 12, 1> data;
+		data << sensor_data_.pose.pose.position.x,
+						sensor_data_.pose.pose.position.y,
+						sensor_data_.pose.pose.position.z,
+						sensor_data_.twist.twist.linear.x,
+						sensor_data_.twist.twist.linear.y,
+						sensor_data_.twist.twist.linear.z,
+						roll,pitch,yaw,
+						sensor_data_.twist.twist.angular.x,
+						sensor_data_.twist.twist.angular.y,
+						sensor_data_.twist.twist.angular.z;
+
+		return data;
+  };
+
 
   Eigen::Matrix<double, 6, 1> getSensorData(){
     pose_sensor_.x.push_back(sensor_(0));

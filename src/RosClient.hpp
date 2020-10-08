@@ -42,7 +42,7 @@ class RosClient{
     base_link_pose_sub = node_handle_.subscribe("/gazebo/link_states",1000,
                             &RosClient::callback_gazebo,this);
 
-    update_timer = node_handle_.createTimer(ros::Duration(T_), &RosClient::update_dynamics,this);
+
     motor_speed_ << 0,0,0,0;
     old_pose_for_odom_ << 0,0,0;
 		acc_ << 0,0,0;
@@ -50,6 +50,20 @@ class RosClient{
     sensor_obj_.reserve(3);
     for (size_t i = 0; i < sensor_params.size(); i++) {
       sensor_obj_.push_back(new Sensor(sensor_params.at(i)));
+    }
+    int k = 0;
+    while (true){
+			for (size_t i = 0; i < sensor_params.size(); i++) {
+				if(sensor_obj_.at(i)->freshMeasurement()) k++;
+			}
+			if (k == sensor_params.size()) {
+				Eigen::Matrix<double, 12, 1> state;
+				state << sensor_obj_.at(0)->getInitialState();
+				ekf.setInitialState(state);
+				update_timer = node_handle_.createTimer(ros::Duration(T_), &RosClient::update_dynamics,this);
+				break;
+			}
+			ros::spinOnce();
     }
 
   }
