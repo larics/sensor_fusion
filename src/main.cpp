@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
 
   RosClient obj2(params,sensors, nh_private);
   //obj2.update_dynamics();
-  ros::spin();
+
 
   return 0;
 }

@@ -85,7 +85,6 @@ class Sensor{
 
 		Eigen::Matrix<double, 3, 1> getRawSensorData(){
   		// Sensor data in the sensor coordinate system
-
 			return sensor_;
 		}
 

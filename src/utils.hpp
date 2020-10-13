@@ -43,6 +43,8 @@ struct VehicleParams{
 struct Pose{
   double x,y,z;
   double x_dot,y_dot,z_dot;
+  double x_angle,y_angle,z_angle;
+  double x_angular,y_angular,z_angular;
 };
 struct velocitiy{
   double x,y,z;
@@ -65,6 +67,25 @@ struct SensorParams{
 
   Eigen::Matrix<double, 6, 6>  R; // correlation matrix of the sensor
 };
+
+
+static const double pi = 3.14159265358979323846;
+//! Wrap angles to [-pi, pi)
+/*!
+    Some discussion about alternative implementations:
+    https://stackoverflow.com/questions/4633177/c-how-to-wrap-a-float-to-the-interval-pi-pi
+ */
+inline double wrapToPi(double angle) {
+	// Naive solution assumes that we're wrapping regularly,
+	// So that the angle argument will never be much bigger than 2pi
+	// or much smaller than -2pi
+
+	while (angle >= pi) angle -= 2 * pi;
+	while (angle < -pi) angle += 2 * pi;
+
+	return angle;
+}
+
 
 std::ostream& save_vector_as_matrix( const std::string& name,
                                      Pose_vec& pose_vec)

@@ -150,9 +150,22 @@ public:
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
     if (x_hat(2) < 0) x_hat(2) = 0;
 
+		x_hat[6] = wrapToPi(x_hat[6]);
+		x_hat[7] = wrapToPi(x_hat[7]);
+		x_hat[8] = wrapToPi(x_hat[8]);
+
 		pose.x = x_hat[0];
 		pose.y = x_hat[1];
 		pose.z = x_hat[2];
+		pose.x_dot = x_hat[3];
+		pose.y_dot = x_hat[4];
+		pose.z_dot = x_hat[5];
+		pose.x_angle = x_hat[6];
+		pose.y_angle = x_hat[7];
+		pose.z_angle = x_hat[8];
+		pose.x_angular = x_hat[9];
+		pose.y_angular = x_hat[10];
+		pose.z_angular = x_hat[11];
 
     return pose;
   }
@@ -168,7 +181,9 @@ public:
 		// ovo se radi jer ocekujemo vise od jednog measuremnt update poziva prilikom rada EKF-a
 		// ovo je zapravo fuzija vise mjerenja
     P_minus = P_plus;
-
+		x_hat[6] = wrapToPi(x_hat[6]);
+		x_hat[7] = wrapToPi(x_hat[7]);
+		x_hat[8] = wrapToPi(x_hat[8]);
     Pose pose;
     pose.x = x_hat[0];
     pose.y = x_hat[1];
@@ -176,6 +191,12 @@ public:
 		pose.x_dot = x_hat[3];
 		pose.y_dot = x_hat[4];
 		pose.z_dot = x_hat[5];
+		pose.x_angle = x_hat[6];
+		pose.y_angle = x_hat[7];
+		pose.z_angle = x_hat[8];
+		pose.x_angular = x_hat[9];
+		pose.y_angular = x_hat[10];
+		pose.z_angular = x_hat[11];
     return pose;
   }
   ~Ekf(){

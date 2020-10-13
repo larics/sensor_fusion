@@ -6,6 +6,8 @@
 #include <gazebo_msgs/LinkStates.h>
 #include "ekf.hpp"
 #include "mavros_msgs/RCOut.h"
+#include <tf2/LinearMath/Quaternion.h>
+
 
 using std::cos;
 using std::sin;
@@ -37,7 +39,7 @@ class RosClient{
     motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
                             &RosClient::callback_motor, this);
     pose_pub = node_handle_.advertise<nav_msgs::Odometry>
-                        ("ekf/ekf_pose", 1000);
+                        ("ekf_odom", 1000);
 		imu_sub = node_handle_.subscribe(imu_topic, 1000,
 																		 &RosClient::callback_imu, this);
     base_link_pose_sub = node_handle_.subscribe("/gazebo/link_states",1000,
@@ -66,7 +68,7 @@ class RosClient{
 			}
 			ros::spinOnce();
     }
-
+		ros::spin();
   }
   void callback_imu(const sensor_msgs::Imu& msg){
   	acc_[0] = msg.linear_acceleration.x;
@@ -103,42 +105,41 @@ class RosClient{
 
 					p = ekf.measurment_update(sensor_obj_.at(i)->getSensorData(),
 																		sensor_obj_.at(i)->getR());
-				//}
-				old_pose_for_odom_ << p.x,p.y,p.z;
+
+				// Create odometry msg
 				ekf_pose_.pose.pose.position.x = p.x;
 				ekf_pose_.pose.pose.position.y = p.y;
 				ekf_pose_.pose.pose.position.z = p.z;
 				ekf_pose_.twist.twist.linear.x = p.x_dot;
 				ekf_pose_.twist.twist.linear.y = p.y_dot;
 				ekf_pose_.twist.twist.linear.z = p.z_dot;
-        ekf_pose_.header.stamp = ros::Time::now();
+				tf2::Quaternion quat;
+				quat.setRPY(p.x_angle,p.y_angle,p.z_angle);
+				ekf_pose_.pose.pose.orientation.w = quat.w();
+				ekf_pose_.pose.pose.orientation.x = quat.x();
+				ekf_pose_.pose.pose.orientation.y = quat.y();
+				ekf_pose_.pose.pose.orientation.z = quat.z();
+				ekf_pose_.twist.twist.angular.x = p.x_angular;
+				ekf_pose_.twist.twist.angular.y = p.y_angular;
+				ekf_pose_.twist.twist.angular.z = p.z_angular;
+
+				ekf_pose_.header.stamp = ros::Time::now();
 				pose_pub.publish(ekf_pose_);
     	}
     }
 
-    poses_ekf_.x.push_back(p.x);
-    poses_ekf_.y.push_back(p.y);
-    poses_ekf_.z.push_back(p.z);
-
-    pose_truth_.x.push_back(pose_gazebo_.x);
-    pose_truth_.y.push_back(pose_gazebo_.y);
-    pose_truth_.z.push_back(pose_gazebo_.z);
-
-    std::cout << "Pose with model \nX: " << p.x << '\n'
-              << "Y: " << p.y << '\n'
-              << "Z: " << p.z << '\n';
 
 
+
+    std::cout << "Pose with model \nX: " << p.x_angle << '\n'
+              << "Y: " << p.y_angle << '\n'
+              << "Z: " << p.z_angle << '\n';
   }
 
   ~RosClient(){
     for (size_t i = 0; i < sensor_obj_.size(); i++) {
       sensor_obj_.at(i)->~Sensor();
     }
-    std::string name = "ekf";
-    save_vector_as_matrix(name,poses_ekf_);
-    name = "truth";
-    save_vector_as_matrix(name,pose_truth_);
   }
 
   double T_;
