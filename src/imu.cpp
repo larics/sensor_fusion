@@ -6,7 +6,7 @@ Imu::Imu(ros::NodeHandle& nh_private){
 	imu_sub = node_handle_.subscribe(imu_topic, 1000,
 																	 &Imu::callback, this);
 	for (int i = 0; i < 6; ++i) {
-		R_(i,i) = 1;
+		R_(i,i) = 0.1;
 	}
 	};
 

@@ -27,8 +27,15 @@ public:
     L(10,10) = 1;
     L(11,11) = 1;
 
-    Q = params_.Qx*L*params_.T;
-    Q(5,5) = params_.Qz*params_.T;
+    Q = MatrixXd::Zero(12, 12);
+		Q(3,3) = params_.Qx*params_.T;
+		Q(4,4) = params_.Qy*params_.T;
+		Q(5,5) = params_.Qz*params_.T;
+		Q(9,9) = params_.Qx_angle*params_.T;
+		Q(10,10) = params_.Qy_angle*params_.T;
+		Q(11,11) = params_.Qz_angle*params_.T;
+
+		std::cout << " Q init: \n" << Q << '\n';
 
     std::cout << " T init: \n" << params_.T << '\n';
     P_minus = MatrixXd::Zero(12, 12);

@@ -22,7 +22,7 @@ EkfImu::EkfImu(VehicleParams params) {
 
 	Q = MatrixXd::Identity(6,6);
 	Q(0,0) = params.Qx; Q(1,1) = params.Qy; Q(2,2) = params.Qz;
-	Q(3,3) = params.Qx_dot; Q(4,4) = params.Qy_dot; Q(5,5) = params.Qz_dot;
+	Q(3,3) = params.Qx_angle; Q(4,4) = params.Qy_angle; Q(5,5) = params.Qz_angle;
 	H = MatrixXd::Zero(3,6);
 	H.topLeftCorner(3,3) = MatrixXd::Identity(3, 3);
 	P = MatrixXd::Zero(6, 6);

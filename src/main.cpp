@@ -23,9 +23,9 @@ int main(int argc, char **argv) {
   params.Qx = config["Qx"].as<double>();
 	params.Qy = config["Qy"].as<double>();
 	params.Qz = config["Qz"].as<double>();
-	params.Qx_dot = config["Qx_dot"].as<double>();
-	params.Qy_dot = config["Qy_dot"].as<double>();
-  params.Qz_dot = config["Qz_dot"].as<double>();
+	params.Qx_angle = config["Qx_angle"].as<double>();
+	params.Qy_angle = config["Qy_angle"].as<double>();
+  params.Qz_angle = config["Qz_angle"].as<double>();
   params.l = config["l"].as<double>();
   params.b = config["b"].as<double>();
   params.d = config["d"].as<double>();

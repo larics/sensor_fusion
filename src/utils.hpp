@@ -37,7 +37,7 @@ struct VehicleParams{
   double J_tp;
   // correlation matrix of the model
   double Qx,Qy,Qz;
-  double Qx_dot,Qy_dot,Qz_dot; //for the z axis that is a bit worse than the rest
+  double Qx_angle,Qy_angle,Qz_angle; //for the z axis that is a bit worse than the rest
 };
 
 struct Pose{
