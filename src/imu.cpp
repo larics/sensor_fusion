@@ -1,12 +1,13 @@
 #include "imu.h"
 
-Imu::Imu(ros::NodeHandle& nh_private){
+Imu::Imu(ros::NodeHandle& nh_private,
+				 std::vector<double> R_imu){
 	std::string imu_topic;
 	nh_private.getParam("imu_topic", imu_topic);
 	imu_sub = node_handle_.subscribe(imu_topic, 1000,
 																	 &Imu::callback, this);
 	for (int i = 0; i < 6; ++i) {
-		R_(i,i) = 0.1;
+		R_(i,i) = R_imu.at(i);
 	}
 	};
 

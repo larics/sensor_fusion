@@ -22,6 +22,7 @@ Qx_dot: 1  #0.005
 Qy_dot: 1
 Qz_dot: 1 #for the z axis that is a bit worse than the rest
 
+R_imu: [1,1,1,1,1,1] #imu R matrix
 #sensor params
 number_of_sensors: 1
 Sensor_prefix: [front]

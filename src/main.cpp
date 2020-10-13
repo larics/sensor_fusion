@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   params.b = config["b"].as<double>();
   params.d = config["d"].as<double>();
   params.J_tp = config["J_tp"].as<double>();
-
+	std::vector<double> R_imu =  config["R_imu"].as<std::vector<double>>();
   std::vector<double> init_state = config["initial_state"].as<std::vector<double>>();
   for (size_t i = 0; i < init_state.size(); i++) {
     params.initial_state(i) = init_state.at(i);
@@ -83,7 +83,8 @@ int main(int argc, char **argv) {
    sensors.push_back(sensor);
   }
 
-  RosClient obj2(params,sensors, nh_private);
+  RosClient obj2(params,sensors, nh_private,
+								 R_imu);
   //obj2.update_dynamics();
 
 

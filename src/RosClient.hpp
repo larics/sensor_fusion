@@ -29,8 +29,9 @@ class RosClient{
 
   public:
   RosClient(VehicleParams params,std::vector<SensorParams> sensor_params,
-						ros::NodeHandle& nh_private)
-  :ekf(params), nh_private_(nh_private),imu_(nh_private) {
+						ros::NodeHandle& nh_private,
+						std::vector<double> R_imu)
+  :ekf(params), nh_private_(nh_private),imu_(nh_private,R_imu) {
     T_ = params.T;
     std::string motor_speed_topic,imu_topic;
     nh_private_.getParam("motor_speed_topic", motor_speed_topic);

@@ -11,7 +11,8 @@ class Imu{
 		ros::NodeHandle node_handle_;
 
 	public:
-		Imu(ros::NodeHandle& nh_private);
+		Imu(ros::NodeHandle& nh_private,
+			std::vector<double> R_imu);
 		void callback(const sensor_msgs::Imu& msg);
 		Eigen::Matrix<double, 6, 1> getImuData(){
 			new_measurement = false;
