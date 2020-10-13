@@ -7,7 +7,7 @@
 #include "ekf.hpp"
 #include "mavros_msgs/RCOut.h"
 #include <tf2/LinearMath/Quaternion.h>
-
+#include "imu.h"
 
 using std::cos;
 using std::sin;
@@ -28,8 +28,9 @@ class RosClient{
   //EkfImu ekf_imu;
 
   public:
-  RosClient(VehicleParams params,std::vector<SensorParams> sensor_params, ros::NodeHandle& nh_private)
-  :ekf(params), nh_private_(nh_private) {
+  RosClient(VehicleParams params,std::vector<SensorParams> sensor_params,
+						ros::NodeHandle& nh_private)
+  :ekf(params), nh_private_(nh_private),imu_(nh_private) {
     T_ = params.T;
     std::string motor_speed_topic,imu_topic;
     nh_private_.getParam("motor_speed_topic", motor_speed_topic);
@@ -94,6 +95,11 @@ class RosClient{
 
     ekf.prediction_step(motor_speed_);
 
+    if(imu_.newMeasurement()){
+    	ekf.imu_measurment_update(imu_.getImuData(),
+															 imu_.getR());
+    }
+
     for (size_t i = 0; i < sensor_obj_.size(); i++) {
 
     	if (sensor_obj_.at(i)->freshMeasurement()){
@@ -147,6 +153,7 @@ class RosClient{
 
   Pose pose_gazebo_;
 
+  Imu imu_;
   std::vector<Sensor*> sensor_obj_;
   nav_msgs::Odometry ekf_pose_;
   Eigen::Matrix<double, 3, 1> old_pose_for_odom_, acc_;

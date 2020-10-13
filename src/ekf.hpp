@@ -199,6 +199,41 @@ public:
 		pose.z_angular = x_hat[11];
     return pose;
   }
+
+  Pose imu_measurment_update(Eigen::Matrix<double, 6, 1> y,
+														 Eigen::Matrix<double, 6, 6>  R){
+
+		Eigen::Matrix<double, 6, 12>  H_imu;
+		H_imu = MatrixXd::Zero(6, 12);
+		H_imu.topRightCorner(6,6) = MatrixXd::Identity(6, 6);
+
+		R = R/params_.T;
+		K = P_minus*H_imu.transpose()*(H_imu*P_minus*H_imu.transpose()+R).inverse();
+		x_hat = x_hat + K*(y-H_imu*x_hat);
+		P_plus = (MatrixXd::Identity(12, 12)-K*H_imu)*P_minus*(MatrixXd::Identity(12, 12)-K*H_imu).transpose()
+						 + K*R*K.transpose();
+
+		// ovo se radi jer ocekujemo vise od jednog measuremnt update poziva prilikom rada EKF-a
+		// ovo je zapravo fuzija vise mjerenja
+		P_minus = P_plus;
+		x_hat[6] = wrapToPi(x_hat[6]);
+		x_hat[7] = wrapToPi(x_hat[7]);
+		x_hat[8] = wrapToPi(x_hat[8]);
+		Pose pose;
+		pose.x = x_hat[0];
+		pose.y = x_hat[1];
+		pose.z = x_hat[2];
+		pose.x_dot = x_hat[3];
+		pose.y_dot = x_hat[4];
+		pose.z_dot = x_hat[5];
+		pose.x_angle = x_hat[6];
+		pose.y_angle = x_hat[7];
+		pose.z_angle = x_hat[8];
+		pose.x_angular = x_hat[9];
+		pose.y_angular = x_hat[10];
+		pose.z_angular = x_hat[11];
+		return pose;
+  }
   ~Ekf(){
   }
 
