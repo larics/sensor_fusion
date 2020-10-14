@@ -14,6 +14,12 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   cmake_modules
+  dynamic_reconfigure
+)
+
+generate_dynamic_reconfigure_options(
+        config/Tutorials.cfg
+        #...
 )
 
 find_package(Eigen3)

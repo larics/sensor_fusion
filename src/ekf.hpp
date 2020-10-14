@@ -41,6 +41,13 @@ public:
     P_minus = MatrixXd::Zero(12, 12);
     P_plus = MatrixXd::Zero(12, 12);
   }
+
+  void setQ(Eigen::Matrix<double, 12, 12> q){
+  	Q = q;
+		std::cout << "Q \n" << Q << std::endl;
+  }
+
+
 	void setInitialState(Eigen::Matrix<double, 12, 1> state){
   	x_hat = state;
 

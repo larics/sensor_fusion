@@ -9,6 +9,9 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include "imu.h"
 
+#include <dynamic_reconfigure/server.h>
+#include <sensor_fusion/TutorialsConfig.h>
+
 using std::cos;
 using std::sin;
 
@@ -56,6 +59,13 @@ class RosClient{
     for (size_t i = 0; i < sensor_params.size(); i++) {
       sensor_obj_.push_back(new Sensor(sensor_params.at(i)));
     }
+		dynamic_reconfigure::Server<sensor_fusion::TutorialsConfig> server;
+		dynamic_reconfigure::Server<sensor_fusion::TutorialsConfig>::CallbackType f;
+
+		f = boost::bind(&RosClient::dynamic_reconfigure_callback,
+									this, _1, _2);
+		server.setCallback(f);
+
     int k = 0;
     while (true){
 			for (size_t i = 0; i < sensor_params.size(); i++) {
@@ -72,6 +82,21 @@ class RosClient{
     }
 		ros::spin();
   }
+
+	void dynamic_reconfigure_callback(sensor_fusion::TutorialsConfig &config, uint32_t level) {
+
+		Eigen::Matrix<double, 12, 12> Q;
+		Q = MatrixXd::Zero(12, 12);
+		Q(3,3) = config.Qx*T_;
+		Q(4,4) = config.Qy*T_;
+		Q(5,5) = config.Qz*T_;
+		Q(9,9) = config.Q_roll*T_;
+		Q(10,10) = config.Q_pitch*T_;
+		Q(11,11) = config.Q_yaw*T_;
+
+		ekf.setQ(Q);
+  }
+
   void callback_imu(const sensor_msgs::Imu& msg){
   	acc_[0] = msg.linear_acceleration.x;
 		acc_[1] = msg.linear_acceleration.y;
