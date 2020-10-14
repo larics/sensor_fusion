@@ -10,7 +10,7 @@
 #include "imu.h"
 
 #include <dynamic_reconfigure/server.h>
-#include <sensor_fusion/TutorialsConfig.h>
+#include <sensor_fusion/EKF_QConfig.h>
 
 using std::cos;
 using std::sin;
@@ -59,8 +59,8 @@ class RosClient{
     for (size_t i = 0; i < sensor_params.size(); i++) {
       sensor_obj_.push_back(new Sensor(sensor_params.at(i)));
     }
-		dynamic_reconfigure::Server<sensor_fusion::TutorialsConfig> server;
-		dynamic_reconfigure::Server<sensor_fusion::TutorialsConfig>::CallbackType f;
+		dynamic_reconfigure::Server<sensor_fusion::EKF_QConfig> server;
+		dynamic_reconfigure::Server<sensor_fusion::EKF_QConfig>::CallbackType f;
 
 		f = boost::bind(&RosClient::dynamic_reconfigure_callback,
 									this, _1, _2);
@@ -83,7 +83,7 @@ class RosClient{
 		ros::spin();
   }
 
-	void dynamic_reconfigure_callback(sensor_fusion::TutorialsConfig &config, uint32_t level) {
+	void dynamic_reconfigure_callback(sensor_fusion::EKF_QConfig &config, uint32_t level) {
 
 		Eigen::Matrix<double, 12, 12> Q;
 		Q = MatrixXd::Zero(12, 12);
