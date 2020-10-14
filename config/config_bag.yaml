@@ -18,11 +18,11 @@ T: 0.04 #freq 20hz
 Qx: 1  #0.005
 Qy: 1
 Qz: 1 #for the z axis that is a bit worse than the rest
-Qx_dot: 1  #0.005
-Qy_dot: 1
-Qz_dot: 1 #for the z axis that is a bit worse than the rest
+Qx_angle: 1  #0.005
+Qy_angle: 1
+Qz_angle: 1 #for the z axis that is a bit worse than the rest
 
-R_imu: [1,1,1,1,1,1] #imu R matrix
+R_imu: [0.1,0.1,0.1,0.1,0.1,0.1] #imu R matrix
 #sensor params
 number_of_sensors: 1
 Sensor_prefix: [front]

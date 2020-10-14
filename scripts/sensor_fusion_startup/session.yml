@@ -26,5 +26,5 @@ windows:
   - sf:
       layout: tiled
       panes:
-        - waitForRos; waitForOdometry; roslaunch sensor_fusion sennsor_fusion.launch config_yaml:=$(rospack find sensor_fusion)/config/config_bag.yaml motor_speed_topic:=mavros/rc/out imu_topic:=mavros/imu/data
+        - waitForRos; waitForOdometry; roslaunch sensor_fusion sensor_fusion.launch config_yaml:=$(rospack find sensor_fusion)/config/config_bag.yaml motor_speed_topic:=mavros/rc/out imu_topic:=mavros/imu/data
         
