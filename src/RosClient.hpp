@@ -61,7 +61,7 @@ class RosClient{
 			for (size_t i = 0; i < sensor_params.size(); i++) {
 				if(sensor_obj_.at(i)->freshMeasurement()) k++;
 			}
-			if (k == sensor_params.size()) {
+			if (k == sensor_params.size() && imu_.newMeasurement()) {
 				Eigen::Matrix<double, 12, 1> state;
 				state << sensor_obj_.at(0)->getInitialState();
 				ekf.setInitialState(state);
