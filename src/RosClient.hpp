@@ -119,10 +119,10 @@ class RosClient{
   void update_dynamics(const ros::TimerEvent& msg){
     Pose p;
 
-    ekf.prediction_step(motor_speed_);
+    p = ekf.prediction_step(motor_speed_);
 
     if(imu_.newMeasurement()){
-    	ekf.imu_measurment_update(imu_.getImuData(),
+    	p = ekf.imu_measurment_update(imu_.getImuData(),
 															 imu_.getR());
     }
 
@@ -139,33 +139,34 @@ class RosClient{
 																		sensor_obj_.at(i)->getR());
 
 				// Create odometry msg
-				ekf_pose_.pose.pose.position.x = p.x;
-				ekf_pose_.pose.pose.position.y = p.y;
-				ekf_pose_.pose.pose.position.z = p.z;
-				ekf_pose_.twist.twist.linear.x = p.x_dot;
-				ekf_pose_.twist.twist.linear.y = p.y_dot;
-				ekf_pose_.twist.twist.linear.z = p.z_dot;
-				tf2::Quaternion quat;
-				quat.setRPY(p.x_angle,p.y_angle,p.z_angle);
-				ekf_pose_.pose.pose.orientation.w = quat.w();
-				ekf_pose_.pose.pose.orientation.x = quat.x();
-				ekf_pose_.pose.pose.orientation.y = quat.y();
-				ekf_pose_.pose.pose.orientation.z = quat.z();
-				ekf_pose_.twist.twist.angular.x = p.x_angular;
-				ekf_pose_.twist.twist.angular.y = p.y_angular;
-				ekf_pose_.twist.twist.angular.z = p.z_angular;
-
-				ekf_pose_.header.stamp = ros::Time::now();
-				pose_pub.publish(ekf_pose_);
     	}
     }
 
+		ekf_pose_.pose.pose.position.x = p.x;
+		ekf_pose_.pose.pose.position.y = p.y;
+		ekf_pose_.pose.pose.position.z = p.z;
+		ekf_pose_.twist.twist.linear.x = p.x_dot;
+		ekf_pose_.twist.twist.linear.y = p.y_dot;
+		ekf_pose_.twist.twist.linear.z = p.z_dot;
+		tf2::Quaternion quat;
+		quat.setRPY(p.x_angle,p.y_angle,p.z_angle);
+		ekf_pose_.pose.pose.orientation.w = quat.w();
+		ekf_pose_.pose.pose.orientation.x = quat.x();
+		ekf_pose_.pose.pose.orientation.y = quat.y();
+		ekf_pose_.pose.pose.orientation.z = quat.z();
+		ekf_pose_.twist.twist.angular.x = p.x_angular;
+		ekf_pose_.twist.twist.angular.y = p.y_angular;
+		ekf_pose_.twist.twist.angular.z = p.z_angular;
+
+		ekf_pose_.header.stamp = ros::Time::now();
+		pose_pub.publish(ekf_pose_);
 
 
 
-    std::cout << "Pose with model \nX: " << p.x_angle << '\n'
-              << "Y: " << p.y_angle << '\n'
-              << "Z: " << p.z_angle << '\n';
+
+    std::cout << "Pose with model \nX: " << p.x<< '\n'
+              << "Y: " << p.y << '\n'
+              << "Z: " << p.z << '\n';
   }
 
   ~RosClient(){

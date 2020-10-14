@@ -13,7 +13,7 @@ Ixx: 1.75655 #0.075032
 Iyy: 1.75655 #0.075032
 Izz: 2.21 #0.15006
 
-T: 0.04 #freq 20hz
+T: 0.05 #freq 20hz
 # correlation matrix of the model
 Qx: 1  #0.005
 Qy: 1

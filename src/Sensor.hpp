@@ -98,7 +98,7 @@ class Sensor{
                msg->pose.pose.position.z;
     sensor_data_ = *msg;
     new_data = true;
-    std::cout << "SENSOR" << std::endl;
+    //std::cout << "SENSOR" << std::endl;
   }
   ~Sensor(){
     std::cout << "SENSOR DESTRUCTOR" << '\n';
