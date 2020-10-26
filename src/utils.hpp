@@ -10,6 +10,9 @@
 #include <numeric>
 #include <fstream>
 #include "ros/ros.h"
+#include <Eigen/Geometry>
+
+using namespace Eigen;
 //https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
 
 struct Quaternions {
@@ -124,6 +127,33 @@ std::ostream& save_vector_as_matrix( const std::string& name, const std::vector<
 
     std::copy( matrix.begin(), matrix.end(), std::ostream_iterator<T>( stm, " " ) ) ;
 	return stm << "\n\n\n" ;
+}
+
+Matrix<double, 3, 3> skew_symetric(Matrix<double,3,1> m){
+	Matrix<double, 3, 3> a;
+	a << 0, -m(2),m(1),
+				m(2),0,-m(0),
+				-m(1),m(0),0;
+	return a;
+}
+
+Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle){
+	double norm = axis_angle.norm();
+	double w,x,y,z;
+	w = cos(norm / 2);
+	if (norm < 1e-50){
+		x = 0;
+		y = 0;
+		z = 0;
+	}
+	else{
+		x = axis_angle[0]/norm * sin(norm/2);
+		y = axis_angle[1]/norm * sin(norm/2);
+		z = axis_angle[2]/norm * sin(norm/2);
+	}
+	Matrix<double, 4, 1> result;
+	result << w,x,y,z;
+	return result;
 }
 
 

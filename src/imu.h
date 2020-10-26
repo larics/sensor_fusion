@@ -5,6 +5,7 @@
 #include "ros/ros.h"
 #include <Eigen/Geometry>
 #include "tf/transform_datatypes.h"
+#include "error_state_ekf.hpp"
 
 class Imu{
 		ros::Subscriber imu_sub;
@@ -12,7 +13,7 @@ class Imu{
 
 	public:
 		Imu(ros::NodeHandle& nh_private,
-			std::vector<double> R_imu);
+			std::vector<double> R_imu, EsEkf* es_ekf);
 		void callback(const sensor_msgs::Imu& msg);
 		Eigen::Matrix<double, 6, 1> getImuData(){
 			new_measurement = false;
@@ -27,7 +28,10 @@ class Imu{
 		// Noise matrix
 		Eigen::Matrix<double, 6, 6>  R_;
 		// bool fresh measurement
-		bool new_measurement;
+		bool new_measurement,first_measurement;
+
+		double old_time;
+		EsEkf* es_ekf_;
 };
 
 

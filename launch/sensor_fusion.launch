@@ -13,7 +13,7 @@
   <param name="/use_sim_time" value="false"/>
 </node>
 
-  <node pkg="rosbag" type="play" name="player" output="screen"
+  <node pkg="rosbag" type="play" name="player"
         args=" /home/kovac/devel/diplomski_seminar/src/UAV-optimization/data/Offline_testing_bag_2020-09-30-15-24-50.bag"/>
   <node pkg="rosbag" type="record" name="rosbag_record"
         args="record -a -o /home/kovac/devel/diplomski_seminar/src/UAV-optimization/data/EKF/EKF"/>

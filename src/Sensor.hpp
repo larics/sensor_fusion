@@ -1,7 +1,7 @@
 #include <iostream>
 #include "ros/ros.h"
 #include <Eigen/Geometry>
-#include "ekf_imu.h"
+#include "error_state_ekf.hpp"
 #include "tf/transform_datatypes.h"
 #include "nav_msgs/Odometry.h"
 
@@ -12,7 +12,7 @@ class Sensor{
   ros::NodeHandle node_handle_;
 
   public:
-  Sensor(SensorParams params){
+  Sensor(SensorParams params,EsEkf* es_ekf_):es_ekf(es_ekf_){
     params_ = params;
     new_data = false;
     sensor_sub = node_handle_.subscribe(params_.topic, 1000,
@@ -99,6 +99,10 @@ class Sensor{
     sensor_data_ = *msg;
     new_data = true;
     //std::cout << "SENSOR" << std::endl;
+
+    es_ekf->measurement_update(params_.R.block<3,3>(0,0),
+            									sensor_);
+
   }
   ~Sensor(){
     std::cout << "SENSOR DESTRUCTOR" << '\n';
@@ -116,4 +120,5 @@ private:
   Eigen::Matrix<double, 3, 1> translation_;
   bool new_data;
 
+  EsEkf* es_ekf;
   };
