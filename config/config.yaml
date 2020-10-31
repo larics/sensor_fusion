@@ -1,6 +1,6 @@
 #Vehicle params
 
-initial_state: [0,0,0,0,0,0]
+initial_state: [-4.38,-1.144,20.044,-0.97,1.49,-0.05,-0.0174, 0.0264, 0.0122, -0.0206, 0.0329, -0.0463]
 mass: 2.426 #2.426 #2.33 #from sim can be a bit off
 g: 9.81
 
@@ -19,13 +19,15 @@ T: 0.05 #freq 20hz
 Qx: 1  #0.005
 Qy: 1
 Qz: 10 #for the z axis that is a bit worse than the rest
-Qx_dot: 1  #0.005
-Qy_dot: 1
-Qz_dot: 10 #for the z axis that is a bit worse than the rest
+Qx_angle: 1  #0.005
+Qy_angle: 1
+Qz_angle: 1 #for the z axis that is a bit worse than the rest
 
+
+R_imu: [0.1,0.1,0.1,0.1,0.1,0.1] #imu R matrix
 #sensor params
 number_of_sensors: 3
-Sensor_prefix: [front,back,mid]
+Sensor_prefix: [front]
 #front
 front_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
 front_odom: 0

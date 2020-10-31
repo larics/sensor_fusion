@@ -42,8 +42,8 @@ class RosClient{
     nh_private_.getParam("imu_topic", imu_topic);
     nh_private_.getParam("motor_speed_topic", motor_speed_topic);
 
-    motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
-                            &RosClient::callback_motor, this);
+//    motor_sub = node_handle_.subscribe(motor_speed_topic, 1000,
+//                            &RosClient::callback_motor, this);
     pose_pub = node_handle_.advertise<nav_msgs::Odometry>
                         ("ekf_odom", 1000);
     base_link_pose_sub = node_handle_.subscribe("/gazebo/link_states",1000,
@@ -95,11 +95,11 @@ class RosClient{
 		ekf.setQ(Q);
   }
 
-  void callback_motor(const mavros_msgs::RCOutPtr& msg){
-    motor_speed_ << msg->channels[0],msg->channels[1],
-                    msg->channels[2],msg->channels[3];
-
-  }
+//  void callback_motor(const mavros_msgs::RCOutPtr& msg){
+//    motor_speed_ << msg->channels[0],msg->channels[1],
+//                    msg->channels[2],msg->channels[3];
+//
+//  }
 
   void callback_gazebo(const gazebo_msgs::LinkStatesPtr& msg){
 
@@ -115,13 +115,15 @@ class RosClient{
 		ekf_pose_.pose.pose.position.x = state[0];
 		ekf_pose_.pose.pose.position.y = state[1];
 		ekf_pose_.pose.pose.position.z = state[2];
+
 		ekf_pose_.twist.twist.linear.x = state[3];
 		ekf_pose_.twist.twist.linear.y = state[4];
 		ekf_pose_.twist.twist.linear.z = state[5];
-		ekf_pose_.pose.pose.orientation.w = state[5];
-		ekf_pose_.pose.pose.orientation.x = state[6];
-		ekf_pose_.pose.pose.orientation.y = state[7];
-		ekf_pose_.pose.pose.orientation.z = state[8];
+
+		ekf_pose_.pose.pose.orientation.w = state[6];
+		ekf_pose_.pose.pose.orientation.x = state[7];
+		ekf_pose_.pose.pose.orientation.y = state[8];
+		ekf_pose_.pose.pose.orientation.z = state[9];
 		ekf_pose_.twist.twist.angular.x = -1;
 		ekf_pose_.twist.twist.angular.y = -1;
 		ekf_pose_.twist.twist.angular.z = -1;

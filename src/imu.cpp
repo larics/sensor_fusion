@@ -6,7 +6,7 @@ Imu::Imu(ros::NodeHandle& nh_private,
 				 new_measurement(false),first_measurement(true){
 	std::string imu_topic;
 	nh_private.getParam("imu_topic", imu_topic);
-	imu_sub = node_handle_.subscribe(imu_topic, 1000,
+	imu_sub = node_handle_.subscribe(imu_topic, 1,
 																	 &Imu::callback, this);
 	for (int i = 0; i < 6; ++i) {
 		R_(i,i) = R_imu.at(i);
@@ -32,6 +32,16 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 	if (first_measurement){
 		old_time = msg.header.stamp.toSec();
 		first_measurement = false;
+		std::cout << msg.orientation.w << "\n"
+						  << msg.orientation.x << "\n"
+						  << msg.orientation.y << "\n"
+						  << msg.orientation.z << "\n";
+		Matrix<double, 4, 1> init_quat({msg.orientation.w,
+																		msg.orientation.x,
+																		msg.orientation.y,
+																		msg.orientation.z});
+		std::cout << init_quat << "\n";
+		es_ekf_->setQest(init_quat);
 	}
 	else{
 		Matrix<double, 3, 1> imu_f,imu_w;
@@ -45,8 +55,9 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 
 		Matrix<double, 3, 3> var_imu_f,var_imu_w;
 		double delta_t = msg.header.stamp.toSec() - old_time;
+		old_time = msg.header.stamp.toSec();
 		var_imu_f = R_.block<3,3>(0,0);
 		var_imu_f = R_.block<3,3>(3,0);
-		es_ekf_->predicition(imu_f,var_imu_f,imu_w,var_imu_w,delta_t);
+		es_ekf_->predicition(imu_f,0.1,imu_w,0.1,delta_t);
 	}
 }

@@ -15,7 +15,7 @@ class Sensor{
   Sensor(SensorParams params,EsEkf* es_ekf_):es_ekf(es_ekf_){
     params_ = params;
     new_data = false;
-    sensor_sub = node_handle_.subscribe(params_.topic, 1000,
+    sensor_sub = node_handle_.subscribe(params_.topic, 1,
                             &Sensor::callback_sensor, this);
 
     rotation_ = RotationMatrix(params.w_x, params.w_y, params.w_z);
@@ -99,9 +99,10 @@ class Sensor{
     sensor_data_ = *msg;
     new_data = true;
     //std::cout << "SENSOR" << std::endl;
-
-    es_ekf->measurement_update(params_.R.block<3,3>(0,0),
-            									sensor_);
+		if (es_ekf->isIinit()){
+			es_ekf->measurement_update(1,
+																 sensor_);
+		}
 
   }
   ~Sensor(){
