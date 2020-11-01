@@ -34,6 +34,7 @@ class Sensor{
   bool freshMeasurement(){return new_data; }
 
   Eigen::Matrix<double, 6, 6> getR(){return params_.R; }
+  void setR(const Eigen::Matrix<double, 6, 6>& R){params_.R = R;}
 
   Eigen::Matrix<double, 12, 1> getInitialState(){
 		// the incoming geometry_msgs::Quaternion is transformed to a tf::Quaterion
