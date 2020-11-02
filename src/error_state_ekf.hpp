@@ -8,18 +8,19 @@ class EsEkf{
 public:
 		EsEkf(){
 			g<< 0,0,-9.81;
-			l_jac=  MatrixXd::Zero(9, 6);  // motion model noise jacobian
-			l_jac.bottomLeftCorner(6,6) =
-							MatrixXd::Identity(6,6);
+			l_jac=  MatrixXd::Zero(15, 12);  // motion model noise jacobian
+			l_jac.bottomLeftCorner(12,12) =
+							MatrixXd::Identity(12,12);
 
 			h_jac;  //measurement model jacobian
-			h_jac =  MatrixXd::Zero(3,9);
+			h_jac =  MatrixXd::Zero(3,15);
 			h_jac.bottomLeftCorner(3,3) = MatrixXd::Identity(3,3);
 
 			p_est << -4.38368, -1.14485,20.044;
 			v_est << -0.97,1.49,0.04 ;
 			q_est << 1,0,0,0;
-			p_cov = MatrixXd::Identity(9,9);
+			fb_est << 0,0,0; wb_est << 0,0,0;
+			p_cov = MatrixXd::Zero(15,15);
 			initialized = false;
 		}
 
@@ -38,23 +39,7 @@ public:
 							initial_state(9);
 
 		}
-		void setPest(Matrix<double, 3, 1> initial_state){
-			p_est << initial_state(0),
-							initial_state(1),
-							initial_state(2);
-		}
-		void setvest(Matrix<double, 3, 1> initial_state){
-			v_est << initial_state(0),
-							initial_state(1),
-							initial_state(2);
-		}
-		void setQest(Matrix<double, 4, 1> initial_state){
-			q_est << initial_state(0),
-							initial_state(1),
-							initial_state(2),
-							initial_state(3);
-			std::cout << "INITAL STATE  " << q_est.transpose() << std::endl;
-		}
+
 		bool isIinit(){return initialized;}
 
 		Matrix<double, 10, 1> predicition(
@@ -69,56 +54,51 @@ public:
 			// 1. Update state with IMU inputs
 			Matrix3d transform_imu = q.toRotationMatrix();
 			p_est = p_est + delta_t*v_est +
-							pow(delta_t,2)/2 * (transform_imu * imu_f + g);
+							pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g);
+			v_est = v_est + delta_t * (transform_imu * (imu_f-fb_est) + g);
 
-//			std::cout << "delta_t " << delta_t << "\n"
-//								<< "v_est " << v_est.transpose() << "\n"
-//								<< "delta_t*v_est " << delta_t*v_est << "\n"
-//								<< " transform imu \n" << transform_imu << "\n"
-//								<< " imu_f " << imu_f.transpose() << "\n"
-//								<< " g " << g.transpose() << "\n"
-//								<< "acc\n" << pow(delta_t,2)/2 * (transform_imu * imu_f + g) << "\n"
-//								<< "P_EST -> " << p_est;
+			Quaternion<double> imu_q = euler2quat({delta_t*(imu_w[0]-wb_est[0]),
+																						 delta_t*(imu_w[1]-wb_est[1]),
+																						 delta_t*(imu_w[2]-wb_est[2])});
 
 
-
-			v_est = v_est + delta_t * (transform_imu * imu_f + g);
-
-			Quaternion<double> imu_q = euler2quat({delta_t*imu_w(0),
-																						 delta_t*imu_w(1),
-																						 delta_t*imu_w(2)});
-
-			//std::cout << "imu_w -> " << imu_w.transpose() << std::endl;
-			//std::cout << "imu_q -> " << imu_q.w() << imu_q.x() << imu_q.y() << imu_q.z() << std::endl;
-			imu_q = q*imu_q;
-			imu_q = imu_q.normalized();
-			//std::cout << "imu_q2 -> " << imu_q.w() << imu_q.x() << imu_q.y() << imu_q.z() << "\n" << std::endl;
-			q_est << imu_q.w(),imu_q.x(),imu_q.y(),imu_q.z();
-
+			fb_est = fb_est; wb_est = wb_est;
+			std::cout << "bias fb -> " << fb_est.transpose() << "\n";
+			std::cout << "bias wb -> " << wb_est.transpose() << "\n";
 			//1.1 Linearize the motion model and compute Jacobians
-			f_jac = MatrixXd::Identity(9,9);
+			f_jac = MatrixXd::Identity(15,15);
 			f_jac.block<3,3>(0,3) = delta_t* MatrixXd::Identity(3,3);
 			f_jac.block<3,3>(3,6) =
-							-skew_symetric(transform_imu * imu_f) * delta_t;
+							-skew_symetric(transform_imu * (imu_f - fb_est)) * delta_t;
+			f_jac.block<3,3>(3,9) = -transform_imu * delta_t;
+			f_jac.block<3,3>(6,12) = -delta_t * MatrixXd::Identity(3,3);
+			f_jac.block<3,3>(6,6) = (imu_q.toRotationMatrix()).transpose();
 
+			imu_q = q*imu_q;
+			imu_q = imu_q.normalized();
+			q_est << imu_q.w(),imu_q.x(),imu_q.y(),imu_q.z();
 
 			// 2. Propagate uncertainty
-			Matrix<double, 6, 6> q_cov = MatrixXd::Zero(6,6);
+			double var_imu_fb = 1;
+			double var_imu_wb = 1;
+			Matrix<double, 12, 12> q_cov = MatrixXd::Identity(12,12);
 			q_cov.block<3,3>(0,0) =  MatrixXd::Identity(3,3)
 															 *var_imu_f * pow(delta_t,2);
 			q_cov.block<3,3>(3,3) =  MatrixXd::Identity(3,3)*
 															 var_imu_w * pow(delta_t,2);
+			q_cov.block<3,3>(6,6) =  MatrixXd::Identity(3,3)*
+															 var_imu_fb * pow(delta_t,2);
+			q_cov.block<3,3>(9,9) =  MatrixXd::Identity(3,3)*
+															 var_imu_wb * pow(delta_t,2);
 
 
 			p_cov = f_jac * p_cov * f_jac.transpose() +
 							l_jac * q_cov * l_jac.transpose();
-
 			p_est_pred = p_est; v_est_pred = v_est;
 			q_est_pred = q_est;
 
 			Matrix<double, 10, 1> state;
 			state << p_est,v_est,q_est;
-			std::cout << "prediction -> " << std::endl;
 			return state;
 		}
 
@@ -126,14 +106,14 @@ public:
 																						 Matrix<double, 3, 1> y){
 
 			Matrix<double,3,3> R_cov = var_sensor * MatrixXd::Identity(3,3);
-			Matrix<double, 9, 3> K= MatrixXd::Zero(9,3);
+			Matrix<double, 15, 3> K= MatrixXd::Zero(15,3);
 			K = p_cov * h_jac.transpose() *
 					(h_jac* p_cov * h_jac.transpose()
 					 + R_cov).inverse();
-
-			Matrix<double, 9, 1> delta_x;
+			Matrix<double, 15, 1> delta_x;
 			//3.2 Compute error state
 			delta_x = K * (y - p_est);
+
 			// 3.3 Correct predicted state
 			p_est = p_est + delta_x.block<3,1>(0,0);
 			v_est = v_est + delta_x.block<3,1>(3,0);
@@ -153,14 +133,20 @@ public:
 							q_est_obj.y(),
 							q_est_obj.z();
 			//TODO add pcov i retun it
-			p_cov = (MatrixXd::Identity(9,9) - K*h_jac) * p_cov;
+
+			fb_est = fb_est +  delta_x.block<3,1>(9,0);
+			wb_est = wb_est +  delta_x.block<3,1>(12,0);
+			std::cout << "bias measure fb -> " << fb_est.transpose() << "\n";
+			std::cout << "bias measure wb -> " << wb_est.transpose() << "\n";
+			p_cov = (MatrixXd::Identity(15,15) - K*h_jac)
+							* p_cov *
+							(MatrixXd::Identity(15,15) - K*h_jac).transpose() +
+							K*R_cov*K.transpose();
 			Matrix<double, 10, 1> state;
 			state << p_est,v_est,q_est;
-
-			std::cout << "measurement update -> " << std::endl;
-
 			return state;
 		}
+
 
 		Matrix<double,10,1 > getState(){
 			Matrix<double,10,1> state;
@@ -168,15 +154,33 @@ public:
 			return state;
 		}
 
+		void setPest(Matrix<double, 3, 1> initial_state){
+			p_est << initial_state(0),
+							initial_state(1),
+							initial_state(2);
+		}
+		void setvest(Matrix<double, 3, 1> initial_state){
+			v_est << initial_state(0),
+							initial_state(1),
+							initial_state(2);
+		}
+		void setQest(Matrix<double, 4, 1> initial_state){
+			q_est << initial_state(0),
+							initial_state(1),
+							initial_state(2),
+							initial_state(3);
+			std::cout << "INITAL STATE  " << q_est.transpose() << std::endl;
+		}
+
 private:
 		// error state Ekf
 		Matrix<double, 3, 1>  g;
-		Matrix<double, 9, 6>	l_jac;
-		Matrix<double, 9, 9>	f_jac;
-		Matrix<double, 3, 9>	h_jac;
-		Matrix<double, 3, 1>	p_est_pred, v_est_pred, p_est,v_est;
+		Matrix<double, 15, 12>	l_jac;
+		Matrix<double, 15, 15>	f_jac;
+		Matrix<double, 3, 15>	h_jac;
+		Matrix<double, 3, 1>	p_est_pred, v_est_pred, p_est,v_est,fb_est,wb_est;
 		Matrix<double, 4, 1>	q_est_pred,q_est;
-		Matrix<double, 9, 9>  p_cov;
+		Matrix<double,15, 15>  p_cov;
 		bool initialized;
 
 };

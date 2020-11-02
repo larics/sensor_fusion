@@ -42,6 +42,10 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 																		msg.orientation.z});
 		std::cout << init_quat << "\n";
 		es_ekf_->setQest(init_quat);
+		Matrix<double, 3, 1> init_vel({ msg.angular_velocity.x,
+																		msg.angular_velocity.y,
+																		msg.angular_velocity.z});
+		es_ekf_->setvest(init_vel);
 	}
 	else{
 		Matrix<double, 3, 1> imu_f,imu_w;
@@ -58,6 +62,6 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 		old_time = msg.header.stamp.toSec();
 		var_imu_f = R_.block<3,3>(0,0);
 		var_imu_f = R_.block<3,3>(3,0);
-		es_ekf_->predicition(imu_f,0.1,imu_w,0.1,delta_t);
+		es_ekf_->predicition(imu_f,0.01,imu_w,0.01,delta_t);
 	}
 }

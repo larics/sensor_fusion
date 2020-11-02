@@ -101,8 +101,11 @@ class Sensor{
     new_data = true;
     //std::cout << "SENSOR" << std::endl;
 		if (es_ekf->isIinit()){
-			es_ekf->measurement_update(1,
+			es_ekf->measurement_update(0.5,
 																 sensor_);
+		}
+		else{
+			es_ekf->setPest(sensor_);
 		}
 
   }

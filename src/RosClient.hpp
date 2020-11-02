@@ -144,9 +144,9 @@ class RosClient{
 
 
 
-    std::cout << "Pose with model \nX: " << state[0] <<'\n'
-              << "Y: " << state[1] <<'\n'
-              << "Z: " << state[2] <<'\n';
+//    std::cout << "Pose with model \nX: " << state[0] <<'\n'
+//              << "Y: " << state[1] <<'\n'
+//              << "Z: " << state[2] <<'\n';
   }
 
   ~RosClient(){
