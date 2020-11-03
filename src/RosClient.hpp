@@ -127,6 +127,30 @@ class RosClient{
     pose_gazebo_.z = msg->pose[1].position.z;
   }
 
+  void publish_odom(){
+
+		Matrix<double,10,1> state = es_ekf.getState();
+		ekf_pose_.pose.pose.position.x = state[0];
+		ekf_pose_.pose.pose.position.y = state[1];
+		ekf_pose_.pose.pose.position.z = state[2];
+
+		ekf_pose_.twist.twist.linear.x = state[3];
+		ekf_pose_.twist.twist.linear.y = state[4];
+		ekf_pose_.twist.twist.linear.z = state[5];
+
+		ekf_pose_.pose.pose.orientation.w = state[6];
+		ekf_pose_.pose.pose.orientation.x = state[7];
+		ekf_pose_.pose.pose.orientation.y = state[8];
+		ekf_pose_.pose.pose.orientation.z = state[9];
+
+		Matrix<double,6,1> data = imu_.getImuData();
+		ekf_pose_.twist.twist.angular.x = data[3];
+		ekf_pose_.twist.twist.angular.y = data[4];
+		ekf_pose_.twist.twist.angular.z = data[5];
+
+		ekf_pose_.header.stamp = ros::Time::now();
+		pose_pub.publish(ekf_pose_);
+  }
   void update_dynamics(const ros::TimerEvent& msg){
 
   	Matrix<double,10,1> state = es_ekf.getState();
