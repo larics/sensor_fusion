@@ -20,13 +20,16 @@ class Imu{
 			return data_;}
 		Eigen::Matrix<double, 6, 6> getR(){return R_;}
 		bool newMeasurement(){return new_measurement;};
+		void setR(Matrix<double,6,6> R);
 
-
+		void setRangle(Matrix<double,3,3> R);
 	private:
 		// Angular velocity and orientatrion
 		Eigen::Matrix<double, 6, 1> data_;
 		// Noise matrix
 		Eigen::Matrix<double, 6, 6>  R_;
+		Eigen::Matrix<double, 3, 3>  R_angle;
+
 		// bool fresh measurement
 		bool new_measurement,first_measurement;
 

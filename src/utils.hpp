@@ -179,6 +179,12 @@ Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle){
 	return result;
 }
 
+Matrix<double,3,1> quat2axis_angle(Matrix<double,4,1> quat){
+	double t = wrapToPi(2*std::acos(quat[0]));
+	Matrix<double,3,1> result({quat[1],quat[2],quat[3]});
+	return t*result/wrapToPi(std::sin(t/2));
+}
+
 EulerAngles ToEulerAngles(Quaternions q) {
     EulerAngles angles;
 

@@ -15,6 +15,7 @@ class Sensor{
   Sensor(SensorParams params,EsEkf* es_ekf_):es_ekf(es_ekf_){
     params_ = params;
     new_data = false;
+		first_measurement = false;
     sensor_sub = node_handle_.subscribe(params_.topic, 1,
                             &Sensor::callback_sensor, this);
 
@@ -100,8 +101,9 @@ class Sensor{
     sensor_data_ = *msg;
     new_data = true;
     //std::cout << "SENSOR" << std::endl;
-		if (es_ekf->isIinit()){
-			es_ekf->measurement_update(0.5,
+		if (es_ekf->isIinit() or first_measurement){
+			first_measurement = false;
+			es_ekf->measurement_update(params_.R.block<3,3>(0,0),
 																 sensor_);
 		}
 		else{
@@ -123,7 +125,7 @@ private:
   Eigen::Matrix<double, 3, 1> sensor_;
   Eigen::Matrix<double, 3, 3> rotation_;
   Eigen::Matrix<double, 3, 1> translation_;
-  bool new_data;
+  bool new_data,first_measurement;
 
   EsEkf* es_ekf;
   };

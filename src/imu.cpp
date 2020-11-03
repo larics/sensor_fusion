@@ -49,6 +49,7 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 	}
 	else{
 		Matrix<double, 3, 1> imu_f,imu_w;
+		Matrix<double, 4, 1> imu_angle;
 		imu_f << msg.linear_acceleration.x,
 						msg.linear_acceleration.y,
 						msg.linear_acceleration.z;
@@ -57,11 +58,26 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 						msg.angular_velocity.y,
 						msg.angular_velocity.z;
 
+		imu_angle << msg.orientation.w,
+								msg.orientation.x,
+								msg.orientation.y,
+								msg.orientation.z;
+
 		Matrix<double, 3, 3> var_imu_f,var_imu_w;
 		double delta_t = msg.header.stamp.toSec() - old_time;
 		old_time = msg.header.stamp.toSec();
 		var_imu_f = R_.block<3,3>(0,0);
-		var_imu_f = R_.block<3,3>(3,0);
-		es_ekf_->predicition(imu_f,0.01,imu_w,0.01,delta_t);
+		var_imu_w = R_.block<3,3>(3,3);
+		std::cout << "R_ \n" << R_.block<3,3>(3,3) << "\n";
+		es_ekf_->predicition(imu_f,var_imu_f,imu_w,var_imu_w,delta_t);
+		es_ekf_->angle_measurement_update(R_angle,imu_angle);
 	}
+}
+
+void Imu::setR(Matrix<double, 6, 6> R) {
+	R_ = R;
+}
+
+void Imu::setRangle(Matrix<double, 3, 3> R) {
+	R_angle = R;
 }

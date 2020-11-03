@@ -94,15 +94,24 @@ class RosClient{
 
 		ekf.setQ(Q);
 		Eigen::Matrix<double, 6, 6> R = MatrixXd::Zero(6,6);
-		R(0,0) =  config.Rx;
-		R(1,1) =  config.Ry;
-		R(2,2) =  config.Rz;
+		R(0,0) =  config.R_xacc;
+		R(1,1) =  config.R_yacc;
+		R(2,2) =  config.R_zacc;
 		R(3,3) =  config.R_xdot;
 		R(4,4) =  config.R_ydot;
 		R(5,5) =  config.R_zdot;
 
-		sensor_obj_.at(0)->setR(R);
+		imu_.setR(R);
+		Eigen::Matrix<double, 3, 3> R2 = MatrixXd::Zero(3,3);
+		R2(0,0) =  config.R_x;
+		R2(1,1) =  config.R_y;
+		R2(2,2) =  config.R_z;
+		imu_.setRangle(R2);
 
+		R(0,0) =  config.R_px;
+		R(1,1) =  config.R_py;
+		R(2,2) =  config.R_pz;
+		sensor_obj_.at(0)->setR(R);
   }
 
 //  void callback_motor(const mavros_msgs::RCOutPtr& msg){

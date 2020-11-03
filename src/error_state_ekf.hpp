@@ -16,8 +16,8 @@ public:
 			h_jac =  MatrixXd::Zero(3,15);
 			h_jac.bottomLeftCorner(3,3) = MatrixXd::Identity(3,3);
 
-			p_est << -4.38368, -1.14485,20.044;
-			v_est << -0.97,1.49,0.04 ;
+			p_est << 0, 0,0;
+			v_est << 0,0,0;
 			q_est << 1,0,0,0;
 			fb_est << 0,0,0; wb_est << 0,0,0;
 			p_cov = MatrixXd::Zero(15,15);
@@ -44,9 +44,9 @@ public:
 
 		Matrix<double, 10, 1> predicition(
 						Matrix<double, 3, 1> imu_f,
-						double var_imu_f,
+						Matrix<double, 3,3> var_imu_f,
 						Matrix<double, 3, 1> imu_w,
-						double var_imu_w,
+						Matrix<double, 3,3> var_imu_w,
 						double delta_t){
 			initialized = true;
 			Quaternion<double> q(q_est(0),q_est(1),
@@ -63,8 +63,8 @@ public:
 
 
 			fb_est = fb_est; wb_est = wb_est;
-			std::cout << "bias fb -> " << fb_est.transpose() << "\n";
-			std::cout << "bias wb -> " << wb_est.transpose() << "\n";
+//			std::cout << "bias fb -> " << fb_est.transpose() << "\n";
+//			std::cout << "bias wb -> " << wb_est.transpose() << "\n";
 			//1.1 Linearize the motion model and compute Jacobians
 			f_jac = MatrixXd::Identity(15,15);
 			f_jac.block<3,3>(0,3) = delta_t* MatrixXd::Identity(3,3);
@@ -79,21 +79,23 @@ public:
 			q_est << imu_q.w(),imu_q.x(),imu_q.y(),imu_q.z();
 
 			// 2. Propagate uncertainty
-			double var_imu_fb = 1;
-			double var_imu_wb = 1;
+			double var_imu_fb = 0;
+			double var_imu_wb = 0;
 			Matrix<double, 12, 12> q_cov = MatrixXd::Identity(12,12);
-			q_cov.block<3,3>(0,0) =  MatrixXd::Identity(3,3)
-															 *var_imu_f * pow(delta_t,2);
-			q_cov.block<3,3>(3,3) =  MatrixXd::Identity(3,3)*
-															 var_imu_w * pow(delta_t,2);
+			q_cov.block<3,3>(0,0) =  var_imu_f * pow(delta_t,2);
+			q_cov.block<3,3>(3,3) =  var_imu_w * pow(delta_t,2);
 			q_cov.block<3,3>(6,6) =  MatrixXd::Identity(3,3)*
-															 var_imu_fb * pow(delta_t,2);
+															 var_imu_fb * delta_t;
 			q_cov.block<3,3>(9,9) =  MatrixXd::Identity(3,3)*
-															 var_imu_wb * pow(delta_t,2);
+															 var_imu_wb * delta_t;
 
 
 			p_cov = f_jac * p_cov * f_jac.transpose() +
 							l_jac * q_cov * l_jac.transpose();
+
+			std::cout << "p_cov predict it \n" << p_cov << "\n";
+			std::cout << "var_imu_f" << var_imu_f <<"\n";
+			std::cout << "var_imu_w" << var_imu_w <<"\n";
 			p_est_pred = p_est; v_est_pred = v_est;
 			q_est_pred = q_est;
 
@@ -102,10 +104,11 @@ public:
 			return state;
 		}
 
-		Matrix<double, 10, 1> measurement_update(double var_sensor,
+		Matrix<double, 10, 1> measurement_update(Matrix<double, 3,3> var_sensor,
 																						 Matrix<double, 3, 1> y){
 
-			Matrix<double,3,3> R_cov = var_sensor * MatrixXd::Identity(3,3);
+			Matrix<double,3,3> R_cov = var_sensor;
+			std::cout << "R_cov measurement \n" << R_cov << "\n";
 			Matrix<double, 15, 3> K= MatrixXd::Zero(15,3);
 			K = p_cov * h_jac.transpose() *
 					(h_jac* p_cov * h_jac.transpose()
@@ -136,11 +139,84 @@ public:
 
 			fb_est = fb_est +  delta_x.block<3,1>(9,0);
 			wb_est = wb_est +  delta_x.block<3,1>(12,0);
-			std::cout << "bias measure fb -> " << fb_est.transpose() << "\n";
-			std::cout << "bias measure wb -> " << wb_est.transpose() << "\n";
+//			std::cout << "bias measure fb -> " << fb_est.transpose() << "\n";
+//			std::cout << "bias measure wb -> " << wb_est.transpose() << "\n";
 			p_cov = (MatrixXd::Identity(15,15) - K*h_jac)
 							* p_cov *
 							(MatrixXd::Identity(15,15) - K*h_jac).transpose() +
+							K*R_cov*K.transpose();
+			Matrix<double, 10, 1> state;
+			state << p_est,v_est,q_est;
+			return state;
+		}
+
+		Matrix<double, 10, 1> angle_measurement_update(Matrix<double, 3,3> var_sensor,
+																						 Matrix<double, 4, 1> y){
+
+			Matrix<double,3,3> R_cov = var_sensor;
+			std::cout << "R_angle \n" << R_cov << "\n";
+			Matrix<double, 15, 3> K= MatrixXd::Zero(15,3);
+			Matrix<double, 3, 15> h_jac_angle =MatrixXd::Zero(3,15);
+			h_jac_angle(0,6) = 1; //quat -> w
+			h_jac_angle(1,7) = 1; //quat -> x
+			h_jac_angle(2,8) = 1; //quat -> y
+
+			K = p_cov * h_jac_angle.transpose() *
+					(h_jac_angle* p_cov * h_jac_angle.transpose()
+					 + R_cov).inverse();
+			std::cout << "K angle \n" << K << "\n";
+			std::cout << "p_cov \n" << p_cov << "\n";
+			Matrix<double, 15, 1> delta_x;
+			//3.2 Compute error state
+			Quaternion<double> q_est_obj(q_est(0),q_est(1),
+																	 q_est(2),q_est(3));
+			Quaternion<double> delta_quat(y[0],y[1],y[2],y[3]);
+			delta_quat.normalize();
+			q_est_obj.normalize();
+			delta_quat = q_est_obj.inverse()*delta_quat;
+			delta_quat.normalize();
+
+			AngleAxis<double> angle_axis(delta_quat.toRotationMatrix());
+//			std::cout << " angle error " << angle_axis.angle() << "\n";
+//			std::cout << " atan  error " << wrapToPi(2*std::atan2(delta_quat.vec().norm(),delta_quat.w())) << "\n";
+//			std::cout << " axis " << angle_axis.axis().transpose() << "\n";
+//			std::cout << " axis*angle " << angle_axis.angle()*angle_axis.axis().transpose() << "\n";
+//			std::cout << "y_angle" << y.transpose() << "\n";
+//			std::cout << "q_est_angle" << q_est.transpose() << "\n";
+//			std::cout << "error" << q_est.transpose() << "\n";
+//			std::cout << "quat2axis_angle" << quat2axis_angle(y - q_est).transpose() << "\n";
+			delta_x = K * (angle_axis.angle()*angle_axis.axis());
+//			std::cout << "delta x -> " << delta_x.transpose() << "\n";
+
+			// 3.3 Correct predicted state
+			p_est = p_est + delta_x.block<3,1>(0,0);
+//			std::cout << "p_est_angle" << p_est.transpose() << "\n";
+//			std::cout << "p_est_error" << delta_x.block<3,1>(0,0).transpose() << "\n";
+			v_est = v_est + delta_x.block<3,1>(3,0);
+			Matrix<double,4,1> quat_from_aa = axixs_angle2quat(
+							delta_x.block<3,1>(6,0));
+
+			Quaternion<double> q(quat_from_aa(0),
+													 quat_from_aa(1),
+													 quat_from_aa(2),
+													 quat_from_aa(3));
+			q_est_obj = q*q_est_obj;
+			q_est_obj = q_est_obj.normalized();
+			q_est << q_est_obj.w(),
+							q_est_obj.x(),
+							q_est_obj.y(),
+							q_est_obj.z();
+
+//			std::cout << "q_est" << q_est.transpose() << "\n";
+			//TODO add pcov i retun it
+
+			fb_est = fb_est +  delta_x.block<3,1>(9,0);
+			wb_est = wb_est +  delta_x.block<3,1>(12,0);
+			std::cout << "bias measure fb -> " << fb_est.transpose() << "\n";
+			std::cout << "bias measure wb -> " << wb_est.transpose() << "\n";
+			p_cov = (MatrixXd::Identity(15,15) - K*h_jac_angle)
+							* p_cov *
+							(MatrixXd::Identity(15,15) - K*h_jac_angle).transpose() +
 							K*R_cov*K.transpose();
 			Matrix<double, 10, 1> state;
 			state << p_est,v_est,q_est;
