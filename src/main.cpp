@@ -82,7 +82,6 @@ int main(int argc, char **argv) {
               << "R: \n" << sensor.R << "\n\n";
    sensors.push_back(sensor);
   }
-
   RosClient obj2(params,sensors, nh_private,
 								 R_imu);
   //obj2.update_dynamics();
