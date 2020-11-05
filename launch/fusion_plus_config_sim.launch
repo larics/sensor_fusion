@@ -1,0 +1,16 @@
+<launch>
+
+    <arg name="namespace" default="$(env UAV_NAMESPACE)"/>
+    <arg name="motor_speed_topic" default="/uav/motor_speed"/>
+    <arg name="imu_topic" default="/uav/imu"/>
+    <arg name="config_yaml" default="$(find sensor_fusion)/config/config.yaml"/>
+
+    <node pkg="sensor_fusion" type="sensor_fusion" name="sensor_fusion" output="screen" ns="$(arg namespace)">
+        <param name="config_yaml"  value="$(arg config_yaml)" />
+        <param name="motor_speed_topic"  value="$(arg motor_speed_topic)" />
+        <param name="imu_topic"  value="$(arg imu_topic)" />
+        <param name="plot_file_loc"  value="$(find sensor_fusion)/matlab/" />
+        <param name="/use_sim_time" value="true"/>
+    </node>
+
+</launch>

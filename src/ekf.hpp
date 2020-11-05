@@ -162,7 +162,6 @@ public:
       x_hat = x_hat + params_.T*X_minus;
       //x_hat = Phi*x_hat;
       P_minus = Phi*P_plus*Phi.transpose() + L*Q*L.transpose(); //get prediction fpr Pk
-    if (x_hat(2) < 0) x_hat(2) = 0;
 
 		x_hat[6] = wrapToPi(x_hat[6]);
 		x_hat[7] = wrapToPi(x_hat[7]);

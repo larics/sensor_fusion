@@ -68,9 +68,9 @@ void Imu::callback(const sensor_msgs::Imu& msg){
 		old_time = msg.header.stamp.toSec();
 		var_imu_f = R_.block<3,3>(0,0);
 		var_imu_w = R_.block<3,3>(3,3);
-		std::cout << "R_ \n" << R_.block<3,3>(3,3) << "\n";
+
 		es_ekf_->predicition(imu_f,var_imu_f,imu_w,var_imu_w,delta_t);
-		es_ekf_->angle_measurement_update(R_angle,imu_angle);
+		//es_ekf_->angle_measurement_update(R_angle,imu_angle);
 	}
 }
 
