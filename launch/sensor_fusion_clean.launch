@@ -1,0 +1,11 @@
+<launch>
+
+    <arg name="namespace" default="$(env UAV_NAMESPACE)"/>
+    <arg name="config_yaml" default="$(find sensor_fusion)/config/clean_config.yaml"/>
+
+    <node pkg="sensor_fusion" type="sensor_fusion2" name="sensor_fusion" output="screen" ns="$(arg namespace)">
+        <param name="config_yaml"  value="$(arg config_yaml)" />
+        <param name="/use_sim_time" value="true"/>
+    </node>
+
+</launch>

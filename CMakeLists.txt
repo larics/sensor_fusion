@@ -189,6 +189,7 @@ mark_as_advanced(YAMLCPP_INCLUDE_DIR YAMLCPP_LIBRARY)
 ## The recommended prefix ensures that target names across packages don't collide)
 add_executable(sensor_fusion src/main.cpp)
 add_executable(republish_odom src/imu_rescan.cpp)
+add_executable(sensor_fusion2 src2/sensor_fusion_main.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -207,6 +208,11 @@ target_link_libraries(sensor_fusion
   ekf
 )
 target_link_libraries(republish_odom
+        ${catkin_LIBRARIES}
+        ${YAMLCPP_LIBRARY}
+        )
+
+target_link_libraries(sensor_fusion2
         ${catkin_LIBRARIES}
         ${YAMLCPP_LIBRARY}
         )
