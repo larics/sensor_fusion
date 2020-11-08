@@ -40,15 +40,14 @@ EsEkfParams parse_yaml(std::string config_file){
 		 * To get transforamtion from sensor link to base link
 		 */
 		rotation = config[id.at(i)+"_rotation"].as<std::vector<double>>();
-		sensor.w_x = rotation.at(0);
-		sensor.w_y = rotation.at(1);
-		sensor.w_z = rotation.at(2);
+		sensor.rotation_mat = AngleAxisd(rotation.at(0), Vector3d::UnitX())
+											 	* AngleAxisd(rotation.at(1), Vector3d::UnitY())
+												* AngleAxisd(rotation.at(2), Vector3d::UnitZ());
 
 		translation = config[id.at(i)+"_translation"].as<std::vector<double>>();
-		sensor.d_x = translation.at(0);
-		sensor.d_y = translation.at(1);
-		sensor.d_z = translation.at(2);
-
+		sensor.translation <<  translation.at(0),
+													translation.at(1),
+													translation.at(2);
 		/*
 		 * If sensor is odom type, we expect output that defines
 		 * relative position in comparison to the old position.
