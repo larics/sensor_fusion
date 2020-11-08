@@ -1,22 +1,15 @@
-Q_acc_x: 1.1
+Q_acc_x: 1
 Q_acc_y: 1
-Q_acc_z: 10
+Q_acc_z: 1
 Q_angular_x: 1
 Q_angular_y: 1
 Q_angular_z: 1
 
 #sensor params
-Sensor_prefix: [front,back]
+Sensor_prefix: [front]
 #front
-front_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
+front_R: [1, 1, 1] # correlation matrix of the sensor
 front_odom: 0
 front_topic: /uav/odom_new
 front_rotation: [0.0, 0.0, 0.0] # rotation around x,y and z axis in comparison to base link in rad
 front_translation: [0.0, 0.0, 0.0] # translation in comparison to base link [x,y,z] in m
-
-#back
-back_R: [0.003, 0.0025, 0.0027] # correlation matrix of the sensor
-back_odom: 0
-back_topic: /uav/odometry3
-back_rotation: [0.0, 0.0, 0.0] # rotation around x,y and z axis in comparison to base link
-back_translation: [0.0, 0.0,  0.0] # translation in comparison to base link [x,y,z]
