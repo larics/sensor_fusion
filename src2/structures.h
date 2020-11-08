@@ -2,6 +2,8 @@
 #define SENSOR_FUSION_STRUCTURES_H
 #include <Eigen/Geometry>
 #include "vector"
+#include "nav_msgs/Odometry.h"
+#include <iostream>
 
 using namespace Eigen;
 
@@ -34,8 +36,8 @@ struct SensorParams{
 		// 1 if its an odom sensor, gives delta values not absolute values
 		bool is_odom;
 
-		double w_x, w_y, w_z; // rotation
-		double d_x, d_y, d_z; // translation
+		Matrix<double, 3, 3> rotation_mat;
+		Matrix<double, 3, 1> translation;
 
 		SensorCovariance cov; // correlation matrix of the sensor
 };
@@ -44,5 +46,32 @@ struct EsEkfParams{
 		std::vector<SensorParams> sensors;
 		ModelCovariance model;
 };
+
+class EsEkfState{
+private:
+		Matrix<double, 10, 1> state;
+public:
+		EsEkfState(){
+			state = MatrixXd::Zero(10,1);
+		}
+		Matrix<double, 10, 1> getState() const{return state;}
+		void operator=(const nav_msgs::OdometryPtr& msg){
+			this->state << msg->pose.pose.position.x,
+										 msg->pose.pose.position.y,
+										 msg->pose.pose.position.z,
+										 msg->twist.twist.linear.x,
+										 msg->twist.twist.linear.y,
+										 msg->twist.twist.linear.z,
+										 msg->pose.pose.orientation.w,
+										 msg->pose.pose.orientation.z,
+										 msg->pose.pose.orientation.y,
+										 msg->pose.pose.orientation.z;
+		}
+		friend std::ostream& operator<<(std::ostream& out, const EsEkfState& f);
+};
+std::ostream& operator<<(std::ostream& out, const EsEkfState& f)
+{
+	out << f.getState().transpose() << "\n";
+}
 
 #endif //SENSOR_FUSION_STRUCTURES_H
