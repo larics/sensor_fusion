@@ -29,10 +29,9 @@
 using namespace Eigen;
 class EsEkf{
 public:
-		EsEkf(){
+		EsEkf():initialized(false){
 			// if the sensor are not initialized wait
 			// dont call measurement update before the first prediction
-			initialized = false;
 
 			// gravity vector
 			g<< 0,0,-9.81;
@@ -48,10 +47,10 @@ public:
 			fb_est << 0,0,0; wb_est << 0,0,0;
 			// initital state error is zero (can be anything else)
 			p_cov = MatrixXd::Zero(15,15);
-
+			ROS_INFO("Es EKF init %d",initialized);
 		}
 
-
+		void setInit(){initialized = true;}
 		bool isInit(){return initialized;}
 
 
@@ -65,9 +64,6 @@ public:
 						Matrix<double, 3, 1> imu_w,
 						Matrix<double, 3,3> var_imu_w,
 						double delta_t){
-			// when we do the first prediction update we initialize the filter
-			initialized = true;
-
 			Quaternion<double> q(q_est(0),q_est(1),
 													 q_est(2),q_est(3));
 			// 1. Update state with IMU inputs
@@ -81,7 +77,7 @@ public:
 																						 delta_t*(imu_w[2]-wb_est[2])});
 
 
-			//fb_est = fb_est; wb_est = wb_est; //bias is constant
+			fb_est = fb_est; wb_est = wb_est; //bias is constant
 
 			//1.1 Linearize the motion model and compute Jacobians
 			f_jac = MatrixXd::Identity(15,15);
@@ -125,7 +121,7 @@ public:
 		 */
 		void measurement_update(Matrix<double, 3,3> R_cov,
 														Matrix<double, 3, 1> y){
-
+			std::cout << "Pest " << p_est << "\n";
 			//measurement model jacobian
 			Matrix<double, 3, 15>	h_jac =  MatrixXd::Zero(3,15);
 			h_jac.bottomLeftCorner(3,3) = MatrixXd::Identity(3,3);
@@ -210,13 +206,6 @@ private:
 		// Covariance matrix
 		Matrix<double,15, 15>   p_cov;
 		bool initialized;
-		/*
-		 * Ros stuff
-		 */
-		ros::NodeHandle nh_private_;
-		ros::NodeHandle node_handle_;
-
-		ros::Publisher pose_pub;
 };
 
 #endif //SENSOR_FUSION_ES_EKF_HPP
