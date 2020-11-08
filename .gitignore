@@ -1,7 +1,5 @@
 *.mat
-Photos
 cmake*
 .idea
-matlab
 *.bag
-optimization/
+optimization
