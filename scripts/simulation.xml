@@ -1,0 +1,203 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<root version="2.3.8">
+ <tabbed_widget name="Main Window" parent="main_window">
+  <plotmatrix rows="2" columns="2" tab_name="plot">
+   <plot col="0" row="0" style="Lines">
+    <range left="0.000000" top="5.818726" right="94.199656" bottom="-0.315676"/>
+    <limitY/>
+    <curve R="26" custom_transform="noTransform" G="201" name="/uav/ekf_odom/pose/position/x" B="56"/>
+    <curve R="255" custom_transform="noTransform" G="127" name="/uav/odometry/pose/position/x" B="14"/>
+    <curve R="23" custom_transform="noTransform" G="190" name="/uav/odometry2/pose/position/x" B="207"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="0" row="1" style="Lines">
+    <range left="0.000000" top="0.100000" right="0.000000" bottom="-0.100000"/>
+    <limitY/>
+    <curve R="241" custom_transform="noTransform" G="76" name="/uav/ekf_odom/pose/position/z" B="193"/>
+    <curve R="148" custom_transform="noTransform" G="103" name="/uav/odometry/pose/position/z" B="189"/>
+    <curve R="148" custom_transform="noTransform" G="103" name="/uav/odometry2/pose/position/z" B="189"/>
+    <curve R="214" custom_transform="noTransform" G="39" name="/uav/odometry2/twist/linear/z" B="40"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="0" style="Lines">
+    <range left="0.000000" top="2.013694" right="94.199656" bottom="-0.199163"/>
+    <limitY/>
+    <curve R="255" custom_transform="noTransform" G="127" name="/uav/ekf_odom/pose/position/y" B="14"/>
+    <curve R="241" custom_transform="noTransform" G="76" name="/uav/odometry/pose/position/y" B="193"/>
+    <curve R="188" custom_transform="noTransform" G="189" name="/uav/odometry2/pose/position/y" B="34"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="1" style="Lines">
+    <range left="7964.694315" top="0.102500" right="7973.783909" bottom="-0.097500"/>
+    <limitY/>
+    <curve R="31" custom_transform="noTransform" G="119" name="/uav/odometry2/pose/covariance[0,0]" B="180"/>
+    <curve R="214" custom_transform="noTransform" G="39" name="/uav/odometry2/pose/covariance[2,2]" B="40"/>
+    <transform value="noTransform"/>
+   </plot>
+  </plotmatrix>
+  <plotmatrix rows="2" columns="2" tab_name="plot">
+   <plot col="0" row="0" style="Lines">
+    <range left="0.000000" top="19.931005" right="7974.543106" bottom="-22.479857"/>
+    <limitY/>
+    <curve R="148" custom_transform="noTransform" G="103" name="/uav/ekf_odom/pose/orientation/pitch_deg" B="189"/>
+    <curve R="214" custom_transform="noTransform" G="39" name="/uav/odometry/pose/orientation/pitch_deg" B="40"/>
+    <curve R="241" custom_transform="noTransform" G="76" name="/uav/odometry2/pose/orientation/pitch_deg" B="193"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="0" row="1" style="Lines">
+    <range left="0.000000" top="1.976678" right="7974.543106" bottom="-2.388148"/>
+    <limitY/>
+    <curve R="188" custom_transform="noTransform" G="189" name="/uav/ekf_odom/pose/orientation/yaw_deg" B="34"/>
+    <curve R="255" custom_transform="noTransform" G="127" name="/uav/odometry/pose/orientation/yaw_deg" B="14"/>
+    <curve R="23" custom_transform="noTransform" G="190" name="/uav/odometry2/pose/orientation/yaw_deg" B="207"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="0" style="Lines">
+    <range left="0.000000" top="10.146826" right="7974.543106" bottom="-7.654118"/>
+    <limitY/>
+    <curve R="23" custom_transform="noTransform" G="190" name="/uav/ekf_odom/pose/orientation/roll_deg" B="207"/>
+    <curve R="26" custom_transform="noTransform" G="201" name="/uav/odometry/pose/orientation/roll_deg" B="56"/>
+    <curve R="148" custom_transform="noTransform" G="103" name="/uav/odometry2/pose/orientation/roll_deg" B="189"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="1" style="Lines">
+    <range left="-85496.850476" top="1.000000" right="-85467.659751" bottom="0.000000"/>
+    <limitY/>
+    <transform value="noTransform"/>
+   </plot>
+  </plotmatrix>
+  <plotmatrix rows="2" columns="2" tab_name="plot">
+   <plot col="0" row="0" style="Lines">
+    <range left="0.000000" top="3.505460" right="8001.624643" bottom="-3.040664"/>
+    <limitY/>
+    <curve R="31" custom_transform="noTransform" G="119" name="/uav/ekf_odom/twist/linear/x" B="180"/>
+    <curve R="188" custom_transform="noTransform" G="189" name="/uav/odometry2/twist/linear/x" B="34"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="0" row="1" style="Lines">
+    <range left="7964.694315" top="0.856061" right="8001.624643" bottom="-1.109569"/>
+    <limitY/>
+    <curve R="31" custom_transform="noTransform" G="119" name="/uav/odometry2/twist/linear/y" B="180"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="0" style="Lines">
+    <range left="7964.694315" top="0.387270" right="8001.624643" bottom="-0.275951"/>
+    <limitY/>
+    <curve R="214" custom_transform="noTransform" G="39" name="/uav/odometry2/twist/linear/z" B="40"/>
+    <transform value="noTransform"/>
+   </plot>
+   <plot col="1" row="1" style="Lines">
+    <range left="-85496.850476" top="1.000000" right="-85467.659751" bottom="0.000000"/>
+    <limitY/>
+    <transform value="noTransform"/>
+   </plot>
+  </plotmatrix>
+  <currentPlotMatrix index="2"/>
+ </tabbed_widget>
+ <use_relative_time_offset enabled="1"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <!-- - - - - - - - - - - - - - - -->
+ <Plugins>
+  <plugin ID="DataLoad CSV">
+   <default time_axis=""/>
+  </plugin>
+  <plugin ID="DataLoad ROS bags">
+   <use_header_stamp value="false"/>
+   <use_renaming_rules value="true"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="DataLoad ULog"/>
+  <plugin ID="ROS Topic Subscriber">
+   <use_header_stamp value="false"/>
+   <use_renaming_rules value="true"/>
+   <discard_large_arrays value="true"/>
+   <max_array_size value="100"/>
+  </plugin>
+  <plugin ID="ROS /rosout Visualization" status="idle"/>
+  <plugin ID="ROS Topic Re-Publisher" status="idle"/>
+ </Plugins>
+ <!-- - - - - - - - - - - - - - - -->
+ <previouslyLoaded_Datafiles/>
+ <previouslyLoaded_Streamer name="ROS Topic Subscriber"/>
+ <!-- - - - - - - - - - - - - - - -->
+ <customMathEquations/>
+ <snippets>
+  <snippet language="JS" name="1st_derivative">
+   <global>var prevX = 0
+var prevY = 0</global>
+   <equation>dx = time - prevX
+dy = value - prevY
+prevX = time
+prevY = value
+
+return dy/dx</equation>
+  </snippet>
+  <snippet language="JS" name="1st_order_lowpass">
+   <global>var prevY = 0
+var alpha = 0.1</global>
+   <equation>prevY = alpha * value + (1.-alpha) * prevY
+
+return prevY</equation>
+  </snippet>
+  <snippet language="JS" name="2D_velocity">
+   <global>var prev_x = 0
+var prev_y = 0
+var prev_t = 0</global>
+   <equation>X = $$your_odometry/position/x$$
+Y = $$your_odometry/position/y$$
+
+var dist = sqrt( (X-prev_x)*(X-prev_x) + (Y-prev_y)*(Y-prev_y) )
+var dT = time - prev_t
+
+prev_x = X
+prev_y = Y
+prev_t = time
+
+return dist / dT</equation>
+  </snippet>
+  <snippet language="JS" name="average_two_curves">
+   <global></global>
+   <equation>a = $$PLOT_A$$
+b = $$PLOT_B$$
+
+return (a+b)/2</equation>
+  </snippet>
+  <snippet language="JS" name="integral">
+   <global>var integral = 0</global>
+   <equation>integral += value
+return integral</equation>
+  </snippet>
+  <snippet language="JS" name="rad_to_deg">
+   <global></global>
+   <equation>return value*180/3.1417</equation>
+  </snippet>
+  <snippet language="JS" name="remove_offset">
+   <global>var is_first = true
+var first_value = 0</global>
+   <equation>if (is_first)
+{
+  is_first = false
+  first_value = value
+}
+
+return value - first_value</equation>
+  </snippet>
+  <snippet language="JS" name="yaw_from_quaternion">
+   <global>// source: https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+
+function quaternionToYaw(x, y, z, w)
+{
+  // yaw (z-axis rotation)
+  t1 = 2.0 * (w * z + x * y);
+  t2 = 1.0 - 2.0 * (y * y + z * z);
+  yaw = Math.atan2(t1, t2);
+
+  return yaw
+}</global>
+   <equation>return quaternionToYaw(x, y, z, w);</equation>
+  </snippet>
+ </snippets>
+ <!-- - - - - - - - - - - - - - - -->
+</root>
+
