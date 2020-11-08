@@ -188,7 +188,7 @@ mark_as_advanced(YAMLCPP_INCLUDE_DIR YAMLCPP_LIBRARY)
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide)
 add_executable(sensor_fusion src/main.cpp)
-add_executable(republish_odom src/imu_rescan.cpp)
+add_executable(republish_odom src2/republish_odom.cpp)
 add_executable(sensor_fusion2 src2/sensor_fusion_main.cpp)
 
 ## Rename C++ executable without prefix
