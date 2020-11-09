@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
 
 generate_dynamic_reconfigure_options(
         config/EKF_Q.cfg
-        #...
 )
 
 find_package(Eigen3)

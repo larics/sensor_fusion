@@ -1,6 +1,9 @@
 #include "error_state_ekf.hpp"
 #include "sensor.h"
 #include "imu.h"
+
+#include <dynamic_reconfigure/server.h>
+#include <sensor_fusion/EKF_QConfig.h>
 /*
  * Define and initialize all relevant subscribers and publishers,
  * create a dynamic reconfigure server for sensor and model noise.
@@ -25,6 +28,13 @@ public:
 				sensor_obj_.push_back(new Sensor( params.sensors.at(i),&es_ekf_));
 			}
 
+			dynamic_reconfigure::Server<sensor_fusion::EKF_QConfig> server;
+			dynamic_reconfigure::Server<sensor_fusion::EKF_QConfig>::CallbackType f;
+
+			f = boost::bind(&RosClient::dynamic_reconfigure_callback,
+											this, _1, _2);
+			server.setCallback(f);
+
 			/*
 			 * Waits until all measurements are received then sets the
 			 * Es-Ekf to initialized and sets up the timed update for regular
@@ -43,12 +53,29 @@ public:
 										&RosClient::publish_state,this);
 					break;
 				}
-				ROS_INFO("Now we wait...");
+				ROS_INFO("Now we wait for sensors...");
 				ros::spinOnce();
 				ros::Duration(0.1).sleep();
 			}
-			ROS_INFO("All is well");
 			ros::spin();
+		}
+
+		void dynamic_reconfigure_callback(sensor_fusion::EKF_QConfig &config, uint32_t level) {
+
+			Matrix3d Q_f = MatrixXd::Zero(3,3);
+			Q_f(0,0) = config.Q_acc_x;
+			Q_f(1,1) = config.Q_acc_y;
+			Q_f(2,2) = config.Q_acc_z;
+			Matrix3d Q_w = MatrixXd::Zero(3,3);
+			Q_w(0,0) = config.Q_angular_x;
+			Q_w(1,1) = config.Q_angular_y;
+			Q_w(2,2) = config.Q_angular_z;
+			imu_.setQ(Q_f,Q_w);
+			Matrix3d R = MatrixXd::Zero(3,3);
+			R(0,0) = config.R_px;
+			R(1,1) = config.R_py;
+			R(2,2) = config.R_pz;
+			sensor_obj_.at(0)->setR(R);
 		}
 
 		void publish_state(const ros::TimerEvent& msg){

@@ -33,6 +33,7 @@ public:
 
 		}
 		bool isInit(){return init;}
+		void setR(Matrix3d R){params_.cov.R = R;}
 		void callback_sensor(const nav_msgs::OdometryPtr& msg){
 			Matrix<double, 3, 1> data;
 			data << msg->pose.pose.position.x,
