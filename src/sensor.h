@@ -56,10 +56,16 @@ public:
 													msg->pose.pose.orientation.z});
 
 				init = true;
+				ROS_INFO("Sensor Measurement: Init filter");
 			}
 			else if(es_ekf_->isInit()){
 				es_ekf_->measurement_update(params_.cov.R,
 																		data);
+				Matrix<double,4,1> angle({msg->pose.pose.orientation.w,
+																	msg->pose.pose.orientation.x,
+																	msg->pose.pose.orientation.y,
+																	msg->pose.pose.orientation.z});
+				es_ekf_->angle_measurement_update(params_.cov.R,angle);
 			}
 			else ROS_INFO("Sensor Measurement: Es-Ekf not initialized");
 		}
