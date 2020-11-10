@@ -2,6 +2,8 @@
 #include "ros/ros.h"
 #include "parse_yaml.h"
 #include "ros_client.hpp"
+#include "camera.h"
+
 /*
  * Sensor fusion algorithm based on an error state kalman filter
  * This is the main function where we parse data and initialize the
@@ -30,7 +32,10 @@ int main(int argc, char **argv) {
 							<< "\n\n";
 	}
 
-	RosClient ros_client(params,nh_private);
+	//RosClient ros_client(params,nh_private);
+	CameraParams cameraParams;
+	EsEkf esEkf;
+	Camera camera(cameraParams,&esEkf,nh_private)
 
 	return 0;
 }

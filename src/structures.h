@@ -42,6 +42,14 @@ struct SensorParams{
 		SensorCovariance cov; // correlation matrix of the sensor
 };
 
+struct CameraParams{
+		Matrix<double, 3, 3> rotation_mat;
+		Matrix<double, 3, 1> translation;
+		//TODO add bias
+		bool is_odom;
+		SensorCovariance cov;
+};
+
 struct EsEkfParams{
 		std::vector<SensorParams> sensors;
 		ModelCovariance model;
