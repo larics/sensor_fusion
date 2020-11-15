@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 	//RosClient ros_client(params,nh_private);
 	CameraParams cameraParams;
 	EsEkf esEkf;
-	Camera camera(cameraParams,&esEkf,nh_private)
+	Camera camera(cameraParams,&esEkf,nh_private);
 
 	return 0;
 }

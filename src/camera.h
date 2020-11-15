@@ -6,12 +6,13 @@
 #include "structures.h"
 #include <Eigen/Geometry>
 #include "nav_msgs/Odometry.h"
+#include "geometry_msgs/TransformStamped.h"
 #include "sensor_msgs/Imu.h"
 
 class Camera{
 private:
-		ros::Subscriber acc_sub, gyro_sub, odom_sub;
-		ros::Publisher odom_pub_;
+		ros::Subscriber acc_sub, gyro_sub, odom_sub, imu_sub,pose_sub;
+		ros::Publisher odom_pub_,imu_pub_;
 		ros::NodeHandle node_handle_;
 
 		CameraParams params_;
@@ -21,6 +22,8 @@ private:
 
 		Matrix<double, 3, 1> old_pose_,pose_, acc_,angular_vel_,linear_vel_;
 		Matrix<double, 4, 1> quat_;
+
+		Matrix<double, 3, 1> pose_posix_;
 
 		Matrix<double, 3, 3> rotation_matrix_;
 
@@ -40,15 +43,23 @@ public:
 
 			std::cout << acc_topic << odom_topic << gyro_topic << std::endl;
 
+			imu_sub = node_handle_.subscribe("/mavros/imu/data", 1,
+																			 &Camera::imu_callback, this);
+
 			acc_sub = node_handle_.subscribe(acc_topic, 1,
 																			 &Camera::acc_callback, this);
 			odom_sub = node_handle_.subscribe(odom_topic, 1,
 																			 &Camera::odom_callback, this);
 			gyro_sub = node_handle_.subscribe(gyro_topic, 1,
 																			 &Camera::gyro_callback, this);
+			pose_sub = node_handle_.subscribe("dummy", 1,
+																				&Camera::pose_callback, this);
 
 			odom_pub_ = node_handle_.advertise<nav_msgs::Odometry>
 									("ekf_odom", 1);
+
+			imu_pub_ = node_handle_.advertise<sensor_msgs::Imu>
+							("imu_transformed", 1);
 
 			//Rotation matrix from gyroscope and accelerometer to camera frame
 			rotation_matrix_ = MatrixXd::Zero(3,3);
@@ -196,8 +207,54 @@ public:
 							msg.pose.pose.orientation.z;
 			odom_init_ = true;
 
+		}
+		void imu_callback(const sensor_msgs::Imu& msg){
+			Matrix<double,3,1> acc,vel;
+			acc <<  msg.linear_acceleration.x,
+							msg.linear_acceleration.y,
+							msg.linear_acceleration.z;
+
+			vel << msg.angular_velocity.x,
+							msg.angular_velocity.y,
+							msg.angular_velocity.z;
+
+			Matrix<double,3,3> rot;
+			Matrix<double,3,1> translation;
+			translation << -0.00171191,-0.00013322,-0.00013322;
+			rot << -0.48273718, 0.83398352, 0.26727571,
+							0.00869194, -0.30061343, 0.95370646,
+							0.87572214, 0.46271271, 0.13786835;
+			Quaternion<double> quat(msg.orientation.w,msg.orientation.x,
+													    msg.orientation.y,msg.orientation.z);
+			acc = rot.transpose()*acc;
+			vel = rot.transpose()*vel;
+			Matrix<double,3,3> rot_quat;
+			rot_quat = rot.transpose()*quat.toRotationMatrix();
+			std::cout << "rotation \n" << rot.transpose() << std::endl;
+			Quaternion<double> quat_rotatated(rot_quat);
+			//std::cout << "quat \n" << quat_rotatated << std::endl;
+			sensor_msgs::Imu data;
+			data.angular_velocity.x = vel[0];
+			data.angular_velocity.y = vel[1];
+			data.angular_velocity.z = vel[2];
+
+			data.linear_acceleration.x = acc[0];
+			data.linear_acceleration.y = acc[1];
+			data.linear_acceleration.z = acc[2];
 
 
+			data.orientation.w = quat_rotatated.w();
+			data.orientation.x = quat_rotatated.x();
+			data.orientation.y = quat_rotatated.y();
+			data.orientation.z = quat_rotatated.z();
+
+
+			data.header.stamp = ros::Time::now();
+			imu_pub_.publish(data);
+		}
+
+		void 	pose_callback(const geometry_msgs::TransformStamped& msg){
+			pose_posix_ << 0,0,0;
 		}
 
 

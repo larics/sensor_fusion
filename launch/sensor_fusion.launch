@@ -3,7 +3,11 @@
 <arg name="namespace" default="$(env UAV_NAMESPACE)"/>
 <arg name="motor_speed_topic" default="/red/mavros/rc/out"/>
 <arg name="imu_topic" default="/red/mavros/imu/data"/>
-<arg name="config_yaml" default="$(find sensor_fusion)/config/config_bag.yaml"/>
+<arg name="config_yaml" default="$(find sensor_fusion)/config/clean_config.yaml"/>
+
+  <arg name="acc_topic" default="/camera/accel/sample"/>
+  <arg name="gyro_topic" default="/camera/gyro/sample"/>
+  <arg name="odom_topic" default="/camera/odom/sample"/>
 
 <node pkg="sensor_fusion" type="sensor_fusion" name="sensor_fusion" output="screen" ns="$(arg namespace)">
   <param name="config_yaml"  value="$(arg config_yaml)" />
@@ -11,10 +15,9 @@
   <param name="imu_topic"  value="$(arg imu_topic)" />
   <param name="plot_file_loc"  value="$(find sensor_fusion)/matlab/" />
   <param name="/use_sim_time" value="false"/>
+  <param name="acc_topic"  value="$(arg acc_topic)" />
+  <param name="odom_topic"  value="$(arg odom_topic)" />
+  <param name="gyro_topic"  value="$(arg gyro_topic)" />
 </node>
 
-  <node pkg="rosbag" type="play" name="player"
-        args=" /home/kovac/devel/diplomski_seminar/src/UAV-optimization/data/Offline_testing_bag_2020-09-30-15-24-50.bag"/>
-  <node pkg="rosbag" type="record" name="rosbag_record"
-        args="record -a -o /home/kovac/devel/diplomski_seminar/src/UAV-optimization/data/EKF/EKF"/>
 </launch>
