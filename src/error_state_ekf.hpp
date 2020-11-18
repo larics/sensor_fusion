@@ -34,7 +34,7 @@ public:
 			// dont call measurement update before the first prediction
 
 			// gravity vector
-			g<< 0,0,-9.81;
+			g<< 0,0,-10.3;
 
 			// motion model noise jacobian
 			l_jac=  MatrixXd::Zero(15, 12);
@@ -42,11 +42,11 @@ public:
 							MatrixXd::Identity(12,12);
 
 			// initial state for pose, linear velocity and orientation
-			p_est << 0, 0,0; v_est << 0,0,0; q_est << 1,0,0,0;
+			p_est << 0, 0,0; v_est << 0,0,0; q_est << -1,0,0,0;
 			// initial state for imu accelerometer and gyroscope bias
 			fb_est << 0,0,0; wb_est << 0,0,0;
 			// initital state error is zero (can be anything else)
-			p_cov = MatrixXd::Zero(15,15);
+			p_cov = MatrixXd::Identity(15,15);
 			ROS_INFO("Es EKF init %d",initialized);
 		}
 
@@ -270,7 +270,8 @@ public:
 		}
 
 
-
+		Matrix<double,3,1> getPose(){return p_est;}
+		Matrix<double,4,1> getOrientation(){return q_est;}
 		Matrix<double,10,1 > getState(){
 			Matrix<double,10,1> state;
 			state << p_est,v_est,q_est;
