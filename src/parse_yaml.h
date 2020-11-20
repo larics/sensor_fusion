@@ -40,9 +40,8 @@ EsEkfParams parse_yaml(std::string config_file){
 		 * To get transforamtion from sensor link to base link
 		 */
 		rotation = config[id.at(i)+"_rotation"].as<std::vector<double>>();
-		sensor.rotation_mat = AngleAxisd(rotation.at(0), Vector3d::UnitX())
-											 	* AngleAxisd(rotation.at(1), Vector3d::UnitY())
-												* AngleAxisd(rotation.at(2), Vector3d::UnitZ());
+		Matrix<double,3,3> Rot(rotation.data());
+		sensor.rotation_mat = Rot;
 
 		translation = config[id.at(i)+"_translation"].as<std::vector<double>>();
 		sensor.translation <<  translation.at(0),
@@ -57,6 +56,31 @@ EsEkfParams parse_yaml(std::string config_file){
 
 		params.sensors.push_back(sensor);
 	}
+
+	CameraParams cameraParams;
+
+	std::vector<double> acc = config["camera_acc_cov"].as<std::vector<double>>();
+	std::vector<double> lin = config["camera_lin_vel_cov"].as<std::vector<double>>();
+	std::vector<double> ang = config["camera_ang_vel_cov"].as<std::vector<double>>();
+	std::vector<double> ori = config["camera_orientation_cov"].as<std::vector<double>>();
+	std::vector<double> pose = config["camera_pose_cov"].as<std::vector<double>>();
+	for (int i = 0; i < 3; ++i) {
+		cameraParams.acc_cov.R(i,i) = acc.at(i);
+		cameraParams.ang_vel_cov.R(i,i) = ang.at(i);
+		cameraParams.lin_vel_cov.R(i,i) = lin.at(i);
+		cameraParams.orientation_cov.R(i,i) = ori.at(i);
+		cameraParams.pose_cov.R(i,i) = pose.at(i);
+	}
+	std::vector<double> cam_rotation = config["camera_rotation"].as<std::vector<double>>();
+	Matrix<double,3,3> Rot_cam(cam_rotation.data());
+	cameraParams.rotation_mat = Rot_cam;
+	std::vector<double> cam_translation = config["camera_translation"].as<std::vector<double>>();
+	Matrix<double,3,1> D(cam_translation.data());
+	cameraParams.translation = D;
+	cameraParams.is_odom = config["camera_odom"].as<int>();
+
+	params.camera = cameraParams;
+
 	return params;
 }
 

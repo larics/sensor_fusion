@@ -15,13 +15,13 @@ private:
 		ros::Publisher odom_pub_,imu_pub_;
 		ros::NodeHandle node_handle_;
 
-		CameraParams params_;
+		EsEkfParams params_;
 
 		EsEkf* es_ekf_;
-		bool odom_init_,gyro_init_, acc_init_;
+		bool odom_init_,gyro_init_, acc_init_,posix_init_,first_camera_measurement_;
 
 		Matrix<double, 3, 1> old_pose_,pose_, acc_,angular_vel_,linear_vel_;
-		Matrix<double, 4, 1> quat_;
+		Matrix<double, 4, 1> quat_,old_quat_;
 
 		Matrix<double, 3, 1> pose_posix_;
 
@@ -31,10 +31,12 @@ private:
 
 
 public:
-		Camera(CameraParams params, EsEkf* es_ekf,
+		Camera(EsEkfParams params, EsEkf* es_ekf,
 					 ros::NodeHandle& nh_private):
 					 params_(params),es_ekf_(es_ekf),
-					 acc_init_(false),gyro_init_(false),odom_init_(false){
+					 acc_init_(false),gyro_init_(false),
+					 odom_init_(false),posix_init_(false),
+					 first_camera_measurement_(true){
 
 			std::string acc_topic,odom_topic,gyro_topic;
 			nh_private.getParam("acc_topic", acc_topic);
@@ -76,29 +78,163 @@ public:
 			 * It has the lowest rate so we call the prediction here.
 			 */
 
-			std::cout << "ovo je ovo "<< acc_init_ <<  odom_init_ << gyro_init_ << std::endl;
 			acc_ << msg.linear_acceleration.x,
 							msg.linear_acceleration.y,
 							msg.linear_acceleration.z;
+			acc_ = params_.camera.rotation_mat * acc_;
+		}
+
+
+		void gyro_callback(const sensor_msgs::Imu& msg){
+			/*
+			 * Obtain the angular velocities measurements
+			 */
+
+			angular_vel_ << msg.angular_velocity.x,
+											msg.angular_velocity.y,
+											msg.angular_velocity.z;
+
+			angular_vel_ = params_.camera.rotation_mat * angular_vel_;
+			gyro_init_ = true;
+		}
+
+		void odom_callback(const nav_msgs::Odometry& msg){
+			/*
+			 * Get pose, linear velocities and orientation
+			 */
+			linear_vel_ << msg.twist.twist.linear.x,
+										msg.twist.twist.linear.y,
+										msg.twist.twist.linear.z;
+			if(params_.camera.is_odom && first_camera_measurement_){
+				// first call
+				ROS_WARN("odom i nije inicijalizirano");
+				old_pose_ << msg.pose.pose.position.x,
+										 msg.pose.pose.position.y,
+										 msg.pose.pose.position.z;
+
+				old_quat_ << msg.pose.pose.orientation.w,
+										 msg.pose.pose.orientation.x,
+										 msg.pose.pose.orientation.y,
+										 msg.pose.pose.orientation.z;
+				first_camera_measurement_ = false;
+
+				es_ekf_->setPose(old_pose_);
+				es_ekf_->setQuat(old_quat_);
+				es_ekf_->setVel(linear_vel_);
+			}
+
+			else if (params_.camera.is_odom && !first_camera_measurement_){
+				ROS_WARN("odom i inicijalizirano");
+				pose_ << msg.pose.pose.position.x,
+								 msg.pose.pose.position.y,
+								 msg.pose.pose.position.z;
+
+				quat_ << msg.pose.pose.orientation.w,
+								 msg.pose.pose.orientation.x,
+								 msg.pose.pose.orientation.y,
+								 msg.pose.pose.orientation.z;
+
+				quat_ = quat_ - old_quat_;
+				pose_ = pose_ - old_pose_; // delta pose
+
+				old_pose_ << msg.pose.pose.position.x,
+								     msg.pose.pose.position.y,
+								     msg.pose.pose.position.z;
+
+				old_quat_ << msg.pose.pose.orientation.w,
+										 msg.pose.pose.orientation.x,
+										 msg.pose.pose.orientation.y,
+										 msg.pose.pose.orientation.z;
+			}
+			else if(!params_.camera.is_odom && !odom_init_){
+				ROS_WARN("nije odom i nije inicijalizirano");
+				pose_ << msg.pose.pose.position.x,
+								 msg.pose.pose.position.y,
+								 msg.pose.pose.position.z;
+
+				quat_ << msg.pose.pose.orientation.w,
+								 msg.pose.pose.orientation.x,
+								 msg.pose.pose.orientation.y,
+								 msg.pose.pose.orientation.z;
+
+				es_ekf_->setPose(pose_);
+				es_ekf_->setQuat(quat_);
+				es_ekf_->setVel(linear_vel_);
+
+				odom_init_ = true;
+			}
+			else{
+				ROS_WARN("nije odom i inicijalizirano");
+				pose_ << msg.pose.pose.position.x,
+								msg.pose.pose.position.y,
+								msg.pose.pose.position.z;
+
+				quat_ << msg.pose.pose.orientation.w,
+								msg.pose.pose.orientation.x,
+								msg.pose.pose.orientation.y,
+								msg.pose.pose.orientation.z;
+			}
+
+			//TRANSFORM THE DATA
+			/*
+			pose_ = params_.camera.rotation_mat * pose_ + params_.camera.translation;
+			Quaternion<double> Q(quat_(0),quat_(1),
+												   quat_(2),quat_(3));
+			Matrix3d R;
+			R = params_.camera.rotation_mat * Q.toRotationMatrix();
+			Q = R;
+			quat_ << Q.w(),Q.x(),Q.y(),Q.z();
+			linear_vel_ = params_.camera.rotation_mat * linear_vel_;
+			 */
+		}
+
+		void 	pose_callback(const geometry_msgs::TransformStamped& msg){
+			posix_init_ = true;
+			pose_posix_ << msg.transform.translation.x,
+							msg.transform.translation.y,
+							msg.transform.translation.z;
+
+			pose_posix_ = params_.sensors.at(0).rotation_mat * pose_posix_;
+
+		}
+
+		void imu_callback(const sensor_msgs::Imu& msg){
+			ROS_INFO("IMU CALLBACK %f",pose_(0));
+			acc_ << msg.linear_acceleration.x,
+							msg.linear_acceleration.y,
+							msg.linear_acceleration.z;
+			angular_vel_ << msg.angular_velocity.x,
+											msg.angular_velocity.y,
+											msg.angular_velocity.z;
 			if (!acc_init_){
 				old_time_ = msg.header.stamp.toSec();
 				acc_init_ = true;
+				return;
 			}
 			else if(odom_init_ and gyro_init_){
+				odom_init_ = false;
 				double delta_t =  msg.header.stamp.toSec() - old_time_;
 				old_time_ = msg.header.stamp.toSec();
 				//TODO here we prediction, lowest rate of publishing
-				Matrix<double, 3, 3> R = MatrixXd::Identity(3,3);
 
-				acc_ = rotation_matrix_ * acc_;
-				angular_vel_ = rotation_matrix_*angular_vel_;
+				//acc_ = rotation_matrix_ * acc_;
+				//angular_vel_ = rotation_matrix_*angular_vel_;
 
-				es_ekf_->prediction(acc_, 0.01*R,
-												angular_vel_, 0.01*R, delta_t);
+				es_ekf_->prediction(acc_, params_.model.Q_f,
+														angular_vel_, params_.model.Q_w,delta_t);
 
-				es_ekf_->measurement_update(0.01*R,pose_);
-				es_ekf_->angle_measurement_update(0.01*R,quat_);
-				es_ekf_->velocity_measurement_update(R,linear_vel_);
+				if (params_.camera.is_odom){
+					std::cout << "odom" << std::endl;
+					es_ekf_->measurement_update(params_.camera.pose_cov.R,pose_+es_ekf_->getPose());
+					es_ekf_->angle_measurement_update(params_.camera.orientation_cov.R,quat_+es_ekf_->getOrientation());
+				}
+				else{
+					std::cout << "nije odom" << std::endl;
+					es_ekf_->measurement_update(params_.camera.pose_cov.R,pose_);
+					es_ekf_->angle_measurement_update(params_.camera.orientation_cov.R,quat_);
+				}
+				es_ekf_->velocity_measurement_update(params_.camera.lin_vel_cov.R,
+																				 linear_vel_);
 
 				Matrix<double,10,1> state = es_ekf_->getState();
 				nav_msgs::Odometry ekf_pose_;
@@ -114,150 +250,28 @@ public:
 				ekf_pose_.pose.pose.orientation.x = state[7];
 				ekf_pose_.pose.pose.orientation.y = state[8];
 				ekf_pose_.pose.pose.orientation.z = state[9];
-				ekf_pose_.twist.twist.angular.x = angular_vel_[0];
-				ekf_pose_.twist.twist.angular.y = angular_vel_[1];
-				ekf_pose_.twist.twist.angular.z = angular_vel_[2];
+				ekf_pose_.twist.twist.angular.x   = angular_vel_[0];
+				ekf_pose_.twist.twist.angular.y   = angular_vel_[1];
+				ekf_pose_.twist.twist.angular.z   = angular_vel_[2];
 
 				ekf_pose_.header.stamp = ros::Time::now();
 				odom_pub_.publish(ekf_pose_);
-
-
 			}
-		}
-
-
-		void gyro_callback(const sensor_msgs::Imu& msg){
-			/*
-			 * Obtain the angular velocities measurements
-			 */
-		//TODO transform the data to match camera output
-
-			angular_vel_ << msg.angular_velocity.x,
-											msg.angular_velocity.y,
-											msg.angular_velocity.z;
-			gyro_init_ = true;
-		}
-
-		void odom_callback(const nav_msgs::Odometry& msg){
-			/*
-			 * Get pose, linear velocities and orientation
-			 */
-
-			if(! odom_init_){
-				linear_vel_ << msg.twist.twist.linear.x,
-								msg.twist.twist.linear.y,
-								msg.twist.twist.linear.z;
-				pose_ << msg.pose.pose.position.x,
-								msg.pose.pose.position.y,
-								msg.pose.pose.position.z;
-
-				quat_ << msg.pose.pose.orientation.w,
-								msg.pose.pose.orientation.x,
-								msg.pose.pose.orientation.y,
-								msg.pose.pose.orientation.z;
-
-
-				old_pose_ << msg.pose.pose.position.x,
-								msg.pose.pose.position.y,
-								msg.pose.pose.position.z;
-				es_ekf_->setQuat(quat_);
-				es_ekf_->setVel(linear_vel_);
-				es_ekf_->setPose(pose_);
-				odom_init_ = true;
-			}
-			else if (params_.is_odom){
-
-				pose_ << msg.pose.pose.position.x - old_pose_[0],
-								 msg.pose.pose.position.y - old_pose_[1],
-								 msg.pose.pose.position.z - old_pose_[2];
-
-				//TODO for quaternions
-				quat_ << msg.pose.pose.orientation.w,
-								msg.pose.pose.orientation.x,
-								msg.pose.pose.orientation.y,
-								msg.pose.pose.orientation.z;
-
-				old_pose_ << msg.pose.pose.position.x,
-										 msg.pose.pose.position.y,
-										 msg.pose.pose.position.z;
-				odom_init_ = true;
-			}
-
 			else{
-				pose_ << msg.pose.pose.position.x,
-								 msg.pose.pose.position.y,
-								 msg.pose.pose.position.z;
+				double delta_t =  msg.header.stamp.toSec() - old_time_;
+				old_time_ = msg.header.stamp.toSec();
+				//TODO here we prediction, lowest rate of publishing
 
-				quat_ << msg.pose.pose.orientation.w,
-								 msg.pose.pose.orientation.x,
-								 msg.pose.pose.orientation.y,
-								 msg.pose.pose.orientation.z;
-				odom_init_ = true;
+				//acc_ = rotation_matrix_ * acc_;
+				//angular_vel_ = rotation_matrix_*angular_vel_;
+
+				es_ekf_->prediction(acc_, params_.model.Q_f,
+														angular_vel_, params_.model.Q_w,
+														delta_t);
+
 			}
-			linear_vel_ << msg.twist.twist.linear.x,
-										 msg.twist.twist.linear.y,
-										 msg.twist.twist.linear.z;
-			pose_ << msg.pose.pose.position.x,
-							msg.pose.pose.position.y,
-							msg.pose.pose.position.z;
-
-			quat_ << msg.pose.pose.orientation.w,
-							msg.pose.pose.orientation.x,
-							msg.pose.pose.orientation.y,
-							msg.pose.pose.orientation.z;
-			odom_init_ = true;
-
+			return;
 		}
-		void imu_callback(const sensor_msgs::Imu& msg){
-			Matrix<double,3,1> acc,vel;
-			acc <<  msg.linear_acceleration.x,
-							msg.linear_acceleration.y,
-							msg.linear_acceleration.z;
-
-			vel << msg.angular_velocity.x,
-							msg.angular_velocity.y,
-							msg.angular_velocity.z;
-
-			Matrix<double,3,3> rot;
-			Matrix<double,3,1> translation;
-			translation << -0.00171191,-0.00013322,-0.00013322;
-			rot << -0.48273718, 0.83398352, 0.26727571,
-							0.00869194, -0.30061343, 0.95370646,
-							0.87572214, 0.46271271, 0.13786835;
-			Quaternion<double> quat(msg.orientation.w,msg.orientation.x,
-													    msg.orientation.y,msg.orientation.z);
-			acc = rot.transpose()*acc;
-			vel = rot.transpose()*vel;
-			Matrix<double,3,3> rot_quat;
-			rot_quat = rot.transpose()*quat.toRotationMatrix();
-			std::cout << "rotation \n" << rot.transpose() << std::endl;
-			Quaternion<double> quat_rotatated(rot_quat);
-			//std::cout << "quat \n" << quat_rotatated << std::endl;
-			sensor_msgs::Imu data;
-			data.angular_velocity.x = vel[0];
-			data.angular_velocity.y = vel[1];
-			data.angular_velocity.z = vel[2];
-
-			data.linear_acceleration.x = acc[0];
-			data.linear_acceleration.y = acc[1];
-			data.linear_acceleration.z = acc[2];
-
-
-			data.orientation.w = quat_rotatated.w();
-			data.orientation.x = quat_rotatated.x();
-			data.orientation.y = quat_rotatated.y();
-			data.orientation.z = quat_rotatated.z();
-
-
-			data.header.stamp = ros::Time::now();
-			imu_pub_.publish(data);
-		}
-
-		void 	pose_callback(const geometry_msgs::TransformStamped& msg){
-			pose_posix_ << 0,0,0;
-		}
-
-
 
 };
 

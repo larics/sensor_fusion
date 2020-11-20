@@ -23,19 +23,28 @@ int main(int argc, char **argv) {
 
 	EsEkfParams params = parse_yaml(config_file);
 
+
 	std::cout << "\n\nModel parameters:\n Q_f \n" << params.model.Q_f << "\n"
 						<< "Q_w\n" << params.model.Q_w << "\n\n";
 	for (int i = 0; i < params.sensors.size(); ++i) {
 		std::cout << "Topic: " << params.sensors.at(i).topic << "\n"
 							<< "Id: " <<  params.sensors.at(i).id << "\n"
-							<< "R: \n" <<  params.sensors.at(i).cov.R
+							<< "R: \n" <<  params.sensors.at(i).cov.R << "\n"
+							<< "Rotation:\n" << params.sensors.at(i).rotation_mat << "\n"
+							<< "Translation:\n" << params.sensors.at(i).translation
 							<< "\n\n";
 	}
 
+
 	//RosClient ros_client(params,nh_private);
-	CameraParams cameraParams;
+
+	std::cout << "rotation \n" << params.camera.rotation_mat << "\n"
+						<< "translation  " << params.camera.translation.transpose() << "\n"
+						<< "is odom " << params.camera.is_odom << std::endl;
+
+
 	EsEkf esEkf;
-	Camera camera(cameraParams,&esEkf,nh_private);
+	Camera camera(params,&esEkf,nh_private);
 
 	return 0;
 }

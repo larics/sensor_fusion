@@ -47,11 +47,12 @@ struct CameraParams{
 		Matrix<double, 3, 1> translation;
 		//TODO add bias
 		bool is_odom;
-		SensorCovariance cov;
+		SensorCovariance acc_cov,ang_vel_cov,lin_vel_cov,pose_cov,orientation_cov;
 };
 
 struct EsEkfParams{
 		std::vector<SensorParams> sensors;
+		CameraParams camera;
 		ModelCovariance model;
 };
 

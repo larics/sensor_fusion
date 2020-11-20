@@ -46,7 +46,8 @@ public:
 			// initial state for imu accelerometer and gyroscope bias
 			fb_est << 0,0,0; wb_est << 0,0,0;
 			// initital state error is zero (can be anything else)
-			p_cov = MatrixXd::Identity(15,15);
+			p_cov = MatrixXd::Zero(15,15);
+			//p_cov.bottomLeftCorner(6,6) =MatrixXd::Zero(6,6);
 			ROS_INFO("Es EKF init %d",initialized);
 		}
 
@@ -108,6 +109,9 @@ public:
 			p_cov = f_jac * p_cov * f_jac.transpose() +
 							l_jac * q_cov * l_jac.transpose();
 			ROS_INFO("Prediction");
+			std::cout << "Fb_est -> " << fb_est.transpose() << "\n";
+			std::cout << "wb_est -> " << wb_est.transpose() << "\n";
+
 		}
 
 
@@ -168,10 +172,11 @@ public:
 
 			Matrix<double,3,3> R_cov = var_sensor;
 			Matrix<double, 15, 3> K= MatrixXd::Zero(15,3);
-			Matrix<double, 3, 15> h_jac_angle =MatrixXd::Zero(3,15);
+			Matrix<double, 3, 15> h_jac_angle = MatrixXd::Zero(3,15);
 			h_jac_angle(0,6) = 1; //quat -> w
 			h_jac_angle(1,7) = 1; //quat -> x
 			h_jac_angle(2,8) = 1; //quat -> y
+
 
 			K = p_cov * h_jac_angle.transpose() *
 					(h_jac_angle* p_cov * h_jac_angle.transpose()
@@ -216,7 +221,7 @@ public:
 							K*R_cov*K.transpose();
 			Matrix<double, 10, 1> state;
 			state << p_est,v_est,q_est;
-			ROS_INFO("Angle measurement");
+			ROS_INFO("Angle measurement %f",angle_axis.angle());
 			return state;
 		}
 
