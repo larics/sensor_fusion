@@ -11,19 +11,19 @@
 
 class Camera{
 private:
-		ros::Subscriber acc_sub, gyro_sub, odom_sub, imu_sub,pose_sub;
+		ros::Subscriber acc_sub, gyro_sub, odom_sub, imu_sub,pose_sub, gps_sub;
 		ros::Publisher odom_pub_,imu_pub_;
 		ros::NodeHandle node_handle_;
 
 		EsEkfParams params_;
 
 		EsEkf* es_ekf_;
-		bool odom_init_,gyro_init_, acc_init_,posix_init_,first_camera_measurement_;
+		bool odom_init_,gyro_init_, gps_init_, acc_init_,posix_init_,first_camera_measurement_;
 
 		Matrix<double, 3, 1> old_pose_,pose_, acc_,angular_vel_,linear_vel_;
 		Matrix<double, 4, 1> quat_,old_quat_;
 
-		Matrix<double, 3, 1> pose_posix_;
+		Matrix<double, 3, 1> pose_posix_,gps_pose_;
 
 		Matrix<double, 3, 3> rotation_matrix_;
 
@@ -36,7 +36,7 @@ public:
 					 params_(params),es_ekf_(es_ekf),
 					 acc_init_(false),gyro_init_(false),
 					 odom_init_(false),posix_init_(false),
-					 first_camera_measurement_(true){
+					 first_camera_measurement_(true),gps_init_(false){
 
 			std::string acc_topic,odom_topic,gyro_topic;
 			nh_private.getParam("acc_topic", acc_topic);
@@ -56,6 +56,8 @@ public:
 																			 &Camera::gyro_callback, this);
 			pose_sub = node_handle_.subscribe("dummy", 1,
 																				&Camera::pose_callback, this);
+			gps_sub = node_handle_.subscribe("/mavros/global_position/local", 1,
+																				&Camera::gps_callback, this);
 
 			odom_pub_ = node_handle_.advertise<nav_msgs::Odometry>
 									("ekf_odom", 1);
@@ -146,7 +148,7 @@ public:
 										 msg.pose.pose.orientation.y,
 										 msg.pose.pose.orientation.z;
 			}
-			else if(!params_.camera.is_odom && !odom_init_){
+			else if(!params_.camera.is_odom && !first_camera_measurement_){
 				ROS_WARN("nije odom i nije inicijalizirano");
 				pose_ << msg.pose.pose.position.x,
 								 msg.pose.pose.position.y,
@@ -162,6 +164,7 @@ public:
 				es_ekf_->setVel(linear_vel_);
 
 				odom_init_ = true;
+				first_camera_measurement_ = false;
 			}
 			else{
 				ROS_WARN("nije odom i inicijalizirano");
@@ -173,10 +176,11 @@ public:
 								msg.pose.pose.orientation.x,
 								msg.pose.pose.orientation.y,
 								msg.pose.pose.orientation.z;
+				odom_init_ = true;
 			}
 
 			//TRANSFORM THE DATA
-			/*
+
 			pose_ = params_.camera.rotation_mat * pose_ + params_.camera.translation;
 			Quaternion<double> Q(quat_(0),quat_(1),
 												   quat_(2),quat_(3));
@@ -185,7 +189,6 @@ public:
 			Q = R;
 			quat_ << Q.w(),Q.x(),Q.y(),Q.z();
 			linear_vel_ = params_.camera.rotation_mat * linear_vel_;
-			 */
 		}
 
 		void 	pose_callback(const geometry_msgs::TransformStamped& msg){
@@ -193,6 +196,16 @@ public:
 			pose_posix_ << msg.transform.translation.x,
 							msg.transform.translation.y,
 							msg.transform.translation.z;
+
+			pose_posix_ = params_.sensors.at(0).rotation_mat * pose_posix_;
+
+		}
+
+		void 	gps_callback(const nav_msgs::Odometry& msg){
+			gps_init_ = true;
+			gps_pose_<< msg.pose.pose.position.x,
+												 msg.pose.pose.position.y,
+							           msg.pose.pose.position.z;
 
 			pose_posix_ = params_.sensors.at(0).rotation_mat * pose_posix_;
 
@@ -211,14 +224,14 @@ public:
 				acc_init_ = true;
 				return;
 			}
-			else if(odom_init_ and gyro_init_){
-				odom_init_ = false;
+			else if(odom_init_ and gps_init_){
+				odom_init_ = false; gps_init_ = false;
 				double delta_t =  msg.header.stamp.toSec() - old_time_;
 				old_time_ = msg.header.stamp.toSec();
-				//TODO here we prediction, lowest rate of publishing
+				//TODO we need a transform from imu to global
 
-				//acc_ = rotation_matrix_ * acc_;
-				//angular_vel_ = rotation_matrix_*angular_vel_;
+				acc_ = params_.camera.rotation_mat * acc_;
+				angular_vel_ = params_.camera.rotation_mat * angular_vel_;
 
 				es_ekf_->prediction(acc_, params_.model.Q_f,
 														angular_vel_, params_.model.Q_w,delta_t);
@@ -233,6 +246,7 @@ public:
 					es_ekf_->measurement_update(params_.camera.pose_cov.R,pose_);
 					es_ekf_->angle_measurement_update(params_.camera.orientation_cov.R,quat_);
 				}
+				//es_ekf_->measurement_update(params_.sensors.at(0).cov.R,gps_pose_);
 				es_ekf_->velocity_measurement_update(params_.camera.lin_vel_cov.R,
 																				 linear_vel_);
 
@@ -262,8 +276,8 @@ public:
 				old_time_ = msg.header.stamp.toSec();
 				//TODO here we prediction, lowest rate of publishing
 
-				//acc_ = rotation_matrix_ * acc_;
-				//angular_vel_ = rotation_matrix_*angular_vel_;
+				acc_ = params_.camera.rotation_mat * acc_;
+				angular_vel_ = params_.camera.rotation_mat * angular_vel_;
 
 				es_ekf_->prediction(acc_, params_.model.Q_f,
 														angular_vel_, params_.model.Q_w,
