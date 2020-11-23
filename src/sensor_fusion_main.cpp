@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 
 	//RosClient ros_client(params,nh_private);
 
-	std::cout << "rotation \n" << params.camera.rotation_mat << "\n"
+	std::cout << "CAMERA to World:\nrotation \n" << params.camera.rotation_mat << "\n"
 						<< "translation  " << params.camera.translation.transpose() << "\n"
 						<< "is odom " << params.camera.is_odom << std::endl;
 

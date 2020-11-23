@@ -34,7 +34,7 @@ public:
 			// dont call measurement update before the first prediction
 
 			// gravity vector
-			g<< 0,0,-10.3;
+			g<< 0,0,-10.34;
 
 			// motion model noise jacobian
 			l_jac=  MatrixXd::Zero(15, 12);
@@ -46,8 +46,9 @@ public:
 			// initial state for imu accelerometer and gyroscope bias
 			fb_est << 0,0,0; wb_est << 0,0,0;
 			// initital state error is zero (can be anything else)
-			p_cov = MatrixXd::Zero(15,15);
-			//p_cov.bottomLeftCorner(6,6) =MatrixXd::Zero(6,6);
+			p_cov = MatrixXd::Identity(15,15);
+			//p_cov.bottomRightCorner(6,6) =MatrixXd::Zero(6,6);
+			std::cout << "p_ccov-> \n" << p_cov;
 			ROS_INFO("Es EKF init %d",initialized);
 		}
 
@@ -72,6 +73,12 @@ public:
 			Matrix3d transform_imu = q.toRotationMatrix();
 			p_est = p_est + delta_t*v_est +
 							pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g);
+
+//			std::cout << "p_est-> " << p_est.transpose() << '\n'
+//								<< "v_est-> " << v_est.transpose() << '\n'
+//								<< "pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g);"
+//								<< (pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g)).transpose() << '\n';
+
 			v_est = v_est + delta_t * (transform_imu * (imu_f-fb_est) + g);
 
 			Quaternion<double> imu_q = euler2quat({delta_t*(imu_w[0]-wb_est[0]),
@@ -79,7 +86,7 @@ public:
 																						 delta_t*(imu_w[2]-wb_est[2])});
 
 			fb_est = fb_est; wb_est = wb_est; //bias is constant
-
+//			ROS_INFO("info of fb_est %f %f",fb_est[1],wb_est[1]);
 			//1.1 Linearize the motion model and compute Jacobians
 			f_jac = MatrixXd::Identity(15,15);
 			f_jac.block<3,3>(0,3) = delta_t* MatrixXd::Identity(3,3);
@@ -109,8 +116,6 @@ public:
 			p_cov = f_jac * p_cov * f_jac.transpose() +
 							l_jac * q_cov * l_jac.transpose();
 			ROS_INFO("Prediction");
-			std::cout << "Fb_est -> " << fb_est.transpose() << "\n";
-			std::cout << "wb_est -> " << wb_est.transpose() << "\n";
 
 		}
 
@@ -161,7 +166,8 @@ public:
 							* p_cov *
 							(MatrixXd::Identity(15,15) - K*h_jac).transpose() +
 							K*R_cov*K.transpose();
-
+			std::cout << "fb_est-> " << fb_est.transpose() << '\n'
+								<< "wb_est-> " << wb_est.transpose() << '\n';
 			ROS_INFO("Pose measurement");
 
 		}
@@ -287,11 +293,13 @@ public:
 			p_est << initial_state(0),
 							initial_state(1),
 							initial_state(2);
+			std::cout << "p_est " << p_est << std::endl;
 		}
 		void setVel(Matrix<double, 3, 1> initial_state){
 			v_est << initial_state(0),
 							initial_state(1),
 							initial_state(2);
+			std::cout << "v_est " << v_est << std::endl;
 		}
 		void setQuat(Matrix<double, 4, 1> initial_state){
 			q_est << initial_state(0),
