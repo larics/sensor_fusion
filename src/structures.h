@@ -46,7 +46,7 @@ struct CameraParams{
 		Matrix<double, 3, 3> rotation_mat;
 		Matrix<double, 3, 1> translation;
 		//TODO add bias
-		bool is_odom;
+		bool use_camera_imu;
 		SensorCovariance acc_cov,ang_vel_cov,lin_vel_cov,pose_cov,orientation_cov;
 };
 

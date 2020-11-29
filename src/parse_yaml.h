@@ -77,7 +77,7 @@ EsEkfParams parse_yaml(std::string config_file){
 	std::vector<double> cam_translation = config["camera_translation"].as<std::vector<double>>();
 	Matrix<double,3,1> D(cam_translation.data());
 	cameraParams.translation = D;
-	cameraParams.is_odom = config["camera_odom"].as<int>();
+	cameraParams.use_camera_imu = config["camera_use_imu"].as<int>();
 
 	params.camera = cameraParams;
 

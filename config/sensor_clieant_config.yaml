@@ -1,0 +1,23 @@
+Q_acc_x: 0.001
+Q_acc_y: 0.001
+Q_acc_z: 0.001
+Q_angular_x: 0.001
+Q_angular_y: 0.001
+Q_angular_z: 0.001
+
+camera_acc_cov: [1,1,1]
+camera_ang_vel_cov: [1,1,1]
+camera_lin_vel_cov: [1,1,1]
+camera_pose_cov: [0.01,0.01,0.1]
+camera_orientation_cov: [0.1,0.1,0.1]
+camera_rotation: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
+camera_translation: [0, 0, 0]
+camera_use_imu: 1
+#position sensor params
+Sensor_prefix: [pozyx]
+#front
+pozyx_R: [10, 15, 20] # correlation matrix of the sensor
+pozyx_odom: 0
+pozyx_topic: /uav/odom_new
+pozyx_rotation: [0.0, 1.0, 0.0,1.0, 0.0, 0,0, 0.0, 1.0] # transformation matrix row major
+pozyx_translation: [-5.071980,-3.987154,-0.2]

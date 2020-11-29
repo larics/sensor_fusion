@@ -2,8 +2,8 @@
 #include "ros/ros.h"
 #include "parse_yaml.h"
 #include "ros_client.hpp"
-#include "camera.h"
-
+//#include "camera.h"
+#include "sensor_client.cpp"
 /*
  * Sensor fusion algorithm based on an error state kalman filter
  * This is the main function where we parse data and initialize the
@@ -40,12 +40,13 @@ int main(int argc, char **argv) {
 
 	std::cout << "CAMERA to World:\nrotation \n" << params.camera.rotation_mat << "\n"
 						<< "translation  " << params.camera.translation.transpose() << "\n"
-						<< "is odom " << params.camera.is_odom << std::endl;
+						<< "is odom " << params.camera.use_camera_imu << std::endl;
 
 
-	EsEkf esEkf;
-	Camera camera(params,&esEkf,nh_private);
-
+	//EsEkf esEkf;
+	//Camera camera(params,&esEkf,nh_private);
+	SensorClient sensors(params,nh_private);
+	sensors.cartographer_callback();
 	return 0;
 }
 
