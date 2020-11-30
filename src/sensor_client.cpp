@@ -9,7 +9,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
 				new_measurement_camera_acc_(false),
 				new_measurement_imu_(false),
 				new_measurement_posix_(false),
-				outlier_constant_(0.5){
+				outlier_constant_(params.outlier_constant){
 	std::string acc_topic,camera_odom_topic,
 					gyro_topic,imu_topic,posix_topic,es_ekf_topic;
 	nh_private.getParam("acc_topic", acc_topic);
@@ -33,6 +33,9 @@ SensorClient::SensorClient(const EsEkfParams& params,
 
 	estimate_pub_ = node_handle_.advertise<nav_msgs::Odometry>(
 					es_ekf_topic, 1);
+
+	pozyx_state_pub_ = node_handle_.advertise<std_msgs::Bool>("/pozyx_state",1);
+	camera_state_pub_ = node_handle_.advertise<std_msgs::Bool>("/camera_state",1);
 
 	while (true){
 		if (((this->camera_imu_ready() && params.camera.use_camera_imu) or
@@ -185,11 +188,14 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 		if(outlier_detection(this->get_camera_pose())) {
 			measurement = true;
 			es_ekf_.camera_measurement_update(params_.camera.pose_cov.R,
-																				this->get_camera_pose());
+															 this->get_camera_pose());
 			es_ekf_.angle_measurement_update(params_.camera.orientation_cov.R,
 																			 this->get_camera_orientation());
+			camera_state_pub_.publish(true);
 		}
-		else ROS_WARN("Outlier detected in cam measurement");
+		else {
+			camera_state_pub_.publish(false);
+			ROS_WARN("Outlier detected in cam measurement"); }
 	}
 
 		if (this->pozyx_ready()){
@@ -200,8 +206,11 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 				ekf_pose_.twist.twist.angular.x   = get_pozyx_pose()[0];
 				ekf_pose_.twist.twist.angular.y   = get_pozyx_pose()[1];
 				ekf_pose_.twist.twist.angular.z   = get_pozyx_pose()[2];
+				pozyx_state_pub_.publish(true);
 			}
-			else ROS_WARN("Outlier detected in pozyx measurement");
+			else {
+				pozyx_state_pub_.publish(false);
+				ROS_WARN("Outlier detected in pozyx measurement"); }
 		}
 
 	if (measurement or prediciton){

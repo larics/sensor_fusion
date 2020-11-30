@@ -54,6 +54,7 @@ struct EsEkfParams{
 		std::vector<SensorParams> sensors;
 		CameraParams camera;
 		ModelCovariance model;
+		double outlier_constant;
 };
 
 class EsEkfState{

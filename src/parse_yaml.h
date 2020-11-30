@@ -81,6 +81,7 @@ EsEkfParams parse_yaml(std::string config_file){
 
 	params.camera = cameraParams;
 
+	params.outlier_constant = config["outlier_constant"].as<double>();
 	return params;
 }
 

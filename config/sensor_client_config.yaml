@@ -5,6 +5,8 @@ Q_angular_x: 0.001
 Q_angular_y: 0.001
 Q_angular_z: 0.001
 
+outlier_constant: 0.35
+
 camera_acc_cov: [1,1,1]
 camera_ang_vel_cov: [1,1,1]
 camera_lin_vel_cov: [1,1,1]

@@ -9,6 +9,7 @@
 #include "nav_msgs/Odometry.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "sensor_msgs/Imu.h"
+#include "std_msgs/Bool.h"
 
 class SensorClient {
 public:
@@ -87,7 +88,10 @@ private:
 										camera_odom_sub_,imu_sub_,
 										posix_sub_, cartographer_sub_;
 
-		ros::Publisher estimate_pub_;
+		ros::Publisher estimate_pub_,
+										camera_state_pub_,
+										pozyx_state_pub_,
+										cartographer_state_pub_;
 		ros::Timer update_timer_;
 		EsEkfParams params_;
 		EsEkf es_ekf_;
