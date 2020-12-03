@@ -17,6 +17,7 @@ private:
 
 		EsEkfParams params_;
 
+		int i;
 		EsEkf* es_ekf_;
 		bool odom_init_,gyro_init_, gps_init_, acc_init_,posix_init_,first_camera_measurement_;
 
@@ -72,7 +73,12 @@ public:
 			rotation_matrix_(2,1) = 1;
 			std::cout << rotation_matrix_ << "\n";
 			pose_posix_ << 0,0,0;
-			ros::spin();
+			i = 0;
+//			ros::AsyncSpinner spinner(0);
+//			spinner.start();
+//			ros::waitForShutdown();
+			ros::MultiThreadedSpinner spinner(0); // Use 4 threads
+			spinner.spin(); // spin() will not return until the node has been shutdown
 		}
 
 		void acc_callback(const sensor_msgs::Imu& msg){
@@ -133,7 +139,7 @@ public:
 										<< "real pose  -> " << (pose_+es_ekf_->getPose()).transpose() << '\n';
 				}
 				else{
-					es_ekf_->measurement_update(params_.camera.pose_cov.R,pose_);
+					es_ekf_->camera_measurement_update(params_.camera.pose_cov.R,pose_);
 				}
 				es_ekf_->angle_measurement_update(params_.camera.orientation_cov.R,
 																					quat_);
@@ -151,10 +157,8 @@ public:
 				ekf_pose_.pose.pose.orientation.x = state[7];
 				ekf_pose_.pose.pose.orientation.y = state[8];
 				ekf_pose_.pose.pose.orientation.z = state[9];
-				ekf_pose_.header.stamp = ros::Time::now();
-				odom_pub_.publish(ekf_pose_);
 			}
-			if(posix_init_){
+			if(false){
 				ROS_INFO("Posix update");
 				posix_init_ = false;
 				es_ekf_->measurement_update(params_.sensors.at(0).cov.R,
@@ -177,6 +181,8 @@ public:
 				ekf_pose_.twist.twist.angular.y   = pose_posix_[1];
 				ekf_pose_.twist.twist.angular.z   = pose_posix_[2];
 			}
+			ekf_pose_.header.stamp = ros::Time::now();
+			odom_pub_.publish(ekf_pose_);
 		}
 
 
@@ -213,9 +219,9 @@ public:
 								msg.pose.pose.orientation.y,
 								msg.pose.pose.orientation.z;
 
-				es_ekf_->setPose(params_.camera.rotation_mat*old_pose_+params_.camera.translation);
+				es_ekf_->setPose(old_pose_);
 				es_ekf_->setQuat(old_quat_);
-				es_ekf_->setVel(params_.camera.rotation_mat*linear_vel_);
+				es_ekf_->setVel(linear_vel_);
 				return;
 			}
 			if (params_.camera.is_odom){
@@ -234,7 +240,12 @@ public:
 										 msg.pose.pose.position.z;
 			}
 			else{
-				odom_init_ = true;
+				i++;
+				if(i > 30){
+					odom_init_ = true;
+					i = 0;
+				}
+
 				ROS_INFO("ODOMETRY %d",params_.camera.is_odom);
 				pose_ << msg.pose.pose.position.x,
 								msg.pose.pose.position.y,

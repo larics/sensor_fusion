@@ -1,6 +1,8 @@
 #ifndef SENSOR_FUSION_ES_EKF_HPP
 #define SENSOR_FUSION_ES_EKF_HPP
 
+#define N_STATE 24
+
 #include <iostream>
 #include <Eigen/Geometry>
 
@@ -18,12 +20,15 @@
  *
  * We use imu acceleration and angular velocity measurements as
  * inputs for the prediction model.
- * For the update model we use position measurements and correct
+ * For the update model we use pose measurements and correct
  * the predicted state with the errors.
- * For the code to work properly it is expected that imu measurements
- * have at least a 3-4 times higher rate than the sensors used for
- * pose measurements (eg. imu: 100hz and sensor: 25 hz )
+ * For the implementation to work as expected it is expected
+ * that imu measurements have at least a few times higher
+ * rate than the sensors used for pose measurements
+ * (eg. imu: 100hz and sensor: 25 hz )
  */
+
+
 
 
 using namespace Eigen;
@@ -34,10 +39,10 @@ public:
 			// dont call measurement update before the first prediction
 
 			// gravity vector
-			g<< 0,0,-10.34;
+			g<< 0,0,-10.5;
 
 			// motion model noise jacobian
-			l_jac=  MatrixXd::Zero(18, 12);
+			l_jac=  MatrixXd::Zero(N_STATE, 12);
 			l_jac.bottomLeftCorner(12,12) =
 							MatrixXd::Identity(12,12);
 
@@ -46,11 +51,14 @@ public:
 			// initial state for imu accelerometer and gyroscope bias
 			fb_est << 0,0,0; wb_est << 0,0,0;
 			// initital state error is zero (can be anything else)
-			p_cov = MatrixXd::Identity(18,18);
+			p_cov = MatrixXd::Identity(N_STATE,N_STATE);
 			//p_cov.bottomRightCorner(6,6) =MatrixXd::Zero(6,6);
 			std::cout << "p_ccov-> \n" << p_cov;
 			ROS_INFO("Es EKF init %d",initialized);
 			camera_drift << 0,0,0;
+			pozyx_drift << 0,0,0;
+			Matrix<double,3,3> I(MatrixXd::Identity(3,3));
+			q_camera = I;
 		}
 
 		void setInit(){initialized = true;}
@@ -78,7 +86,8 @@ public:
 //			std::cout << "p_est-> " << p_est.transpose() << '\n'
 //								<< "v_est-> " << v_est.transpose() << '\n'
 //								<< "pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g);"
-//								<< (pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g)).transpose() << '\n';
+//								<< (pow(delta_t,2)/2 * (transform_imu * (imu_f-fb_est) + g)).transpose()
+//								<< '\n';
 
 			v_est = v_est + delta_t * (transform_imu * (imu_f-fb_est) + g);
 
@@ -89,7 +98,7 @@ public:
 			fb_est = fb_est; wb_est = wb_est; //bias is constant
 //			ROS_INFO("info of fb_est %f %f",fb_est[1],wb_est[1]);
 			//1.1 Linearize the motion model and compute Jacobians (Scola (270))
-			f_jac = MatrixXd::Identity(18,18);
+			f_jac = MatrixXd::Identity(N_STATE,N_STATE);
 			f_jac.block<3,3>(0,3) = delta_t* MatrixXd::Identity(3,3);
 			f_jac.block<3,3>(3,6) =
 							-skew_symetric(transform_imu * (imu_f - fb_est)) * delta_t;
@@ -129,16 +138,16 @@ public:
 		void measurement_update(Matrix<double, 3,3> R_cov,
 														Matrix<double, 3, 1> y){
 			//measurement model jacobian
-			Matrix<double, 3, 18>	h_jac =  MatrixXd::Zero(3,18);
+			Matrix<double, 3, N_STATE>	h_jac =  MatrixXd::Zero(3,N_STATE);
 			h_jac.bottomLeftCorner(3,3) = MatrixXd::Identity(3,3);
 			//K -> Kalman gain
-			Matrix<double, 18, 3> K= MatrixXd::Zero(18,3);
+			Matrix<double, N_STATE, 3> K= MatrixXd::Zero(N_STATE,3);
 			K = p_cov * h_jac.transpose() *
 					(h_jac* p_cov * h_jac.transpose()
 					 + R_cov).inverse();
 
 			// delta_x -> Error state
-			Matrix<double, 18, 1> delta_x;
+			Matrix<double, N_STATE, 1> delta_x;
 			//3.2 Compute error state
 			delta_x = K * (y - p_est);
 
@@ -164,9 +173,9 @@ public:
 			fb_est = fb_est +  delta_x.block<3,1>(9,0);
 			wb_est = wb_est +  delta_x.block<3,1>(12,0);
 			camera_drift = camera_drift + delta_x.block<3,1>(15,0);
-			p_cov = (MatrixXd::Identity(18,18) - K*h_jac)
+			p_cov = (MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac)
 							* p_cov *
-							(MatrixXd::Identity(18,18) - K*h_jac).transpose() +
+							(MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac).transpose() +
 							K*R_cov*K.transpose();
 //			std::cout << "fb_est-> " << fb_est.transpose() << '\n'
 //								<< "wb_est-> " << wb_est.transpose() << '\n';
@@ -177,20 +186,93 @@ public:
 		void camera_measurement_update(Matrix<double, 3,3> R_cov,
 																   Matrix<double, 3, 1> y){
 			//measurement model jacobian
-			Matrix<double, 3, 18>	h_jac =  MatrixXd::Zero(3,18);
+			Matrix<double, 3, N_STATE>	h_jac =  MatrixXd::Zero(3,N_STATE);
 			h_jac.bottomLeftCorner(3,3) = MatrixXd::Identity(3,3);
-			h_jac.bottomRightCorner(3,3) = MatrixXd::Identity(3,3);
-			//K -> Kalman gain
-			Matrix<double, 18, 3> K= MatrixXd::Zero(18,3);
+			h_jac(0,15) = -1;
+			h_jac(1,16) = -1;
+			h_jac(2,17) = -1;
+			h_jac.bottomRightCorner(3,3) = skew_symetric(q_camera.toRotationMatrix()*y);
+//			//K -> Kalman gain
+			Matrix<double, N_STATE, 3> K= MatrixXd::Zero(N_STATE,3);
 			K = p_cov * h_jac.transpose() *
 					(h_jac* p_cov * h_jac.transpose()
 					 + R_cov).inverse();
 
 			// delta_x -> Error state
-			Matrix<double, 18, 1> delta_x;
+			Matrix<double, N_STATE, 1> delta_x;
 			//3.2 Compute error state
-			delta_x = K * (y - (p_est+camera_drift));
-			std::cout << "Delta pose ------>" << (y - (p_est+camera_drift)).transpose() <<  '\n';
+			//NA KRIVOM MJESTU JE ROTACIJAKSA MATRICA TREBA BIT NA Y
+			delta_x = K * ((q_camera.toRotationMatrix() * y + camera_drift) - p_est);
+			std::cout << "delta "
+								<< ((q_camera.toRotationMatrix() * y + camera_drift) - p_est).transpose()
+								<< "\n";
+			std::cout << " K \n" << K << '\n';
+			std::cout << "  h_jac\n" << h_jac.transpose() << '\n';
+			std::cout << "Rotation matrix ------>\n"
+								<< q_camera.toRotationMatrix()
+								<< "\nTranslation" << camera_drift.transpose() << "\n";
+			// 3.3 Correct predicted state
+			p_est = p_est + delta_x.block<3,1>(0,0);
+			v_est = v_est + delta_x.block<3,1>(3,0);
+			Matrix<double,4,1> quat_from_aa = axixs_angle2quat(
+							delta_x.block<3,1>(6,0));
+
+			Quaternion<double> q(quat_from_aa(0),
+													 quat_from_aa(1),
+													 quat_from_aa(2),
+													 quat_from_aa(3));
+			Quaternion<double> q_est_obj(q_est(0),q_est(1),
+																	 q_est(2),q_est(3));
+			q_est_obj = q*q_est_obj;
+			q_est_obj = q_est_obj.normalized();
+			q_est << q_est_obj.w(),
+							q_est_obj.x(),
+							q_est_obj.y(),
+							q_est_obj.z();
+
+			// get to error rotation of the camrea frma to imu frame
+			quat_from_aa = axixs_angle2quat(delta_x.block<3,1>(21,0));
+			Quaternion<double> q2(quat_from_aa(0),
+														quat_from_aa(1),
+														quat_from_aa(2),
+														quat_from_aa(3));
+
+			q_camera = q2*q_camera;
+
+			fb_est = fb_est +  delta_x.block<3,1>(9,0);
+			wb_est = wb_est +  delta_x.block<3,1>(12,0);
+			camera_drift = camera_drift + delta_x.block<3,1>(15,0);
+			pozyx_drift = pozyx_drift + delta_x.block<3,1>(18,0);
+			std::cout << "Camera Drift -----------------> " << camera_drift.transpose() << '\n';
+			p_cov = (MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac)
+							* p_cov *
+							(MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac).transpose() +
+							K*R_cov*K.transpose();
+//			std::cout << "fb_est-> " << fb_est.transpose() << '\n'
+//								<< "wb_est-> " << wb_est.transpose() << '\n';
+			ROS_INFO("Camera Pose measurement");
+
+		}
+
+		void pozyx_measurement_update(Matrix<double, 3,3> R_cov,
+																	 Matrix<double, 3, 1> y){
+			//measurement model jacobian
+			Matrix<double, 3, N_STATE>	h_jac =  MatrixXd::Zero(3,N_STATE);
+			h_jac.bottomLeftCorner(3,3) = MatrixXd::Identity(3,3);
+			h_jac(0,18) = 1;
+			h_jac(1,19) = 1;
+			h_jac(2,20) = 1;
+			//K -> Kalman gain
+			Matrix<double, N_STATE, 3> K= MatrixXd::Zero(N_STATE,3);
+			K = p_cov * h_jac.transpose() *
+					(h_jac* p_cov * h_jac.transpose()
+					 + R_cov).inverse();
+
+			// delta_x -> Error state
+			Matrix<double, N_STATE, 1> delta_x;
+			//3.2 Compute error state
+			delta_x = K * (y - (p_est+pozyx_drift));
+			std::cout << "Delta pose ------>" << (y - (p_est+pozyx_drift)).transpose() <<  '\n';
 			std::cout << "Delta pose old -->" << (y - p_est).transpose() <<  '\n';
 			// 3.3 Correct predicted state
 			p_est = p_est + delta_x.block<3,1>(0,0);
@@ -214,14 +296,15 @@ public:
 			fb_est = fb_est +  delta_x.block<3,1>(9,0);
 			wb_est = wb_est +  delta_x.block<3,1>(12,0);
 			camera_drift = camera_drift + delta_x.block<3,1>(15,0);
-			std::cout << "Camera Drift -----------------> " << camera_drift.transpose() << '\n';
-			p_cov = (MatrixXd::Identity(18,18) - K*h_jac)
+			pozyx_drift = pozyx_drift + delta_x.block<3,1>(18,0);
+			std::cout << "Pozyx Drift -----------------> " << pozyx_drift.transpose() << '\n';
+			p_cov = (MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac)
 							* p_cov *
-							(MatrixXd::Identity(18,18) - K*h_jac).transpose() +
+							(MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac).transpose() +
 							K*R_cov*K.transpose();
 //			std::cout << "fb_est-> " << fb_est.transpose() << '\n'
 //								<< "wb_est-> " << wb_est.transpose() << '\n';
-			ROS_INFO("Pose measurement");
+			ROS_INFO("Pozyx Pose measurement");
 
 		}
 
@@ -234,21 +317,32 @@ public:
 
 
 			Matrix<double,3,3> R_cov = var_sensor;
-			Matrix<double, 18, 3> K= MatrixXd::Zero(18,3);
-			Matrix<double, 3, 18> h_jac_angle = MatrixXd::Zero(3,18);
-			h_jac_angle(0,6) = 1; //quat -> w
-			h_jac_angle(1,7) = 1; //quat -> x
-			h_jac_angle(2,8) = 1; //quat -> y
+			Matrix<double, N_STATE, 3> K= MatrixXd::Zero(N_STATE,3);
+			Matrix<double, 3, N_STATE> h_jac_angle = MatrixXd::Zero(3,N_STATE);
+//			h_jac_angle(0,6) = 1; //quat -> w
+//			h_jac_angle(1,7) = 1; //quat -> x
+//			h_jac_angle(2,8) = 1; //quat -> y
+			h_jac_angle.block<3,3>(0,6) =
+			        MatrixXd::Identity(3,3);
+			h_jac_angle.block<3,3>(0,21) =
+							MatrixXd::Identity(3,3);
+
+			std::cout << "ANGLE H JACOB\n" << h_jac_angle.transpose() << "\n";
+
 
 
 			K = p_cov * h_jac_angle.transpose() *
 					(h_jac_angle* p_cov * h_jac_angle.transpose()
 					 + R_cov).inverse();
-			Matrix<double, 18, 1> delta_x;
+			Matrix<double, N_STATE, 1> delta_x;
 			//3.2 Compute error state
 			Quaternion<double> q_est_obj(q_est(0),q_est(1),
 																	 q_est(2),q_est(3));
 			Quaternion<double> delta_quat(y[0],y[1],y[2],y[3]);
+
+			std::cout << "mesurement of angle: " << delta_quat.coeffs() << "\n";
+			delta_quat = q_camera*delta_quat*q_camera.inverse();
+			std::cout << "Transformed of angle: " << delta_quat.coeffs() << "\n";
 			delta_quat.normalize();
 			q_est_obj.normalize();
 			delta_quat = q_est_obj.inverse()*delta_quat;
@@ -274,14 +368,22 @@ public:
 							q_est_obj.y(),
 							q_est_obj.z();
 
-			//TODO add pcov i retun it
+			// get to error rotation of the camrea frma to imu frame
+			quat_from_aa = axixs_angle2quat(delta_x.block<3,1>(21,0));
+			Quaternion<double> q2(quat_from_aa(0),
+														quat_from_aa(1),
+														quat_from_aa(2),
+														quat_from_aa(3));
+
+			q_camera = q2*q_camera;
 
 			fb_est = fb_est +  delta_x.block<3,1>(9,0);
 			wb_est = wb_est +  delta_x.block<3,1>(12,0);
 			camera_drift = camera_drift + delta_x.block<3,1>(15,0);
-			p_cov = (MatrixXd::Identity(18,18) - K*h_jac_angle)
+			pozyx_drift = pozyx_drift + delta_x.block<3,1>(18,0);
+			p_cov = (MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac_angle)
 							* p_cov *
-							(MatrixXd::Identity(18,18) - K*h_jac_angle).transpose() +
+							(MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac_angle).transpose() +
 							K*R_cov*K.transpose();
 			Matrix<double, 10, 1> state;
 			state << p_est,v_est,q_est;
@@ -293,18 +395,18 @@ public:
 		void velocity_measurement_update(Matrix<double, 3,3> R_cov,
 																		 Matrix<double, 3, 1> y){
 			//measurement model jacobian
-			Matrix<double, 3, 18>	h_jac =  MatrixXd::Zero(3,18);
+			Matrix<double, 3, N_STATE>	h_jac =  MatrixXd::Zero(3,N_STATE);
 			h_jac(0,3) = 1;
 			h_jac(1,4) = 1;
 			h_jac(2,5) = 1;
 			//K -> Kalman gain
-			Matrix<double, 18, 3> K= MatrixXd::Zero(18,3);
+			Matrix<double, N_STATE, 3> K= MatrixXd::Zero(N_STATE,3);
 			K = p_cov * h_jac.transpose() *
 					(h_jac* p_cov * h_jac.transpose()
 					 + R_cov).inverse();
 
 			// delta_x -> Error state
-			Matrix<double, 18, 1> delta_x;
+			Matrix<double, N_STATE, 1> delta_x;
 			//3.2 Compute error state
 			delta_x = K * (y - v_est);
 
@@ -330,9 +432,10 @@ public:
 			fb_est = fb_est +  delta_x.block<3,1>(9,0);
 			wb_est = wb_est +  delta_x.block<3,1>(12,0);
 			camera_drift = camera_drift + delta_x.block<3,1>(15,0);
-			p_cov = (MatrixXd::Identity(18,18) - K*h_jac)
+			pozyx_drift = pozyx_drift + delta_x.block<3,1>(18,0);
+			p_cov = (MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac)
 							* p_cov *
-							(MatrixXd::Identity(18,18) - K*h_jac).transpose() +
+							(MatrixXd::Identity(N_STATE,N_STATE) - K*h_jac).transpose() +
 							K*R_cov*K.transpose();
 
 			ROS_INFO("Velocity measurement");
@@ -342,6 +445,8 @@ public:
 
 		Matrix<double,3,1> getPose(){return p_est;}
 		Matrix<double,4,1> getOrientation(){return q_est;}
+		Quaterniond getCameraOrientation(){return q_camera;}
+		Matrix<double,3,1> getCameraTranslation(){return camera_drift;}
 		Matrix<double,10,1 > getState(){
 			Matrix<double,10,1> state;
 			state << p_est,v_est,q_est;
@@ -376,14 +481,16 @@ private:
 		// Gravity vector
 		Matrix<double, 3, 1>    g;
 		// motion model noise jacobian
-		Matrix<double, 18, 12>	l_jac;
+		Matrix<double, N_STATE, 12>	l_jac;
 		// Linearized motion model Jacobian
-		Matrix<double, 18, 18>	f_jac;
+		Matrix<double, N_STATE, N_STATE>	f_jac;
 		//States we estamte
-		Matrix<double, 3, 1>	  p_est,v_est,fb_est,wb_est,camera_drift;
+		Matrix<double, 3, 1>	  p_est,v_est,fb_est,wb_est,
+														camera_drift, pozyx_drift;
 		Matrix<double, 4, 1>	  q_est;
+		Quaterniond q_camera;
 		// Covariance matrix
-		Matrix<double,18, 18>   p_cov;
+		Matrix<double,N_STATE, N_STATE>   p_cov;
 		bool initialized;
 };
 

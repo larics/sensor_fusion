@@ -1,17 +1,17 @@
 Q_acc_x: 0.001
 Q_acc_y: 0.001
-Q_acc_z: 0.001
+Q_acc_z: 0.01
 Q_angular_x: 0.001
 Q_angular_y: 0.001
 Q_angular_z: 0.001
 
-outlier_constant: 0.35
+outlier_constant: 0.45
 
 camera_acc_cov: [1,1,1]
 camera_ang_vel_cov: [1,1,1]
 camera_lin_vel_cov: [1,1,1]
-camera_pose_cov: [0.01,0.01,0.1]
-camera_orientation_cov: [0.1,0.1,0.1]
+camera_pose_cov: [0.01,0.01,0.01]
+camera_orientation_cov: [0.01,0.01,0.01]
 camera_rotation: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
 camera_translation: [0, 0, 0]
 camera_use_imu: 1
