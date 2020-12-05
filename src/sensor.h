@@ -6,6 +6,7 @@
 #include "structures.h"
 #include <Eigen/Geometry>
 #include "nav_msgs/Odometry.h"
+
 using namespace Eigen;
 
 /*
@@ -18,57 +19,55 @@ class Sensor{
 		ros::Subscriber sensor_sub;
 		ros::NodeHandle node_handle_;
 		SensorParams params_;
-		EsEkf* es_ekf_;
-		bool init;
+		Translation3d pose_;
+		Quaternion<double> quat_;
+
+		bool fresh_measurement_;
 
 public:
-		Sensor(SensorParams params, EsEkf* es_ekf):
-		es_ekf_(es_ekf), params_(params)
+		Sensor(SensorParams params):params_(params),
+		fresh_measurement_(false)
 		{
 			// if its the first measurement update the intial pose
 			// and dont call measurement update
-			init = false;
 			sensor_sub = node_handle_.subscribe(params_.topic, 1,
-																					&Sensor::callback_sensor, this);
+																 &Sensor::callback_sensor, this);
 
 		}
-		bool isInit(){return init;}
 		void setR(Matrix3d R){params_.cov.R = R;}
+
 		void callback_sensor(const nav_msgs::OdometryPtr& msg){
-			Matrix<double, 3, 1> data;
-			data << msg->pose.pose.position.x,
-							msg->pose.pose.position.y,
-							msg->pose.pose.position.z;
-			//data = params_.rotation_mat * data + params_.translation;
+			fresh_measurement_ = true;
 
-			if(!init){
-				//Set initial state
-				//TODO this has to be done in one step with a
-				// a defined structure for to es-ekf state.
-				// Add tramsformation to all data
-				es_ekf_->setPose(data);
-				es_ekf_->setVel({msg->twist.twist.linear.x,
-												 msg->twist.twist.linear.y,
-												 msg->twist.twist.linear.z});
-				es_ekf_->setQuat({msg->pose.pose.orientation.w,
-													msg->pose.pose.orientation.x,
-													msg->pose.pose.orientation.y,
-													msg->pose.pose.orientation.z});
+			pose_.x() = msg->pose.pose.position.x;
+			pose_.y() = msg->pose.pose.position.y;
+			pose_.z() = msg->pose.pose.position.z;
 
-				init = true;
-				ROS_INFO("Sensor Measurement: Init filter");
-			}
-			else if(es_ekf_->isInit()){
-				es_ekf_->measurement_update(params_.cov.R,
-																		data);
-				Matrix<double,4,1> angle({msg->pose.pose.orientation.w,
-																	msg->pose.pose.orientation.x,
-																	msg->pose.pose.orientation.y,
-																	msg->pose.pose.orientation.z});
-				es_ekf_->angle_measurement_update(params_.cov.R,angle);
-			}
-			else ROS_INFO("Sensor Measurement: Es-Ekf not initialized");
+			quat_.w() = msg->pose.pose.orientation.w;
+			quat_.x() = msg->pose.pose.orientation.x;
+			quat_.y() = msg->pose.pose.orientation.y;
+			quat_.z() = msg->pose.pose.orientation.z;
 		}
+
+		Matrix<double,3,1> getPose(){
+			fresh_measurement_ = false;
+			return (params_.rotation_mat*pose_).translation()
+							+ params_.translation;
+		}
+
+		Matrix<double,4,1> getOrientation(){
+			//TODO add transformation
+			fresh_measurement_ = false;
+			return {quat_.w(),quat_.x(),
+							quat_.y(),quat_.z()};
+		}
+
+		bool newMeasurement(){return fresh_measurement_;}
+		bool isOrientationSensor(){return params_.is_orientation_sensor;}
+		bool estimateDrift(){return params_.estimate_drift;}
+
+		Matrix3d getRPose(){return params_.cov.R;}
+		Matrix3d getROrientation(){return params_.cov.R_orientation;}
 
 		~Sensor() {
 			std::cout << "SENSOR DESTRUCTOR" << '\n';

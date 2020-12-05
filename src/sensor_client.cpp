@@ -9,6 +9,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
 				new_measurement_camera_acc_(false),
 				new_measurement_imu_(false),
 				new_measurement_posix_(false),
+				imu_(params.model,nh_private),
 				outlier_constant_(params.outlier_constant){
 	std::string acc_topic,camera_odom_topic,
 					gyro_topic,imu_topic,posix_topic,es_ekf_topic;

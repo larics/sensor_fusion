@@ -25,9 +25,10 @@ struct ModelCovariance{
 };
 
 struct SensorCovariance{
-		Matrix<double,3,3> R;
+		Matrix<double,3,3> R,R_orientation;
 		SensorCovariance(){
 			R = MatrixXd::Zero(3,3);
+			R_orientation = MatrixXd::Zero(3,3);
 		}
 };
 struct SensorParams{
@@ -35,6 +36,9 @@ struct SensorParams{
 		std::string topic;
 		// 1 if its an odom sensor, gives delta values not absolute values
 		bool is_odom;
+
+		bool is_orientation_sensor;
+		bool estimate_drift;
 
 		Matrix<double, 3, 3> rotation_mat;
 		Matrix<double, 3, 1> translation;

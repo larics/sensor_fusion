@@ -10,6 +10,8 @@
 #include "geometry_msgs/TransformStamped.h"
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Bool.h"
+#include "imu.h"
+#include "sensor.h"
 
 class SensorClient {
 public:
@@ -95,6 +97,9 @@ private:
 		ros::Timer update_timer_;
 		EsEkfParams params_;
 		EsEkf es_ekf_;
+		Imu imu_;
+		std::vector<Sensor*> sensor_pointer_vec_;
+
 		ros::NodeHandle node_handle_;
 		bool start_flag_,start_imu_,start_camera_imu_;
 		bool new_measurement_camera_odom_,

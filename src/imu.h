@@ -15,9 +15,9 @@ class Imu{
 		ros::NodeHandle node_handle_;
 
 public:
-		Imu(ModelCovariance cov, EsEkf* es_ekf,
+		Imu(ModelCovariance cov,
 			ros::NodeHandle& nh_private):
-			init_(false),es_ekf_(es_ekf),
+			init_(false),fresh_measurement_(false),delta_t_(0.0),
 			Q_f_(cov.Q_f),Q_w_(cov.Q_w){
 			std::string imu_topic;
 			nh_private.getParam("imu_topic", imu_topic);
@@ -31,23 +31,20 @@ public:
 				init_ = true;
 				old_time = msg->header.stamp.toSec();
 			}
-			else if (es_ekf_->isInit()){
-				Matrix<double, 3, 1> imu_f,imu_w;
-				Matrix<double, 4, 1> imu_angle;
-				imu_f << msg->linear_acceleration.x,
+			else{
+				fresh_measurement_ = true;
+				imu_f_ << msg->linear_acceleration.x,
 								msg->linear_acceleration.y,
 								msg->linear_acceleration.z;
 
-				imu_w << msg->angular_velocity.x,
+				imu_w_ << msg->angular_velocity.x,
 								msg->angular_velocity.y,
 								msg->angular_velocity.z;
 
-				double delta_t = msg->header.stamp.toSec() - old_time;
+				delta_t_ = msg->header.stamp.toSec() - old_time;
 				old_time = msg->header.stamp.toSec();
 
-				es_ekf_->prediction(imu_f,Q_f_,imu_w,Q_w_,delta_t);
 			}
-			else ROS_INFO("Imu Prediction: Es-Ekf not initialized");
 		}
 
 		void setQ(Matrix<double,3,3> Q_f,Matrix<double,3,3> Q_w){
@@ -55,15 +52,26 @@ public:
 			Q_f_ = Q_f;
 		}
 		bool isInit(){return init_;}
+		bool newMeasurement(){return fresh_measurement_;}
+		Matrix<double,3,1> get_acc(){
+			fresh_measurement_ = false;
+			return imu_f_;
+		}
+		Matrix<double,3,1> get_angular_vel(){
+			fresh_measurement_ = false;
+			return imu_w_;
+		}
+		double getDeltaT(){return delta_t_;}
+
 private:
 		// Noise matrix
 		Matrix<double,3,3> Q_f_, Q_w_;
 
 		// bool fresh measurement
-		bool init_;
-
+		bool init_,fresh_measurement_;
+		Matrix<double,3,1> imu_f_,imu_w_;
+		double delta_t_;
 		double old_time;
-		EsEkf* es_ekf_;
 };
 
 
