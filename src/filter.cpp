@@ -150,3 +150,64 @@ void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov,
 
 
 }
+
+void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
+																		Quaterniond y){
+	//Sola equation:(278)
+	Matrix<double,4,N_STATES+1> H =
+					MatrixXd::Zero(4,N_STATES+1);
+	//We measure quaternions directly this a standard
+	// measurement model Jacobian for an extended Kalman filter
+	H.block<4,4>(0,6) =
+	        MatrixXd::Identity(4,4);
+
+	Matrix<double,N_STATES+1,N_STATES> H_dx =
+					MatrixXd::Identity(N_STATES+1,N_STATES);
+	//Scola equation:(280)
+	H_dx.block<4,3>(6,6) = firstOrderApprox(q_est);
+
+	Matrix<double,4,N_STATES> h_jac =
+					MatrixXd::Zero(4,N_STATES);
+
+	h_jac = H*H_dx;
+	Matrix<double, N_STATES, 4> K= MatrixXd::Zero(N_STATE,4);
+	K = p_cov * h_jac.transpose() *
+			(h_jac * p_cov * h_jac.transpose()
+			 + R_cov).inverse();
+
+
+	Matrix<double,N_STATES,1> delta_x;
+	Matrix<double,4,1> delta_quat;
+	delta_quat << y.w()-q_est.w(),
+								y.x()-q_est.x(),
+								y.y()-q_est.y(),
+								y.z()-q_est.z();
+	delta_x = K * (delta_quat);
+
+
+	p_est.vector() = p_est.vector() +
+					delta_x.block<3,1>(0,0);
+	v_est.vector() = v_est.vector() +
+					delta_x.block<3,1>(3,0);
+
+	Matrix<double,4,1> quat_from_aa = axixs_angle2quat(
+					delta_x.block<3,1>(6,0));
+	Quaterniond q(quat_from_aa(0),
+								quat_from_aa(1),
+								quat_from_aa(2),
+								quat_from_aa(3));
+
+	q_est = q*q_est;
+	q_est.normalize();
+
+	fb_est.vector() = fb_est.vector() +
+					delta_x.block<3,1>(9,0);
+	wb_est.vector() = wb_est.vector() +
+					delta_x.block<3,1>(12,0);
+
+	p_cov = (MatrixXd::Identity(N_STATES,N_STATES) - K*h_jac)
+					* p_cov *
+					(MatrixXd::Identity(N_STATES,N_STATES)
+					 - K*h_jac).transpose() +
+					K*R_cov*K.transpose();
+}

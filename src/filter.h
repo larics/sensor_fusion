@@ -71,6 +71,9 @@ public:
 		void poseMeasurementUpdate(Matrix3d R_cov,
 															 Matrix<double,3,1> y);
 
+		void angleMeasurementUpdate(Matrix<double,4,4> R_cov,
+																Quaterniond y);
+
 		void measurementUpdateDrift();
 
 		// Setters
@@ -87,7 +90,8 @@ public:
 		// Getters
 		Matrix<double,10,1> getState(){
 			Matrix<double,10,1> state;
-			state << p_est.vector(),v_est.vector(),q_est.w(),q_est.x(),q_est.y(),q_est.z();
+			state << p_est.vector(),v_est.vector(),
+								q_est.w(),q_est.x(),q_est.y(),q_est.z();
 			return state;
 		}
 		Matrix<double,3,1> getP(){return p_est.vector();}

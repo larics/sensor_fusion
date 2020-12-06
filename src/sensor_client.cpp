@@ -197,8 +197,8 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 			measurement = true;
 			es_ekf_.poseMeasurementUpdate(params_.camera.pose_cov.R,
 																		 this->get_camera_pose());
-//			es_ekf_.angle_measurement_update(params_.camera.orientation_cov.R,
-//																			 this->get_camera_orientation());
+			es_ekf_.angleMeasurementUpdate(MatrixXd::Identity(4,4)*0.0001,
+																			 this->get_camera_orientation_quat());
 			camera_state_pub_.publish(true);
 //			ekf_pose_.twist.twist.angular.x = (es_ekf_.getCameraOrientation().toRotationMatrix() *
 //																				this->get_camera_pose() + es_ekf_.getCameraTranslation())[0];

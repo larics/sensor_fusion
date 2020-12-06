@@ -71,6 +71,16 @@ Quaternion<double> euler2quat(Matrix<double,3,1> euler){
 	return Quaternion<double>(w,x,y,z);
 }
 
+Matrix<double,4,3> firstOrderApprox(Quaterniond q){
+	Matrix<double,4,3> m;
+	m << -q.x(),-q.y(),-q.z(),
+				q.w(),q.z(),-q.y(),
+				-q.z(),q.w(),q.x(),
+				q.y(),-q.x(),q.w();
+	return m;
+}
+
+
 
 
 #endif //SENSOR_FUSION_UTILS_H
