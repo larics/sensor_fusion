@@ -13,6 +13,8 @@
 #include "imu.h"
 #include "sensor.h"
 
+#include "filter.h"
+
 class SensorClient {
 public:
 		SensorClient(const EsEkfParams& params,
@@ -63,6 +65,10 @@ public:
 			return {camera_orientation_.w(),camera_orientation_.x(),
 							camera_orientation_.y(),camera_orientation_.z()};
 		}
+		Quaterniond get_camera_orientation_quat(){
+			new_measurement_camera_odom_ = false;
+			return camera_orientation_;
+		}
 
 		Matrix<double,3,1> get_pozyx_pose() {
 			new_measurement_posix_ = false;
@@ -96,7 +102,7 @@ private:
 										cartographer_state_pub_;
 		ros::Timer update_timer_;
 		EsEkfParams params_;
-		EsEkf es_ekf_;
+		EsEkf2 es_ekf_;
 		Imu imu_;
 		std::vector<Sensor*> sensor_pointer_vec_;
 

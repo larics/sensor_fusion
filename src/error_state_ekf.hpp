@@ -103,7 +103,7 @@ public:
 			f_jac.block<3,3>(3,6) =
 							-skew_symetric(transform_imu * (imu_f - fb_est)) * delta_t;
 			f_jac.block<3,3>(3,9) = -transform_imu * delta_t;
-			f_jac.block<3,3>(6,12) = -delta_t * MatrixXd::Identity(3,3);
+			f_jac.block<3,3>(6,12) = -delta_t * transform_imu;
 			f_jac.block<3,3>(6,6) = (imu_q.toRotationMatrix()).transpose();
 
 			//Propagate orientation
@@ -322,10 +322,10 @@ public:
 //			h_jac_angle(0,6) = 1; //quat -> w
 //			h_jac_angle(1,7) = 1; //quat -> x
 //			h_jac_angle(2,8) = 1; //quat -> y
-			h_jac_angle.block<3,3>(0,6) =
-			        MatrixXd::Identity(3,3);
-			h_jac_angle.block<3,3>(0,21) =
-							MatrixXd::Identity(3,3);
+//			h_jac_angle.block<3,3>(0,6) =
+//			        MatrixXd::Identity(3,3);
+//			h_jac_angle.block<3,3>(0,21) =
+//							MatrixXd::Identity(3,3);
 
 			std::cout << "ANGLE H JACOB\n" << h_jac_angle.transpose() << "\n";
 

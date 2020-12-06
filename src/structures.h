@@ -59,6 +59,23 @@ struct EsEkfParams{
 		CameraParams camera;
 		ModelCovariance model;
 		double outlier_constant;
+		Translation3d g;
+		bool estimate_acc_bias,
+		     estimate_gyro_bias,
+		     estimate_gravity_bias;
+		Matrix3d fb_var,wb_var,gb_var;
+
+		EsEkfParams(){
+			fb_var = MatrixXd::Zero(3,3);
+			wb_var = MatrixXd::Zero(3,3);
+			gb_var = MatrixXd::Zero(3,3);
+			estimate_acc_bias = false;estimate_gyro_bias = false;
+			estimate_gravity_bias = false;
+			g.x() = 0;
+			g.y() = 0;
+			g.z() = -10.3;
+			outlier_constant = 0.5;
+		}
 };
 
 class EsEkfState{

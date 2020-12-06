@@ -4,6 +4,7 @@
 #include "ros_client.hpp"
 //#include "camera.h"
 #include "sensor_client.cpp"
+#include "filter.cpp"
 /*
  * Sensor fusion algorithm based on an error state kalman filter
  * This is the main function where we parse data and initialize the
@@ -45,8 +46,9 @@ int main(int argc, char **argv) {
 
 	//EsEkf esEkf;
 	//Camera camera(params,&esEkf,nh_private);
+
+	//EsEkf2 esEkf2(params);
 	SensorClient sensors(params,nh_private);
-	sensors.cartographer_callback();
 	return 0;
 }
 
