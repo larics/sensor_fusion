@@ -80,6 +80,15 @@ Matrix<double,4,3> firstOrderApprox(Quaterniond q){
 	return m;
 }
 
+Matrix<double,4,3> firstOrderApproxLocal(Quaterniond q){
+	Matrix<double,4,3> m;
+	m << -q.x(),-q.y(),-q.z(),
+				q.w(),-q.z(),q.y(),
+				q.z(),q.w(),-q.x(),
+				-q.y(),q.x(),q.w();
+	return m;
+}
+
 Matrix<double,4,4> leftQuatProdMat(Quaterniond q){
 	Matrix<double,4,4> m;
 	m << q.w(),-q.x(),-q.y(),-q.z(),

@@ -71,7 +71,7 @@ struct EsEkfParams{
 			gb_var = MatrixXd::Zero(3,3);
 			gb_var(3,3) = 0.001;
 			estimate_acc_bias = true;estimate_gyro_bias = true;
-			estimate_gravity_bias = false;
+			estimate_gravity_bias = true;
 			g.x() = 0;
 			g.y() = 0;
 			g.z() = -10.25;

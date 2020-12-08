@@ -12,7 +12,6 @@ EsEkf2::EsEkf2(EsEkfParams params){
 	l_jac.block<12,12>(3,0) =
 	        MatrixXd::Identity(3,3);
 
-	p_cov = MatrixXd::Zero(N_STATES,N_STATES);
 
 	// initial state for pose, linear velocity and orientation
 	p_est = {0,0,0};
@@ -29,8 +28,12 @@ EsEkf2::EsEkf2(EsEkfParams params){
 	Matrix3d m = MatrixXd::Identity(3,3);
 	q_drift = m;
 
-	// initital state error is zero (can be anything else)
-	p_cov = MatrixXd::Identity(N_STATES,N_STATES);
+	// initital state error is zero (can be anything else),18 nuber of core states p,v,q,ab,wb,g
+	p_cov = MatrixXd::Zero(N_STATES,N_STATES);
+	p_cov.block<18,18>(0,0) =
+	        MatrixXd::Identity(18,18);
+	p_cov.block<3,3>(21,21) =
+					0.00001*MatrixXd::Identity(3,3);
 	if (!params.estimate_acc_bias){
 		p_cov.block<3,3>(9,9) =
 		        MatrixXd::Zero(3,3);
@@ -45,9 +48,8 @@ EsEkf2::EsEkf2(EsEkfParams params){
 		p_cov.block<3,3>(15,15) =
 		        MatrixXd::Zero(3,3);
 	}
-
-//	std::cout << "l_jacobian:\n" << l_jac << '\n'
-//						<< "p_cov init:\n" << p_cov << '\n';
+	std::cout << "l_jacobian:\n" << l_jac << '\n'
+						<< "p_cov init:\n" << p_cov << '\n';
 }
 
 void EsEkf2::prediction(Matrix<double,3,1> imu_f, Matrix3d var_imu_f,
@@ -178,9 +180,9 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 	//We measure quaternions directly this a standard
 	// measurement model Jacobian for an extended Kalman filter
 	H.block<4,4>(0,6) =
-	        leftQuatProdMat(q_drift);
+	        rightQuatProdMat(q_drift);
 	H.block<4,4>(0,22) =
-					rightQuatProdMat(y);
+					leftQuatProdMat(q_est);
 
 	Matrix<double,N_STATES+2,N_STATES> H_dx =
 					MatrixXd::Zero(N_STATES+2,N_STATES);
@@ -188,7 +190,7 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 	H_dx.block<6,6>(0,0) = MatrixXd::Identity(6,6);
 	H_dx.block<4,3>(6,6) = 0.5*firstOrderApprox(q_est);
 	H_dx.block<12,12>(10,9) = MatrixXd::Identity(12,12);
-	H_dx.block<4,3>(22,21) = 0.5*firstOrderApprox(q_drift);
+	H_dx.block<4,3>(22,21) = 0.5*firstOrderApproxLocal(q_drift);
 
 
 	Matrix<double,4,N_STATES> h_jac =
@@ -205,7 +207,7 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 					 << "p_cov->\n" << p_cov << '\n';
 	std::cout <<	"K\n"  << K << "\n";
 	std::cout << "Y-> " << y.coeffs().transpose() << '\n';
-	y = q_drift*y;
+	q_est = q_est*q_drift;
 
 	std::cout << "q_drift-> " << q_drift.coeffs().transpose() << '\n'
 						<< "y-> " << y.coeffs().transpose() << '\n'
@@ -253,14 +255,17 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 	g_est.vector() = g_est.vector() +
 					delta_x.block<3,1>(15,0);
 
-	quat_from_aa = axixs_angle2quat(
-					delta_x.block<3,1>(21,0));
-	Quaternion<double> q2(quat_from_aa(0),
-												quat_from_aa(1),
-												quat_from_aa(2),
-												quat_from_aa(3));
+	Matrix<double,4,1> quat_from_aa2 =
+					axixs_angle2quat(delta_x.block<3,1>(21,0));
+	Quaterniond q2(quat_from_aa2(0),
+								 quat_from_aa2(1),
+								 quat_from_aa2(2),
+								 quat_from_aa2(3));
 
-	q_drift = q2*q_drift;
+	std::cout << "delta_q_drift-> "
+						<< delta_x.block<3,1>(21,0).transpose() << "\n";
+	q_drift = q_drift*q2;
+	q_drift.normalize();
 
 	p_cov = (MatrixXd::Identity(N_STATES,N_STATES) - K*h_jac)
 					* p_cov *
