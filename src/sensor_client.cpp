@@ -141,6 +141,7 @@ bool SensorClient::outlier_detection(Matrix<double,3,1> measurement) {
 //	std::cout << "measurement-> " << measurement.transpose()
 //						<< "\nstate-> " << es_ekf_.getPose().transpose()
 //						<< "\nNorm-> " << (measurement-es_ekf_.getPose()).norm() << '\n';
+	return true;
 	return ((measurement-es_ekf_.getP()).norm() < outlier_constant_);
 }
 
@@ -165,12 +166,12 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 	bool prediction = false;
 	bool measurement = false;
 	nav_msgs::Odometry ekf_pose_;
-		ekf_pose_.twist.twist.angular.x = std::nan("");
-		ekf_pose_.twist.twist.angular.y = std::nan("");
-		ekf_pose_.twist.twist.angular.z = std::nan("");
-	ekf_pose_.twist.covariance.at(3) = std::nan("");
-	ekf_pose_.twist.covariance.at(4) = std::nan("");
-	ekf_pose_.twist.covariance.at(5) = std::nan("");
+		ekf_pose_.pose.covariance.at(0) = std::nan("");
+		ekf_pose_.pose.covariance.at(1)= std::nan("");
+		ekf_pose_.pose.covariance.at(2) = std::nan("");
+	ekf_pose_.twist.covariance.at(0) = std::nan("");
+	ekf_pose_.twist.covariance.at(1) = std::nan("");
+	ekf_pose_.twist.covariance.at(2) = std::nan("");
 	if (start_imu_) {
 		ROS_WARN("IMU not ready");
 		return; }
@@ -193,34 +194,34 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 	}
 
 	if (this->camera_odom_ready()){
-		if(outlier_detection(this->get_camera_pose())) {
+		if(outlier_detection(es_ekf_.getQDrift()*this->get_camera_pose()
+													+ es_ekf_.getPDrift())) {
 			measurement = true;
 			es_ekf_.poseMeasurementUpdate(params_.camera.pose_cov.R,
-																		 this->get_camera_pose());
-			es_ekf_.angleMeasurementUpdate(MatrixXd::Identity(4,4)*0.0001,
+																 		this->get_camera_pose());
+			es_ekf_.angleMeasurementUpdate(MatrixXd::Identity(4,4)*0.001,
 																			 this->get_camera_orientation_quat());
 			camera_state_pub_.publish(true);
-//			ekf_pose_.twist.twist.angular.x = (es_ekf_.getCameraOrientation().toRotationMatrix() *
-//																				this->get_camera_pose() + es_ekf_.getCameraTranslation())[0];
-//			ekf_pose_.twist.twist.angular.y = (es_ekf_.getCameraOrientation().toRotationMatrix() *
-//																				this->get_camera_pose() + es_ekf_.getCameraTranslation())[1];
-//			ekf_pose_.twist.twist.angular.z = (es_ekf_.getCameraOrientation().toRotationMatrix() *
-//																				this->get_camera_pose() + es_ekf_.getCameraTranslation())[2];
+			ekf_pose_.pose.covariance.at(0) = (es_ekf_.getQDrift() *
+																				this->get_camera_pose() + es_ekf_.getPDrift())[0];
+			ekf_pose_.pose.covariance.at(1) = (es_ekf_.getQDrift() *
+																				this->get_camera_pose() + es_ekf_.getPDrift())[1];
+			ekf_pose_.pose.covariance.at(2) = (es_ekf_.getQDrift() *
+																				this->get_camera_pose() + es_ekf_.getPDrift())[2];
 		}
 		else {
 			camera_state_pub_.publish(false);
 			ROS_WARN("Outlier detected in cam measurement"); }
 	}
-		//Just for debugging
 
 //		if (this->pozyx_ready()){
 //			if(outlier_detection(this->get_pozyx_pose())) {
 //				measurement = true;
-//				es_ekf_.measurement_update(params_.sensors.at(0).cov.R,
+//				es_ekf_.poseMeasurementUpdate(params_.sensors.at(0).cov.R,
 //																	 			this->get_pozyx_pose());
-//				ekf_pose_.twist.covariance.at(3) = get_pozyx_pose()[0];
-//				ekf_pose_.twist.covariance.at(4) = get_pozyx_pose()[1];
-//				ekf_pose_.twist.covariance.at(5) = get_pozyx_pose()[2];
+//				ekf_pose_.twist.covariance.at(0) = get_pozyx_pose()[0];
+//				ekf_pose_.twist.covariance.at(1) = get_pozyx_pose()[1];
+//				ekf_pose_.twist.covariance.at(2) = get_pozyx_pose()[2];
 //				pozyx_state_pub_.publish(true);
 //			}
 //			else {

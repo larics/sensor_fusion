@@ -15,7 +15,7 @@
 #include "structures.h"
 
 //nuber of error states
-#define N_STATES 18
+#define N_STATES 24//18
 
 
 /*
@@ -40,16 +40,14 @@ class EsEkf2{
 private:
 		// State (pose,lin vel, gyroscope bias,
 		// accelerometer bias, gravity bias)
-		Translation3d p_est,v_est,wb_est,fb_est,gb_est;
+		Translation3d p_est,v_est,wb_est,fb_est,g_est;
 		// Orientation in quaternions
-		Quaterniond q_est;
+		Quaterniond q_est,q_drift;
 		//State covariance matrix
 		Matrix<double, N_STATES,N_STATES> p_cov;
-		// Gravity vector
-		Translation3d g;
 		Matrix<double,N_STATES,12> l_jac;
 		bool init;
-
+		Translation3d p_drift;
 		Matrix3d var_imu_fb,var_imu_wb;
 public:
 		//Constructor
@@ -74,7 +72,11 @@ public:
 		void angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 																Quaterniond y);
 
-		void measurementUpdateDrift();
+		void poseMeasurementUpdateDrift(Matrix3d R_cov,
+																		Matrix<double,3,1> y);
+
+		void angleMeasurementUpdateDrift(Matrix<double,4,4> R_cov,
+																		Quaterniond y);
 
 		// Setters
 		void setP(Matrix<double,3,1> p){p_est.vector() = p;}
@@ -95,6 +97,8 @@ public:
 			return state;
 		}
 		Matrix<double,3,1> getP(){return p_est.vector();}
+		Matrix<double,3,1> getPDrift(){return p_drift.vector();}
+		Matrix3d getQDrift(){return q_drift.toRotationMatrix();}
 };
 
 

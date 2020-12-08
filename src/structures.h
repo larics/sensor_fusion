@@ -66,14 +66,15 @@ struct EsEkfParams{
 		Matrix3d fb_var,wb_var,gb_var;
 
 		EsEkfParams(){
-			fb_var = MatrixXd::Zero(3,3);
-			wb_var = MatrixXd::Zero(3,3);
+			fb_var = 0.001*MatrixXd::Identity(3,3);
+			wb_var = 0.001*MatrixXd::Identity(3,3);
 			gb_var = MatrixXd::Zero(3,3);
-			estimate_acc_bias = false;estimate_gyro_bias = false;
+			gb_var(3,3) = 0.001;
+			estimate_acc_bias = true;estimate_gyro_bias = true;
 			estimate_gravity_bias = false;
 			g.x() = 0;
 			g.y() = 0;
-			g.z() = -10.3;
+			g.z() = -10.25;
 			outlier_constant = 0.5;
 		}
 };

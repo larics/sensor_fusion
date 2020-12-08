@@ -1,7 +1,7 @@
 #ifndef SENSOR_FUSION_SENSOR_CLIENT_H
 #define SENSOR_FUSION_SENSOR_CLIENT_H
 
-#include "error_state_ekf.hpp"
+//#include "error_state_ekf.hpp"
 #include "structures.h"
 
 #include "ros/ros.h"

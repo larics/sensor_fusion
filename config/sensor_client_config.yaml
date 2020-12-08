@@ -1,9 +1,9 @@
 Q_acc_x: 0.001
 Q_acc_y: 0.001
 Q_acc_z: 0.01
-Q_angular_x: 0.01
-Q_angular_y: 0.01
-Q_angular_z: 0.01
+Q_angular_x: 0.001
+Q_angular_y: 0.001
+Q_angular_z: 0.001
 
 outlier_constant: 0.45
 

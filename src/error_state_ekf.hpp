@@ -348,7 +348,7 @@ public:
 			delta_quat = q_est_obj.inverse()*delta_quat;
 			delta_quat.normalize();
 
-			AngleAxis<double> angle_axis(delta_quat.toRotationMatrix());;
+			AngleAxis<double> angle_axis(delta_quat.toRotationMatrix());
 			delta_x = K * (angle_axis.angle()*angle_axis.axis());
 
 			// 3.3 Correct predicted state
