@@ -8,11 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
   cmake_modules
-  dynamic_reconfigure
-)
-
-generate_dynamic_reconfigure_options(
-        config/EKF_Q.cfg
 )
 
 find_package(Eigen3)
@@ -34,6 +29,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   src/
+  include/
 )
 if(YAMLCPP_STATIC_LIBRARY)
     set(YAMLCPP_STATIC libyaml-cpp.a)
@@ -75,6 +71,7 @@ mark_as_advanced(YAMLCPP_INCLUDE_DIR YAMLCPP_LIBRARY)
 
 add_executable(republish_odom src/republish_odom.cpp)
 add_executable(sensor_fusion src/sensor_fusion_main.cpp)
+add_executable(sensor_fusion src2/sensor_fusion_main.cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sensor_fusion
