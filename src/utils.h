@@ -107,6 +107,25 @@ Matrix<double,4,4> rightQuatProdMat(Quaterniond q){
 	return m;
 }
 
+Matrix<double,3,4> JacobianWithRespectToQuat(
+									Quaterniond q,Vector3d a){
+	Vector3d v = {q.x(),q.y(),q.z()};
+	double w = q.w();
+	Vector3d dw =2 * ( w*a+v.cross(a));
+	//std::cout << "dw-> " << dw.transpose() << '\n';
+	Matrix3d I = Matrix3d::Identity();
+	Matrix3d dv = 2*(v.transpose()*a*I + v*a.transpose() - a*v.transpose() - w*skew_symetric(a));
+
+	//std::cout << "Dv->\n" << dv << '\n';
+
+	Matrix<double,3,4> m = MatrixXd::Zero(3,4);
+	m.block<3,1>(0,0) = dw;
+	//std::cout << "M\n" << m << '\n';
+	m.bottomRightCorner(3,3) = dv;
+	//std::cout << "M\n" << m << '\n';
+	return m;
+}
+
 
 
 

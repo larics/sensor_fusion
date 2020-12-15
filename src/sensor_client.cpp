@@ -169,9 +169,9 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 		ekf_pose_.pose.covariance.at(0) = std::nan("");
 		ekf_pose_.pose.covariance.at(1)= std::nan("");
 		ekf_pose_.pose.covariance.at(2) = std::nan("");
-	ekf_pose_.twist.covariance.at(0) = std::nan("");
-	ekf_pose_.twist.covariance.at(1) = std::nan("");
-	ekf_pose_.twist.covariance.at(2) = std::nan("");
+	ekf_pose_.twist.twist.angular.x = std::nan("");
+	ekf_pose_.twist.twist.angular.y = std::nan("");
+	ekf_pose_.twist.twist.angular.z = std::nan("");
 	if (start_imu_) {
 		ROS_WARN("IMU not ready");
 		return; }
@@ -197,7 +197,7 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 		if(outlier_detection(es_ekf_.getQDrift()*this->get_camera_pose()
 													+ es_ekf_.getPDrift())) {
 			measurement = true;
-			es_ekf_.poseMeasurementUpdate(params_.camera.pose_cov.R,
+			es_ekf_.poseMeasurementUpdateDrift(params_.camera.pose_cov.R,
 																 		this->get_camera_pose());
 			es_ekf_.angleMeasurementUpdate(MatrixXd::Identity(4,4)*0.001,
 																			 this->get_camera_orientation_quat());
@@ -214,20 +214,20 @@ void SensorClient::state_estimation(const ros::TimerEvent &msg) {
 			ROS_WARN("Outlier detected in cam measurement"); }
 	}
 
-//		if (this->pozyx_ready()){
-//			if(outlier_detection(this->get_pozyx_pose())) {
-//				measurement = true;
-//				es_ekf_.poseMeasurementUpdate(params_.sensors.at(0).cov.R,
-//																	 			this->get_pozyx_pose());
-//				ekf_pose_.twist.covariance.at(0) = get_pozyx_pose()[0];
-//				ekf_pose_.twist.covariance.at(1) = get_pozyx_pose()[1];
-//				ekf_pose_.twist.covariance.at(2) = get_pozyx_pose()[2];
-//				pozyx_state_pub_.publish(true);
-//			}
-//			else {
-//				pozyx_state_pub_.publish(false);
-//				ROS_WARN("Outlier detected in pozyx measurement"); }
-//		}
+		if (this->pozyx_ready()){
+			if(outlier_detection(this->get_pozyx_pose())) {
+				measurement = true;
+				es_ekf_.poseMeasurementUpdate(params_.sensors.at(0).cov.R,
+																	 			this->get_pozyx_pose());
+				ekf_pose_.twist.twist.angular.x = get_pozyx_pose()[0];
+				ekf_pose_.twist.twist.angular.y = get_pozyx_pose()[1];
+				ekf_pose_.twist.twist.angular.z = get_pozyx_pose()[2];
+				pozyx_state_pub_.publish(true);
+			}
+			else {
+				pozyx_state_pub_.publish(false);
+				ROS_WARN("Outlier detected in pozyx measurement"); }
+		}
 
 	if (measurement or prediction){
 		Matrix<double,10,1> state;

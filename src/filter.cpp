@@ -31,7 +31,9 @@ EsEkf2::EsEkf2(EsEkfParams params){
 	// initital state error is zero (can be anything else),18 nuber of core states p,v,q,ab,wb,g
 	p_cov = MatrixXd::Zero(N_STATES,N_STATES);
 	p_cov.block<18,18>(0,0) =
-	        MatrixXd::Identity(18,18);
+	        0.001*MatrixXd::Identity(18,18);
+	p_cov.block<3,3>(18,18) =
+					0.001*MatrixXd::Identity(3,3);
 	p_cov.block<3,3>(21,21) =
 					0.00001*MatrixXd::Identity(3,3);
 	if (!params.estimate_acc_bias){
@@ -109,9 +111,17 @@ void EsEkf2::prediction(Matrix<double,3,1> imu_f, Matrix3d var_imu_f,
 	q_cov.block<3,3>(6,6) = var_imu_fb * delta_t;
 	q_cov.block<3,3>(9,9) = var_imu_wb * delta_t;
 
+	Matrix<double, 24, 24> p_cov_temp = p_cov;
 	p_cov = f_jac * p_cov * f_jac.transpose() +
 					l_jac * q_cov * l_jac.transpose();
 
+//	std::cout << "p_old->\n" << p_cov_temp << '\n'
+//						<< "p_new->\n" << p_cov << '\n'
+//						<< "q_cov->\n" << q_cov << '\n'
+//						<< "q_cov*l->\n" << l_jac * q_cov * l_jac.transpose() << '\n'
+//						<< "f_jacob->\n" << f_jac << '\n'
+//						<< "f_jac * p_cov * f_jac.transpose()->\n"<< f_jac * p_cov_temp * f_jac.transpose() << '\n'
+//						<< "delta_p\n" << p_cov_temp - p_cov << '\n';
 	//ROS_INFO("Prediction");
 }
 
@@ -128,8 +138,8 @@ void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov,
 			 + R_cov).inverse();
 
 	//debugging string
-	std::cout << "Pose_Update:\nK->\n" << K << '\n' << "h->\n" << h_jac.transpose() << '\n'
-						<< "p_cov->\n" << p_cov << '\n';
+//	std::cout << "Pose_Update:\nK->\n" << K << '\n' << "h->\n" << h_jac.transpose() << '\n'
+//						<< "p_cov->\n" << p_cov << '\n';
 //						<< "y-> " << y.transpose() << '\n'
 //						<< "p_est -> " << p_est.vector().transpose() << '\n'
 //						<< "d_p -> " << (y - p_est.vector()).transpose() << '\n';
@@ -201,18 +211,18 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 	K = p_cov * h_jac.transpose() *
 			(h_jac * p_cov * h_jac.transpose()
 			 + R_cov).inverse();
-	std::cout<< "H->\n" << H.transpose() << "\n"
-					 << "h_dx->\n" << H_dx << "\n"
-					 << "h_jac->\n" << h_jac.transpose() << "\n"
-					 << "p_cov->\n" << p_cov << '\n';
-	std::cout <<	"K\n"  << K << "\n";
-	std::cout << "Y-> " << y.coeffs().transpose() << '\n';
+//	std::cout<< "H->\n" << H.transpose() << "\n"
+//					 << "h_dx->\n" << H_dx << "\n"
+//					 << "h_jac->\n" << h_jac.transpose() << "\n"
+//					 << "p_cov->\n" << p_cov << '\n';
+//	std::cout <<	"K\n"  << K << "\n";
+//	std::cout << "Y-> " << y.coeffs().transpose() << '\n';
 	q_est = q_est*q_drift;
 
-	std::cout << "q_drift-> " << q_drift.coeffs().transpose() << '\n'
-						<< "y-> " << y.coeffs().transpose() << '\n'
-						<< "q_est-> " << q_est.coeffs().transpose() << '\n'
-						<< "Q_drift.RotM->\n" << q_drift.toRotationMatrix() << "\n\n";
+//	std::cout << "q_drift-> " << q_drift.coeffs().transpose() << '\n'
+//						<< "y-> " << y.coeffs().transpose() << '\n'
+//						<< "q_est-> " << q_est.coeffs().transpose() << '\n'
+//						<< "Q_drift.RotM->\n" << q_drift.toRotationMatrix() << "\n\n";
 //	Quaterniond delta_Q;
 //	q_est.normalize();
 //	delta_Q = y.conjugate()*q_est;
@@ -229,7 +239,7 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 								y.y()-q_est.y(),
 								y.z()-q_est.z();
 	delta_x = K * (delta_quat);
-	std::cout <<	"delta_x-> "  << delta_x.transpose() << "\n";
+//	std::cout <<	"delta_x-> "  << delta_x.transpose() << "\n";
 
 
 
@@ -254,7 +264,8 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 					delta_x.block<3,1>(12,0);
 	g_est.vector() = g_est.vector() +
 					delta_x.block<3,1>(15,0);
-
+	p_drift.vector() = p_drift.vector()
+					 + delta_x.block<3,1>(18,0);
 	Matrix<double,4,1> quat_from_aa2 =
 					axixs_angle2quat(delta_x.block<3,1>(21,0));
 	Quaterniond q2(quat_from_aa2(0),
@@ -262,8 +273,8 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 								 quat_from_aa2(2),
 								 quat_from_aa2(3));
 
-	std::cout << "delta_q_drift-> "
-						<< delta_x.block<3,1>(21,0).transpose() << "\n";
+//	std::cout << "delta_q_drift-> "
+//						<< delta_x.block<3,1>(21,0).transpose() << "\n";
 	q_drift = q_drift*q2;
 	q_drift.normalize();
 
@@ -278,27 +289,38 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double,4,4> R_cov,
 void EsEkf2::poseMeasurementUpdateDrift(Matrix3d R_cov,
 																				Matrix<double, 3, 1> y) {
 
-	Matrix<double,3,N_STATES> h_jac =  MatrixXd::Zero(3,N_STATES);
-	h_jac.block<3,3>(0,0) =
+	Matrix<double,3,N_STATES+2> H =  MatrixXd::Zero(3,N_STATES);
+	H.block<3,3>(0,0) =
+					q_drift.toRotationMatrix();
+
+	H.block<3,3>(0,19) =
 	        MatrixXd::Identity(3,3);
+	H.block<3,4>(0,22) =
+					JacobianWithRespectToQuat(q_drift,p_est.vector());
 
-	h_jac.block<3,3>(0,18) =
-	        -MatrixXd::Identity(3,3);
-	h_jac.block<3,3>(0,21) =
-					skew_symetric(q_drift.toRotationMatrix()*y);
+	Matrix<double,N_STATES+2,N_STATES> H_dx =
+					MatrixXd::Zero(N_STATES+2,N_STATES);
+	//Scola equation:(280)
+	H_dx.block<6,6>(0,0) = MatrixXd::Identity(6,6);
+	H_dx.block<4,3>(6,6) = 0.5*firstOrderApprox(q_est);
+	H_dx.block<12,12>(10,9) = MatrixXd::Identity(12,12);
+	H_dx.block<4,3>(22,21) = 0.5*firstOrderApproxLocal(q_drift);
 
-	std::cout<< "h_jac\n" << h_jac.transpose() << '\n';
 
-		Matrix<double, N_STATES, 3> K= MatrixXd::Zero(N_STATES,3);
+	Matrix<double,3,N_STATES> h_jac =
+					MatrixXd::Zero(3,N_STATES);
 
+	h_jac = H*H_dx;
+
+	Matrix<double, N_STATES, 3> K= MatrixXd::Zero(N_STATES,3);
 	K = p_cov * h_jac.transpose() *
 			(h_jac* p_cov * h_jac.transpose()
 			 + R_cov).inverse();
 	// delta_x -> Error state
 	Matrix<double, N_STATES, 1> delta_x;
 
-	delta_x = K * ((q_drift.toRotationMatrix() * y
-									+ p_drift.vector()) - p_est.vector());
+	delta_x = K * (y - (q_drift.toRotationMatrix() * p_est.vector()
+											+ p_drift.vector()));
 
 	// 3.3 Correct predicted state
 	p_est.vector() = p_est.vector()
@@ -332,10 +354,14 @@ void EsEkf2::poseMeasurementUpdateDrift(Matrix3d R_cov,
 												quat_from_aa(2),
 												quat_from_aa(3));
 
-	q_drift = q2*q_drift;
+	q_drift = q_drift*q2;
+	q_drift.normalize();
 
-	std::cout << "Q drift -> \n" << q_drift.toRotationMatrix() << '\n'
-						<<"P drift -> " << p_drift.vector().transpose() << '\n';
+//	std::cout << "Q drift -> \n" << q_drift.toRotationMatrix() << '\n'
+//						<<"P drift -> " << p_drift.vector().transpose() << '\n'
+//					<<"g_est -> " << g_est.vector().transpose() << '\n'
+//					<<"fb_est -> " << fb_est.vector().transpose() << '\n'
+//					<<"wb_est -> " << wb_est.vector().transpose() << '\n';
 	p_cov = (MatrixXd::Identity(N_STATES,N_STATES) - K*h_jac)
 					* p_cov *
 					(MatrixXd::Identity(N_STATES,N_STATES)

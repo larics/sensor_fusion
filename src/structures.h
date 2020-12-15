@@ -74,7 +74,7 @@ struct EsEkfParams{
 			estimate_gravity_bias = true;
 			g.x() = 0;
 			g.y() = 0;
-			g.z() = -10.25;
+			g.z() = -10.35;
 			outlier_constant = 0.5;
 		}
 };
