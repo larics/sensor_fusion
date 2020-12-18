@@ -1,18 +1,18 @@
 #ifndef SENSOR_FUSION_SENSOR_CLIENT_H
 #define SENSOR_FUSION_SENSOR_CLIENT_H
 
-//#include "error_state_ekf.hpp"
 #include <Eigen/Geometry>
 
-#include "filter.h"
 #include "geometry_msgs/TransformStamped.h"
-#include "imu.h"
 #include "nav_msgs/Odometry.h"
 #include "ros/ros.h"
-#include "sensor.h"
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Bool.h"
+
 #include "structures.h"
+#include "imu.h"
+#include "filter.cpp"
+#include "sensor.h"
 
 class SensorClient {
  public:
@@ -30,7 +30,7 @@ class SensorClient {
 
   // Get sensor state
   Matrix<double, 3, 1> get_acc() {
-    if (params_.camera.use_camera_imu) {
+    if (params_.use_cam_imu) {
       new_measurement_camera_acc_ = false;
       return camera_acc_.translation();
     } else {
@@ -40,7 +40,7 @@ class SensorClient {
   }
 
   Vector3d get_angular_vel() {
-    if (params_.camera.use_camera_imu) {
+    if (params_.use_cam_imu) {
       new_measurement_camera_gyro_ = false;
       return camera_gyro_.translation();
     } else
@@ -48,12 +48,12 @@ class SensorClient {
   }
   Matrix<double, 3, 1> get_camera_pose() {
     new_measurement_camera_odom_ = false;
-    return (params_.camera.rotation_mat * camera_pose_).translation() +
-           params_.camera.translation;
+    return (params_.sensors.at(0).rotation_mat * camera_pose_).translation() +
+           params_.sensors.at(0).translation;
   }
 
   Matrix<double, 3, 1> get_camera_lin_vel() {
-    return (params_.camera.rotation_mat * camera_lin_vel_).translation();
+    return (params_.sensors.at(0).rotation_mat * camera_lin_vel_).translation();
   }
 
   Matrix<double, 4, 1> get_camera_orientation() {
@@ -84,8 +84,9 @@ class SensorClient {
   bool pozyx_ready() { return new_measurement_posix_; }
 
  private:
+
   ros::Subscriber camera_acc_sub_, camera_gyro_sub_, camera_odom_sub_, imu_sub_,
-      posix_sub_, cartographer_sub_;
+                  posix_sub_, cartographer_sub_;
 
   ros::Publisher estimate_pub_, camera_state_pub_, pozyx_state_pub_,
       cartographer_state_pub_;
@@ -93,7 +94,7 @@ class SensorClient {
   EsEkfParams params_;
   EsEkf2 es_ekf_;
   Imu imu_;
-  std::vector<Sensor*> sensor_pointer_vec_;
+  std::vector<Sensor*> sensor_vec_;
 
   ros::NodeHandle node_handle_;
   bool start_flag_, start_imu_, start_camera_imu_;

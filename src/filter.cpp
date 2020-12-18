@@ -41,7 +41,7 @@ EsEkf2::EsEkf2(EsEkfParams params) {
     p_cov.block<3, 3>(12, 12) = MatrixXd::Zero(3, 3);
     var_imu_wb = Matrix3d::Zero();
   }
-  if (!params.estimate_gravity_bias) {
+  if (!params.estimate_gravity) {
     p_cov.block<3, 3>(15, 15) = MatrixXd::Zero(3, 3);
   }
   std::cout << "l_jacobian:\n"

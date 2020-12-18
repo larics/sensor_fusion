@@ -3,7 +3,6 @@ project(sensor_fusion)
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  mav_msgs
   nav_msgs
   roscpp
   sensor_msgs
@@ -71,7 +70,7 @@ mark_as_advanced(YAMLCPP_INCLUDE_DIR YAMLCPP_LIBRARY)
 
 add_executable(republish_odom src/republish_odom.cpp)
 add_executable(sensor_fusion src/sensor_fusion_main.cpp)
-add_executable(sensor_fusion src2/sensor_fusion_main.cpp)
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(sensor_fusion

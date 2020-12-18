@@ -1,7 +1,3 @@
-//
-// Created by kovac on 05. 12. 2020..
-//
-
 #ifndef SENSOR_FUSION_FILTER_H
 #define SENSOR_FUSION_FILTER_H
 
@@ -36,7 +32,7 @@ using namespace Eigen;
 class EsEkf2 {
  private:
   // State (pose,lin vel, gyroscope bias,
-  // accelerometer bias, gravity bias)
+  // accelerometer bias, gravity)
   Translation3d p_est, v_est, wb_est, fb_est, g_est;
   // Orientation in quaternions
   Quaterniond q_est, q_drift;
