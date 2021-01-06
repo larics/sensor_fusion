@@ -13,6 +13,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
       new_measurement_imu_(false),
       new_measurement_posix_(false),
       imu_(params.model, nh_private){
+  //TODO makni flag
   std::string acc_topic, gyro_topic, es_ekf_topic;
   nh_private.getParam("acc_topic", acc_topic);
   nh_private.getParam("gyro_topic", gyro_topic);
@@ -46,7 +47,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
       if (ros::isShuttingDown()) break;
     }
   }
-
+  // TODO izvuci van
   update_timer_ = node_handle_.createTimer(
       ros::Duration(0.01), &SensorClient::state_estimation, this);
 
@@ -88,6 +89,7 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
   if (start_flag_) {
     if (sensor_vec_.at(0)->newMeasurement()) {
       es_ekf_.setP(sensor_vec_.at(0)->getPose());
+      // TODO if orientaion vector
       es_ekf_.setQ(sensor_vec_.at(0)->getOrientationVector());
       es_ekf_.setV({0,0,0});
       start_flag_ = false;
@@ -98,6 +100,7 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
   bool prediction = false;
   bool measurement = false;
   nav_msgs::Odometry ekf_pose_;
+  // TODO ovo makni, provjerava se u inicijalizaciji
   if (imu_.isInit()) {
     ROS_WARN("IMU not ready");
     return;
@@ -120,8 +123,7 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
 
   for (int i = 0; i < sensor_vec_.size(); ++i) {
     if (sensor_vec_.at(i)->newMeasurement()) {
-      // if (outlier_detection())
-      // sensor_state_publish
+
       if (sensor_vec_.at(i)->estimateDrift() &&
           outlier_detection(sensor_vec_.at(i)->getDriftedPose(
                             es_ekf_.getQDrift(), es_ekf_.getPDrift()))) {

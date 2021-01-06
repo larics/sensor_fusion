@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
               << params.sensors.at(i).translation << "\n  ";
   }
 
-
+//TODO IZBRISI
   // EsEkf esEkf;
   // Camera camera(params,&esEkf,nh_private);
 

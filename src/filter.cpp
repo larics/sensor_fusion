@@ -30,9 +30,16 @@ EsEkf2::EsEkf2(EsEkfParams params) {
   // initital state error is zero (can be anything else),18 nuber of core states
   // p,v,q,ab,wb,g
   p_cov = MatrixXd::Zero(N_STATES, N_STATES);
-  p_cov.block<18, 18>(0, 0) = 0.001 * MatrixXd::Identity(18, 18);
-  p_cov.block<3, 3>(18, 18) = 0.001 * MatrixXd::Identity(3, 3);
-  p_cov.block<3, 3>(21, 21) = 0.00001 * MatrixXd::Identity(3, 3);
+  p_cov.block<3, 3>(0, 0) = params.init_pose_p_cov * Matrix3d::Identity();
+  p_cov.block<3, 3>(3, 3) = params.init_v_p_cov * Matrix3d::Identity();
+  p_cov.block<3, 3>(6, 6) = params.init_q_p_cov * Matrix3d::Identity();
+  p_cov.block<3, 3>(9, 9) = params.init_ab_p_cov * Matrix3d::Identity();
+  p_cov.block<3, 3>(12, 12) = params.init_wb_p_cov * Matrix3d::Identity();
+  p_cov.block<3, 3>(15, 15) = params.init_g_cov * Matrix3d::Identity();
+
+  p_cov.block<3, 3>(18, 18) = params.init_p_drift * MatrixXd::Identity(3, 3);
+  p_cov.block<3, 3>(21, 21) = params.init_q_drift * MatrixXd::Identity(3, 3);
+
   if (!params.estimate_acc_bias) {
     p_cov.block<3, 3>(9, 9) = MatrixXd::Zero(3, 3);
     var_imu_fb = Matrix3d::Zero();
@@ -58,12 +65,6 @@ void EsEkf2::prediction(Matrix<double, 3, 1> imu_f, Matrix3d var_imu_f,
                    pow(delta_t, 2) / 2 *
                        (q_est.toRotationMatrix() * (imu_f - fb_est.vector()) +
                         (g_est.vector()));
-
-  //	std::cout << "p_est->\n" << p_est.vector().transpose() << '\n'
-  //						<< "delta_t -> " << delta_t <<
-  //'\n'
-  //						<< "imu_f->" <<
-  // imu_f.transpose();
 
   v_est.vector() = v_est.vector() + delta_t * (q_est.toRotationMatrix() *
                                                    (imu_f - fb_est.vector()) +
@@ -102,18 +103,7 @@ void EsEkf2::prediction(Matrix<double, 3, 1> imu_f, Matrix3d var_imu_f,
   Matrix<double, 24, 24> p_cov_temp = p_cov;
   p_cov = f_jac * p_cov * f_jac.transpose() + l_jac * q_cov * l_jac.transpose();
 
-  //	std::cout << "p_old->\n" << p_cov_temp << '\n'
-  //						<< "p_new->\n" << p_cov << '\n'
-  //						<< "q_cov->\n" << q_cov << '\n'
-  //						<< "q_cov*l->\n" << l_jac * q_cov
-  //* l_jac.transpose() << '\n'
-  //						<< "f_jacob->\n" << f_jac <<
-  //'\n'
-  //						<< "f_jac * p_cov * f_jac.transpose()->\n"<< f_jac
-  //* p_cov_temp * f_jac.transpose() << '\n'
-  //						<< "delta_p\n" << p_cov_temp - p_cov
-  //<<
-  //'\n'; ROS_INFO("Prediction");
+  ROS_INFO("Prediction");
 }
 
 void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y) {
@@ -125,18 +115,6 @@ void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y) {
   K = p_cov * h_jac.transpose() *
       (h_jac * p_cov * h_jac.transpose() + R_cov).inverse();
 
-  // debugging string
-  //	std::cout << "Pose_Update:\nK->\n" << K << '\n' << "h->\n" <<
-  // h_jac.transpose() << '\n'
-  //						<< "p_cov->\n" << p_cov << '\n';
-  //						<< "y-> " << y.transpose() <<
-  //'\n'
-  //						<< "p_est -> " << p_est.vector().transpose()
-  //<<
-  //'\n'
-  //						<< "d_p -> " << (y - p_est.vector()).transpose()
-  //<<
-  //'\n';
   // delta_x -> Error state
   Matrix<double, N_STATES, 1> delta_x;
 
