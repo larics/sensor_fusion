@@ -1,7 +1,6 @@
 *.mat
 cmake*
 .idea
-*.bag
 *.zip
 *.xml
 optimization
