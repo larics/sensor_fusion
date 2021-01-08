@@ -40,6 +40,10 @@ class Sensor {
     }
     sensor_state_pub = node_handle_.advertise<std_msgs::Bool>(params.id +
                                                               "_state", 1);
+    quat_.w() = 1;
+    quat_.x() = 0;
+    quat_.y() = 0;
+    quat_.z() = 0;
   }
   void setR(Matrix3d R) { params_.cov.R_pose = R; }
   void publishState(bool state){sensor_state_pub.publish(state);}
