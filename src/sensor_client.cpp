@@ -97,8 +97,8 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
   bool measurement = false;
   nav_msgs::Odometry ekf_pose_;
   // TODO ovo makni, provjerava se u inicijalizaciji
-  if (imu_.isInit()) {
-    ROS_WARN("IMU not ready");
+  if (!imu_.isInit()) {
+    ROS_WARN_THROTTLE(5.0, "IMU not ready");
     return;
   }
   if (params_.use_cam_imu && this->camera_imu_ready()) {

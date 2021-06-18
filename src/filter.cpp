@@ -103,7 +103,7 @@ void EsEkf2::prediction(Matrix<double, 3, 1> imu_f, Matrix3d var_imu_f,
   Matrix<double, 24, 24> p_cov_temp = p_cov;
   p_cov = f_jac * p_cov * f_jac.transpose() + l_jac * q_cov * l_jac.transpose();
 
-  ROS_INFO("Prediction");
+  ROS_INFO_THROTTLE(2.0, "Prediction");
 }
 
 void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y) {
