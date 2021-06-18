@@ -46,7 +46,11 @@ class Sensor {
     quat_.z() = 0;
   }
   void setR(Matrix3d R) { params_.cov.R_pose = R; }
-  void publishState(bool state){sensor_state_pub.publish(state);}
+  void publishState(bool state){
+    std_msgs::Bool state_msg;
+    state_msg.data = state;
+    sensor_state_pub.publish(state_msg);
+  }
   void callback_sensor_pozyx(const geometry_msgs::TransformStamped& msg) {
     // ROS_INFO("camera_posix_callback");
     fresh_measurement_ = true;
