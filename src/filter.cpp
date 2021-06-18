@@ -8,7 +8,7 @@ EsEkf2::EsEkf2(EsEkfParams params) {
   g_est = params.g;
   // motion model noise jacobian
   l_jac = MatrixXd::Zero(N_STATES, 12);
-  l_jac.block<12, 12>(3, 0) = MatrixXd::Identity(3, 3);
+  l_jac.block<3, 3>(3, 0) = MatrixXd::Identity(3, 3);
 
   // initial state for pose, linear velocity and orientation
   p_est = {0, 0, 0};
