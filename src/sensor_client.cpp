@@ -29,7 +29,9 @@ SensorClient::SensorClient(const EsEkfParams& params,
   for (int i = 0; i < params_.sensors.size(); ++i) {
     sensor_vec_.push_back(new Sensor(params_.sensors.at(i)));
   }
-  while (true) {
+  while (ros::ok()) {
+    ros::Duration(0.25).sleep();
+    ros::spinOnce();
     if (((this->camera_imu_ready() && params.use_cam_imu) or
          (!params.use_cam_imu && imu_.isInit()))) {
       int k = 0;
@@ -39,11 +41,12 @@ SensorClient::SensorClient(const EsEkfParams& params,
       if (k == params_.sensors.size()){
         ROS_INFO("SENSOR INITIALIZED");
         break;
+      } else {
+        ROS_INFO_STREAM("Waiting for all sensors. Initialized: [" << k << "/" << params_.sensors.size() << "]");
       }
+
     } else {
       ROS_WARN("Now we wait for sensors...");
-      ros::Duration(0.25).sleep();
-      ros::spinOnce();
       if (ros::isShuttingDown()) break;
     }
   }
