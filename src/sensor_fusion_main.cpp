@@ -63,5 +63,9 @@ int main(int argc, char** argv) {
   // EsEkf2 esEkf2(params);
   SensorClient sensors(params, nh_private);
 
+  ROS_INFO("Starting sensor client");
+  ros::MultiThreadedSpinner spinner(0);  // Use max number of threads
+  spinner.spin();  // spin() will not return until the node has been shutdown
+  
   return 0;
 }

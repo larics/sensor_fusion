@@ -50,10 +50,6 @@ SensorClient::SensorClient(const EsEkfParams& params,
   // TODO izvuci van
   update_timer_ = node_handle_.createTimer(
       ros::Duration(0.01), &SensorClient::state_estimation, this);
-
-  ROS_INFO("Starting sensor client");
-  ros::MultiThreadedSpinner spinner(0);  // Use max number of threads
-  spinner.spin();  // spin() will not return until the node has been shutdown
 }
 
 void SensorClient::camera_acc_callback(const sensor_msgs::Imu& msg) {
