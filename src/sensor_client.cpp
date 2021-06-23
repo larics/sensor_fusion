@@ -120,9 +120,10 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
                        params_.model.Q_w, delta_t_);
     prediction = true;
   } else if (imu_.newMeasurement()) {
-    		es_ekf_.prediction(imu_acc_.translation(),params_.model.Q_f,
-    		imu_gyro_.translation(),params_.model.Q_w,
-    		delta_t_);
+    //std::cout << "Linear acc -> " << imu_.get_acc();
+    es_ekf_.prediction(imu_.get_acc(),params_.model.Q_f,
+    imu_.get_angular_vel(),params_.model.Q_w,
+    imu_.getDeltaT());
     prediction = true;
   }
 
