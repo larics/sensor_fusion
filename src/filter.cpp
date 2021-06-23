@@ -209,7 +209,7 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double, 4, 4> R_cov, Quaterniond y) {
 
 void EsEkf2::poseMeasurementUpdateDrift(Matrix3d R_cov,
                                         Matrix<double, 3, 1> y) {
-  Matrix<double, 3, N_STATES + 2> H = MatrixXd::Zero(3, N_STATES);
+  Matrix<double, 3, N_STATES + 2> H = MatrixXd::Zero(3, N_STATES + 2);
   H.block<3, 3>(0, 0) = q_drift.toRotationMatrix();
 
   H.block<3, 3>(0, 19) = MatrixXd::Identity(3, 3);
