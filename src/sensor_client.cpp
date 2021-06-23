@@ -146,6 +146,8 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
         sensor_vec_.at(i)->publishState(false);
       }
     }
+
+    sensor_vec_.at(i)->publishTransformedPose();
   }
 
   if (measurement or prediction) {

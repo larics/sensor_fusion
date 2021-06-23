@@ -8,6 +8,7 @@
 #include "structures.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "std_msgs/Bool.h"
+#include <geometry_msgs/PoseStamped.h>
 
 using namespace Eigen;
 
@@ -21,6 +22,7 @@ class Sensor {
   // subscriber for sensor odometry type msg
   ros::Subscriber sensor_sub;
   ros::Publisher sensor_state_pub;
+  ros::Publisher transformed_pub;
   ros::NodeHandle node_handle_;
   SensorParams params_;
   Translation3d pose_;
@@ -40,6 +42,8 @@ class Sensor {
     }
     sensor_state_pub = node_handle_.advertise<std_msgs::Bool>(params.id +
                                                               "_state", 1);
+    transformed_pub = node_handle_.advertise<geometry_msgs::PoseStamped>(params.id + "_transformed_pose", 1);
+    
     quat_.w() = 1;
     quat_.x() = 0;
     quat_.y() = 0;
@@ -50,6 +54,20 @@ class Sensor {
     std_msgs::Bool state_msg;
     state_msg.data = state;
     sensor_state_pub.publish(state_msg);
+  }
+  void publishTransformedPose(){
+    geometry_msgs::PoseStamped transformed_msg;
+    auto transformed_pose = getPose();
+    transformed_msg.header.frame_id = "world";
+    transformed_msg.header.stamp = ros::Time::now();
+    transformed_msg.pose.position.x = transformed_pose.x();
+    transformed_msg.pose.position.y = transformed_pose.y();
+    transformed_msg.pose.position.z = transformed_pose.z();
+    transformed_msg.pose.orientation.x = quat_.x();
+    transformed_msg.pose.orientation.y = quat_.y();
+    transformed_msg.pose.orientation.z = quat_.z();
+    transformed_msg.pose.orientation.w = quat_.w();
+    transformed_pub.publish(transformed_msg);    
   }
   void callback_sensor_pozyx(const geometry_msgs::TransformStamped& msg) {
     // ROS_INFO("camera_posix_callback");
