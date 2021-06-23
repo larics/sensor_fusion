@@ -34,13 +34,22 @@ SensorClient::SensorClient(const EsEkfParams& params,
          (!params.use_cam_imu && imu_.isInit()))) {
       int k = 0;
       for (int i = 0; i < params_.sensors.size(); ++i) {
-        if(sensor_vec_.at(i)->newMeasurement()) k++;
+        if(sensor_vec_.at(i)->newMeasurement()){
+          k++;
+        }
       }
       if (k == params_.sensors.size()){
         ROS_INFO("SENSOR INITIALIZED");
         break;
       }
+
+      ROS_WARN("Now we wait for sensors...");
+      ros::Duration(0.25).sleep();
+      ros::spinOnce();
+      if (ros::isShuttingDown()) break;
+
     } else {
+
       ROS_WARN("Now we wait for sensors...");
       ros::Duration(0.25).sleep();
       ros::spinOnce();
@@ -100,11 +109,7 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg) {
   bool prediction = false;
   bool measurement = false;
   nav_msgs::Odometry ekf_pose_;
-  // TODO ovo makni, provjerava se u inicijalizaciji
-  if (imu_.isInit()) {
-    ROS_WARN("IMU not ready");
-    return;
-  }
+
   if (params_.use_cam_imu && this->camera_imu_ready()) {
     Matrix<double, 3, 3> cam_imu_to_cam = MatrixXd::Zero(3, 3);
     cam_imu_to_cam(0, 2) = 1;
