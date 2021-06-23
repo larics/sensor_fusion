@@ -1,0 +1,21 @@
+name: sf_debug 
+root: ./
+startup_window: roscore 
+pre_window: 
+  export UAV_NAMESPACE=sf_debug &&
+  export BAG_NAME=$HOME/Bags/danieli1_compassless/pozyx_state_correct_fusion_2021-06-23-13-16-27.bag && 
+  export UAV_NAME=red &&
+  export RECORD_BAG_NAME=$HOME/Bags/danieli1_compassless/sf_debug
+windows:
+  - roscore:
+      layout: tiled
+      panes:
+        - roscore
+        - waitForRos; inspection_ws; roslaunch sensor_fusion sensor_fusion.launch 
+          config_yaml:=$(rospack find sensor_fusion)/startup/sf_bag_debug/custom_config/sensor_client_config.yaml
+        - waitForRos; sleep 5; rosbag play $BAG_NAME 
+          /$UAV_NAME/mavros/imu/data:=/$UAV_NAMESPACE/mavros/imu/data 
+          /$UAV_NAME/camera/accel/sample:=/$UAV_NAMESPACE/camera/accel/sample 
+          /$UAV_NAME/camera/gyro/sample:=/$UAV_NAMESPACE/camera/gyro/sample
+        - history -s "rosbag record -a -x \"/(.*)(image)(.*)\" -o $RECORD_BAG_NAME"
+
