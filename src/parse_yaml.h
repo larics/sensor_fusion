@@ -56,6 +56,7 @@ EsEkfParams parse_yaml(std::string config_file) {
         translation.at(2);
     std::cout << "id.at(i)-> " << id.at(i) << '\n';
     sensor.estimate_drift = config[id.at(i) + "_estimate_drift"].as<int>();
+    sensor.origin_at_first_measurement = config[id.at(i) + "_origin_at_first_measurement"].as<int>();
     sensor.msg_type = config[id.at(i) + "_msg_type"].as<int>();
     params.sensors.push_back(sensor);
   }

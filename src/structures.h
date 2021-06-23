@@ -38,6 +38,7 @@ struct SensorParams {
   std::string id;
   bool is_orientation_sensor;
   bool estimate_drift;
+  bool origin_at_first_measurement = false;
   int msg_type;
 
   Matrix<double, 3, 3> rotation_mat;

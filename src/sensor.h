@@ -29,6 +29,7 @@ class Sensor {
   Quaterniond quat_;
 
   bool fresh_measurement_;
+  bool first_measurement_ = false;
 
  public:
   Sensor(SensorParams params) : params_(params), fresh_measurement_(false) {
@@ -72,6 +73,12 @@ class Sensor {
   void callback_sensor_pozyx(const geometry_msgs::TransformStamped& msg) {
     // ROS_INFO("camera_posix_callback");
     fresh_measurement_ = true;
+    if (!first_measurement_ && params_.origin_at_first_measurement) {
+      first_measurement_ = true;
+      params_.translation.x() = - msg.transform.translation.x;
+      params_.translation.y() = - msg.transform.translation.y;
+      params_.translation.z() = - msg.transform.translation.z;
+    }
     pose_.x() = msg.transform.translation.x;
     pose_.y() = msg.transform.translation.y;
     pose_.z() = msg.transform.translation.z;
@@ -96,7 +103,7 @@ class Sensor {
 
   Matrix<double, 3, 1> getPose() {
     fresh_measurement_ = false;
-    return (params_.rotation_mat * pose_).translation() + params_.translation;
+    return (params_.rotation_mat * pose_).translation() + params_.rotation_mat * params_.translation;
   }
 
   Quaterniond getOrientation() {
