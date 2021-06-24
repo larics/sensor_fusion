@@ -34,16 +34,24 @@ class EsEkf2
 private:
   // State (pose,lin vel, gyroscope bias,
   // accelerometer bias, gravity)
-  Translation3d p_est, v_est, wb_est, fb_est, g_est;
+  Translation3d m_est_position;
+  Translation3d m_est_lin_velocity;
+  Translation3d m_est_gyro_bias;
+  Translation3d m_est_acc_bias;
+  Translation3d m_est_gravity;
+
   // Orientation in quaternions
-  Quaterniond q_est, q_drift;
+  Quaterniond m_est_quaternion;
+  Quaterniond m_est_quaternion_drift;
+
   // State covariance matrix
   Matrix<double, N_STATES, N_STATES> p_cov;
   Matrix<double, N_STATES, 12>       l_jac;
-  bool                               init;
   Translation3d                      p_drift;
-  Matrix3d                           var_imu_fb, var_imu_wb;
-  const Matrix<double, 3, 3>         I3x3 = Matrix<double, 3, 3>::Identity();
+  Matrix3d                           m_acc_bias_variance;
+  Matrix3d                           m_gyro_bias_variance;
+
+  const Matrix<double, 3, 3> I3x3 = Matrix<double, 3, 3>::Identity();
 
 public:
   // Constructor
@@ -67,28 +75,29 @@ public:
   void poseMeasurementUpdateDrift(const Matrix3d& R_cov, const Matrix<double, 3, 1>& y);
 
   // Setters
-  void setP(Matrix<double, 3, 1> p) { p_est.vector() = std::move(p); }
-  void setV(Matrix<double, 3, 1> v) { v_est.vector() = std::move(v); }
-  void setWb(Matrix<double, 3, 1> wb) { wb_est.vector() = std::move(wb); }
-  void setFb(Matrix<double, 3, 1> fb) { fb_est.vector() = std::move(fb); }
+  void setP(Matrix<double, 3, 1> p) { m_est_position.vector() = std::move(p); }
+  void setV(Matrix<double, 3, 1> v) { m_est_lin_velocity.vector() = std::move(v); }
+  void setWb(Matrix<double, 3, 1> wb) { m_est_gyro_bias.vector() = std::move(wb); }
+  void setFb(Matrix<double, 3, 1> fb) { m_est_acc_bias.vector() = std::move(fb); }
   void setQ(Matrix<double, 4, 1> q)
   {
-    q_est.w() = q[0];
-    q_est.x() = q[1];
-    q_est.y() = q[2];
-    q_est.z() = q[3];
+    m_est_quaternion.w() = q[0];
+    m_est_quaternion.x() = q[1];
+    m_est_quaternion.y() = q[2];
+    m_est_quaternion.z() = q[3];
     ROS_INFO_STREAM("EsEkf2::setQ() - q = " << q.transpose());
   }
   // Getters
   Matrix<double, 10, 1> getState()
   {
     Matrix<double, 10, 1> state;
-    state << p_est.vector(), v_est.vector(), q_est.w(), q_est.x(), q_est.y(), q_est.z();
+    state << m_est_position.vector(), m_est_lin_velocity.vector(), m_est_quaternion.w(),
+      m_est_quaternion.x(), m_est_quaternion.y(), m_est_quaternion.z();
     return state;
   }
-  Matrix<double, 3, 1> getP() { return p_est.vector(); }
+  Matrix<double, 3, 1> getP() { return m_est_position.vector(); }
   Matrix<double, 3, 1> getPDrift() { return p_drift.vector(); }
-  Matrix3d             getQDrift() { return q_drift.toRotationMatrix(); }
+  Matrix3d             getQDrift() { return m_est_quaternion_drift.toRotationMatrix(); }
 };
 
 #endif// SENSOR_FUSION_FILTER_H

@@ -20,43 +20,43 @@ using namespace Eigen;
 // TODO add sensor_state publishing
 class Sensor
 {
-  // subscriber for sensor odometry type msg
-  ros::Subscriber sensor_sub;
-  ros::Publisher  sensor_state_pub;
-  ros::Publisher  transformed_pub;
-  ros::NodeHandle node_handle_;
-  SensorParams    params_;
-  Translation3d   pose_;
-  Quaterniond     quat_;
-
-  bool fresh_measurement_;
-  bool first_measurement_ = false;
+private:
+  ros::Subscriber m_sensor_sub;
+  ros::Publisher  m_sensor_state_pub;
+  ros::Publisher  m_transformed_pub;
+  ros::NodeHandle m_node_handle;
+  SensorParams    m_sensor_params;
+  Translation3d   m_sensor_position;
+  Quaterniond     m_sensor_q;
+  bool            m_fresh_measurement = false;
+  bool            m_first_measurement = false;
 
 public:
-  Sensor(SensorParams params) : params_(params), fresh_measurement_(false)
+  Sensor(const SensorParams& params) : m_sensor_params(params)
   {
-    if (params.msg_type == 0) {
-      sensor_sub =
-        node_handle_.subscribe(params_.topic, 1, &Sensor::callback_sensor, this);
-    } else if (params.msg_type == 1) {
-      sensor_sub =
-        node_handle_.subscribe(params_.topic, 1, &Sensor::callback_sensor_pozyx, this);
+    if (m_sensor_params.msg_type == 0) {
+      m_sensor_sub =
+        m_node_handle.subscribe(m_sensor_params.topic, 1, &Sensor::callback_sensor, this);
+    } else if (m_sensor_params.msg_type == 1) {
+      m_sensor_sub = m_node_handle.subscribe(
+        m_sensor_params.topic, 1, &Sensor::callback_sensor_pozyx, this);
     }
-    sensor_state_pub = node_handle_.advertise<std_msgs::Bool>(params.id + "_state", 1);
-    transformed_pub  = node_handle_.advertise<geometry_msgs::PoseStamped>(
-      params.id + "_transformed_pose", 1);
+    m_sensor_state_pub =
+      m_node_handle.advertise<std_msgs::Bool>(m_sensor_params.id + "_state", 1);
+    m_transformed_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
+      m_sensor_params.id + "_transformed_pose", 1);
 
-    quat_.w() = 1;
-    quat_.x() = 0;
-    quat_.y() = 0;
-    quat_.z() = 0;
+    m_sensor_q.w() = 1;
+    m_sensor_q.x() = 0;
+    m_sensor_q.y() = 0;
+    m_sensor_q.z() = 0;
   }
-  void setR(Matrix3d R) { params_.cov.R_pose = R; }
+  void setR(Matrix3d R) { m_sensor_params.cov.R_pose = R; }
   void publishState(bool state)
   {
     std_msgs::Bool state_msg;
     state_msg.data = state;
-    sensor_state_pub.publish(state_msg);
+    m_sensor_state_pub.publish(state_msg);
   }
   void publishTransformedPose()
   {
@@ -67,70 +67,74 @@ public:
     transformed_msg.pose.position.x             = transformed_pose.x();
     transformed_msg.pose.position.y             = transformed_pose.y();
     transformed_msg.pose.position.z             = transformed_pose.z();
-    transformed_msg.pose.orientation.x          = quat_.x();
-    transformed_msg.pose.orientation.y          = quat_.y();
-    transformed_msg.pose.orientation.z          = quat_.z();
-    transformed_msg.pose.orientation.w          = quat_.w();
-    transformed_pub.publish(transformed_msg);
+    transformed_msg.pose.orientation.x          = m_sensor_q.x();
+    transformed_msg.pose.orientation.y          = m_sensor_q.y();
+    transformed_msg.pose.orientation.z          = m_sensor_q.z();
+    transformed_msg.pose.orientation.w          = m_sensor_q.w();
+    m_transformed_pub.publish(transformed_msg);
   }
   void callback_sensor_pozyx(const geometry_msgs::TransformStamped& msg)
   {
     // ROS_INFO("camera_posix_callback");
-    fresh_measurement_ = true;
-    if (!first_measurement_ && params_.origin_at_first_measurement) {
-      first_measurement_      = true;
-      params_.translation.x() = -msg.transform.translation.x;
-      params_.translation.y() = -msg.transform.translation.y;
-      params_.translation.z() = -msg.transform.translation.z;
+    m_fresh_measurement = true;
+    if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
+      m_first_measurement             = true;
+      m_sensor_params.translation.x() = -msg.transform.translation.x;
+      m_sensor_params.translation.y() = -msg.transform.translation.y;
+      m_sensor_params.translation.z() = -msg.transform.translation.z;
     }
-    pose_.x() = msg.transform.translation.x;
-    pose_.y() = msg.transform.translation.y;
-    pose_.z() = msg.transform.translation.z;
+    m_sensor_position.x() = msg.transform.translation.x;
+    m_sensor_position.y() = msg.transform.translation.y;
+    m_sensor_position.z() = msg.transform.translation.z;
   }
 
   Vector3d getDriftedPose(Matrix3d R, Vector3d d)
   {
-    return R.inverse() * pose_.translation() - R.inverse() * d;
+    return R.inverse() * m_sensor_position.translation() - R.inverse() * d;
   }
 
   void callback_sensor(const nav_msgs::OdometryPtr& msg)
   {
-    fresh_measurement_ = true;
+    m_fresh_measurement = true;
 
-    pose_.x() = msg->pose.pose.position.x;
-    pose_.y() = msg->pose.pose.position.y;
-    pose_.z() = msg->pose.pose.position.z;
+    m_sensor_position.x() = msg->pose.pose.position.x;
+    m_sensor_position.y() = msg->pose.pose.position.y;
+    m_sensor_position.z() = msg->pose.pose.position.z;
 
-    quat_.w() = msg->pose.pose.orientation.w;
-    quat_.x() = msg->pose.pose.orientation.x;
-    quat_.y() = msg->pose.pose.orientation.y;
-    quat_.z() = msg->pose.pose.orientation.z;
+    m_sensor_q.w() = msg->pose.pose.orientation.w;
+    m_sensor_q.x() = msg->pose.pose.orientation.x;
+    m_sensor_q.y() = msg->pose.pose.orientation.y;
+    m_sensor_q.z() = msg->pose.pose.orientation.z;
   }
 
   Matrix<double, 3, 1> getPose()
   {
-    fresh_measurement_ = false;
-    return (params_.rotation_mat * pose_).translation()
-           + params_.rotation_mat * params_.translation;
+    m_fresh_measurement = false;
+    return (m_sensor_params.rotation_mat * m_sensor_position).translation()
+           + m_sensor_params.rotation_mat * m_sensor_params.translation;
   }
 
-  Quaterniond getOrientation()
+  const Quaterniond& getOrientation()
   {
     // TODO add transformation
-    fresh_measurement_ = false;
-    return quat_;
+    m_fresh_measurement = false;
+    return m_sensor_q;
   }
+
   Matrix<double, 4, 1> getOrientationVector()
   {
-    fresh_measurement_ = false;
-    return { quat_.w(), quat_.x(), quat_.y(), quat_.z() };
+    m_fresh_measurement = false;
+    return { m_sensor_q.w(), m_sensor_q.x(), m_sensor_q.y(), m_sensor_q.z() };
   }
-  bool newMeasurement() { return fresh_measurement_; }
-  bool isOrientationSensor() { return params_.is_orientation_sensor; }
-  bool estimateDrift() { return params_.estimate_drift; }
-
-  Matrix3d             getRPose() { return params_.cov.R_pose; }
-  Matrix<double, 4, 4> getROrientation() { return params_.cov.R_orientation; }
+  bool newMeasurement() { return m_fresh_measurement; }
+  bool isOrientationSensor() { return m_sensor_params.is_orientation_sensor; }
+  bool estimateDrift() { return m_sensor_params.estimate_drift; }
+  const std::string&          getSensorID() { return m_sensor_params.id; }
+  const Matrix3d&             getRPose() { return m_sensor_params.cov.R_pose; }
+  const Matrix<double, 4, 4>& getROrientation()
+  {
+    return m_sensor_params.cov.R_orientation;
+  }
 
   ~Sensor() { std::cout << "SENSOR DESTRUCTOR" << '\n'; }
 };

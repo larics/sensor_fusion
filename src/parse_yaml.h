@@ -59,17 +59,17 @@ EsEkfParams parse_yaml(const std::string& config_file)
   params.outlier_constant  = config["outlier_constant"].as<double>();
   params.estimate_acc_bias = config["estimate_acc_bias"].as<int>();
   if (params.estimate_acc_bias) {
-    params.init_ab_p_cov = config["acc_bias_p_cov"].as<double>();
-    translation          = config["acc_bias_var"].as<std::vector<double>>();
-    params.fb_var        = Matrix3d::Zero();
-    for (int i = 0; i < 3; ++i) { params.fb_var(i, i) = translation.at(i); }
+    params.init_ab_p_cov     = config["acc_bias_p_cov"].as<double>();
+    translation              = config["acc_bias_var"].as<std::vector<double>>();
+    params.acc_bias_variance = Matrix3d::Zero();
+    for (int i = 0; i < 3; ++i) { params.acc_bias_variance(i, i) = translation.at(i); }
   }
   params.estimate_gyro_bias = config["estimate_gyro_bias"].as<int>();
   if (params.estimate_gyro_bias) {
-    params.init_wb_p_cov = config["gyro_bias_p_cov"].as<double>();
-    translation          = config["gyro_bias_var"].as<std::vector<double>>();
-    params.wb_var        = Matrix3d::Zero();
-    for (int i = 0; i < 3; ++i) { params.wb_var(i, i) = translation.at(i); }
+    params.init_wb_p_cov      = config["gyro_bias_p_cov"].as<double>();
+    translation               = config["gyro_bias_var"].as<std::vector<double>>();
+    params.gyro_bias_variance = Matrix3d::Zero();
+    for (int i = 0; i < 3; ++i) { params.gyro_bias_variance(i, i) = translation.at(i); }
   }
   params.estimate_gravity = config["estimate_gravity"].as<int>();
   params.init_g_cov       = config["g_p_cov"].as<double>();

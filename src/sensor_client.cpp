@@ -17,17 +17,22 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
     ros::Duration(0.25).sleep();
     ros::spinOnce();
     if (m_imu_sensor.isInit()) {
-      int k = 0;
+      bool all_sensor_initialized = true;
       for (const auto& sensor_ptr : m_sensor_vector) {
-        if (sensor_ptr->newMeasurement()) { k++; }
-      }
-      if (k == m_sensor_vector.size()) {
-        ROS_INFO_STREAM("SensorClient::SensorClient() - Sensor Initialized!");
-        break;
+        if (sensor_ptr->newMeasurement()) {
+          ROS_INFO_STREAM("SensorClient::SensorClient() - Sensor "
+                          << sensor_ptr->getSensorID() << " initilized.");
+        } else {
+          ROS_WARN_STREAM("SensorClient::SensorClient() - Unable to initialize "
+                          << sensor_ptr->getSensorID() << " sensor.");
+          all_sensor_initialized = false;
+        }
       }
 
-      ROS_INFO_STREAM("Waiting for all sensors. Initialized: ["
-                      << k << "/" << m_ekf_params.sensors.size() << "]");
+      if (all_sensor_initialized) {
+        ROS_INFO("SensorClient::SensorClient() - All Sensors Initialized!");
+        break;
+      }
 
     } else {
       ROS_WARN("Now we wait for sensors...");
