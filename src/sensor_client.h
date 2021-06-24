@@ -19,80 +19,8 @@ class SensorClient
 public:
   SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_private);
 
-  void camera_acc_callback(const sensor_msgs::Imu& msg);
-  void camera_gyro_callback(const sensor_msgs::Imu& msg);
-  void camera_odom_callback(const nav_msgs::Odometry& msg);
-  void posix_raw_callback(const geometry_msgs::TransformStamped& msg);
-  void cartographer_callback();
-  void imu_callback(const sensor_msgs::Imu& msg);
   void state_estimation(const ros::TimerEvent& msg);
-
-  bool outlier_detection(Matrix<double, 3, 1> measurement);
-
-  // Get sensor state
-  Matrix<double, 3, 1> get_acc()
-  {
-    if (params_.use_cam_imu) {
-      new_measurement_camera_acc_ = false;
-      return camera_acc_.translation();
-    } else {
-      new_measurement_imu_ = false;
-      return imu_acc_.translation();
-    }
-  }
-
-  Vector3d get_angular_vel()
-  {
-    if (params_.use_cam_imu) {
-      new_measurement_camera_gyro_ = false;
-      return camera_gyro_.translation();
-    } else
-      return imu_gyro_.translation();
-  }
-  Matrix<double, 3, 1> get_camera_pose()
-  {
-    new_measurement_camera_odom_ = false;
-    return (params_.sensors.at(0).rotation_mat * camera_pose_).translation()
-           + params_.sensors.at(0).translation;
-  }
-
-  Matrix<double, 3, 1> get_camera_lin_vel()
-  {
-    return (params_.sensors.at(0).rotation_mat * camera_lin_vel_).translation();
-  }
-
-  Matrix<double, 4, 1> get_camera_orientation()
-  {
-    new_measurement_camera_odom_ = false;
-    return { camera_orientation_.w(),
-             camera_orientation_.x(),
-             camera_orientation_.y(),
-             camera_orientation_.z() };
-  }
-  Quaterniond get_camera_orientation_quat()
-  {
-    new_measurement_camera_odom_ = false;
-    return camera_orientation_;
-  }
-
-  Matrix<double, 3, 1> get_pozyx_pose()
-  {
-    new_measurement_posix_ = false;
-    return (params_.sensors.at(0).rotation_mat * posix_pose_).translation()
-           + params_.sensors.at(0).translation;
-  }
-
-  Translation3d get_cartographer_pose() { return cartographer_pose_; };
-  bool          camera_imu_ready()
-  {
-    if (new_measurement_camera_gyro_ && new_measurement_camera_acc_) {
-      return true;
-    } else
-      return false;
-  }
-
-  bool camera_odom_ready() { return new_measurement_camera_odom_; }
-  bool pozyx_ready() { return new_measurement_posix_; }
+  bool outlier_detection(const Matrix<double, 3, 1>& measurement);
 
 private:
   ros::Subscriber camera_acc_sub_, camera_gyro_sub_, camera_odom_sub_, imu_sub_,

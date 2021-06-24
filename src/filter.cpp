@@ -4,7 +4,7 @@
 
 #include "filter.h"
 
-EsEkf2::EsEkf2(EsEkfParams params)
+EsEkf2::EsEkf2(const EsEkfParams& params)
 {
   g_est = params.g;
   // motion model noise jacobian
@@ -53,11 +53,11 @@ EsEkf2::EsEkf2(EsEkfParams params)
   std::cout << "l_jacobian:\n" << l_jac << '\n' << "p_cov init:\n" << p_cov << '\n';
 }
 
-void EsEkf2::prediction(Matrix<double, 3, 1> imu_f,
-                        Matrix3d             var_imu_f,
-                        Matrix<double, 3, 1> imu_w,
-                        Matrix3d             var_imu_w,
-                        double               delta_t)
+void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
+                        const Matrix3d&             var_imu_f,
+                        const Matrix<double, 3, 1>& imu_w,
+                        const Matrix3d&             var_imu_w,
+                        const double                delta_t)
 {
   // 1. Update state with IMU inputs
   auto rot_est = q_est.toRotationMatrix();
@@ -99,10 +99,10 @@ void EsEkf2::prediction(Matrix<double, 3, 1> imu_f,
   q_cov.block<3, 3>(9, 9)      = var_imu_wb * delta_t;
   p_cov = f_jac * p_cov * f_jac.transpose() + l_jac * q_cov * l_jac.transpose();
 
-  ROS_INFO_THROTTLE(2.0, "Prediction");
+  ROS_INFO_THROTTLE(2.0, "EsEkf2::prediction()");
 }
 
-void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y)
+void EsEkf2::poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3, 1>& y)
 {
   // measurement model jacobian
   Matrix<double, 3, N_STATES> h_jac = MatrixXd::Zero(3, N_STATES);
@@ -142,7 +142,7 @@ void EsEkf2::poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y)
           + K * R_cov * K.transpose();
 }
 
-void EsEkf2::angleMeasurementUpdate(Matrix<double, 4, 4> R_cov, Quaterniond y)
+void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov, const Quaterniond& y)
 {
   // Sola equation:(278)
   Matrix<double, 4, N_STATES + 2> H = MatrixXd::Zero(4, N_STATES + 2);
@@ -196,7 +196,7 @@ void EsEkf2::angleMeasurementUpdate(Matrix<double, 4, 4> R_cov, Quaterniond y)
           + K * R_cov * K.transpose();
 }
 
-void EsEkf2::poseMeasurementUpdateDrift(Matrix3d R_cov, Matrix<double, 3, 1> y)
+void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d& R_cov, const Matrix<double, 3, 1>& y)
 {
   Matrix<double, 3, N_STATES + 2> H = MatrixXd::Zero(3, N_STATES + 2);
   H.block<3, 3>(0, 0)               = q_drift.toRotationMatrix();

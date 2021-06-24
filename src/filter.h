@@ -48,37 +48,36 @@ private:
 public:
   // Constructor
   // Set gravity vector and bias vectors
-  EsEkf2(EsEkfParams params);
+  EsEkf2(const EsEkfParams& params);
   /*
    * The prediction step. Here we use imu measurements to get an
    * estimate of the pose, velocity and orientation.
    */
-  void prediction(Matrix<double, 3, 1> imu_f,
-                  Matrix3d             var_imu_f,
-                  Matrix<double, 3, 1> imu_w,
-                  Matrix3d             var_imu_w,
-                  double               delta_t);
+  void prediction(const Matrix<double, 3, 1>& imu_f,
+                  const Matrix3d&             var_imu_f,
+                  const Matrix<double, 3, 1>& imu_w,
+                  const Matrix3d&             var_imu_w,
+                  const double                delta_t);
   /*
    * Measurement update. Use sensor measurement of pose to
    * update the estimation and reduce uncertainty.
    */
-  void poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y);
-  void angleMeasurementUpdate(Matrix<double, 4, 4> R_cov, Quaterniond y);
-  void poseMeasurementUpdateDrift(Matrix3d R_cov, Matrix<double, 3, 1> y);
-  void angleMeasurementUpdateDrift(Matrix<double, 4, 4> R_cov, Quaterniond y);
+  void poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3, 1>& y);
+  void angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov, const Quaterniond& y);
+  void poseMeasurementUpdateDrift(const Matrix3d& R_cov, const Matrix<double, 3, 1>& y);
 
   // Setters
-  void setP(Matrix<double, 3, 1> p) { p_est.vector() = p; }
-  void setV(Matrix<double, 3, 1> v) { v_est.vector() = v; }
-  void setWb(Matrix<double, 3, 1> wb) { wb_est.vector() = wb; }
-  void setFb(Matrix<double, 3, 1> fb) { fb_est.vector() = fb; }
+  void setP(Matrix<double, 3, 1> p) { p_est.vector() = std::move(p); }
+  void setV(Matrix<double, 3, 1> v) { v_est.vector() = std::move(v); }
+  void setWb(Matrix<double, 3, 1> wb) { wb_est.vector() = std::move(wb); }
+  void setFb(Matrix<double, 3, 1> fb) { fb_est.vector() = std::move(fb); }
   void setQ(Matrix<double, 4, 1> q)
   {
     q_est.w() = q[0];
     q_est.x() = q[1];
     q_est.y() = q[2];
     q_est.z() = q[3];
-    std::cout << "q" << q.transpose() << std::endl;
+    ROS_INFO_STREAM("EsEkf2::setQ() - q = " << q.transpose());
   }
   // Getters
   Matrix<double, 10, 1> getState()

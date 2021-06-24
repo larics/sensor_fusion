@@ -29,7 +29,6 @@ int main(int argc, char** argv)
             << "Q_w\n"
             << params.model.Q_w << "\n\n"
             << "ES EKF params\n\n "
-            << "Use camera imu: " << params.use_cam_imu << '\n'
             << "Estimate acc bias: " << params.estimate_acc_bias << '\n'
             << "Estimate gyro bias: " << params.estimate_gyro_bias << '\n'
             << "Estimate gravity: " << params.estimate_gravity << '\n'
@@ -63,7 +62,7 @@ int main(int argc, char** argv)
   // EsEkf2 esEkf2(params);
   SensorClient sensors(params, nh_private);
 
-  ROS_INFO("Starting sensor client");
+  ROS_INFO("[main] - Starting sensor client");
   ros::MultiThreadedSpinner spinner(0);// Use max number of threads
   spinner.spin();// spin() will not return until the node has been shutdown
 

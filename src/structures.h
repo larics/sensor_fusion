@@ -63,7 +63,6 @@ struct EsEkfParams
   double init_pose_p_cov, init_v_p_cov, init_q_p_cov, init_ab_p_cov, init_wb_p_cov,
     init_g_cov, init_p_drift, init_q_drift;
 
-  bool use_cam_imu;
   bool estimate_acc_bias, estimate_gyro_bias, estimate_gravity;
 
   Matrix3d fb_var, wb_var;

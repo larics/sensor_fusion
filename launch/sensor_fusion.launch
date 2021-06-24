@@ -3,11 +3,6 @@
   <arg name="namespace"     default="$(env UAV_NAMESPACE)"/>
   <arg name="imu_topic"     default="mavros/imu/data"/>
   <arg name="config_yaml"   default="$(find sensor_fusion)/config/sensor_client_config.yaml"/>
-
-  <arg name="acc_topic"     default="camera/accel/sample"/>
-  <arg name="gyro_topic"    default="camera/gyro/sample"/>
-  <arg name="odom_topic"    default="camera/odom/sample"/>
-  <arg name="posix_topic"   default="pozyx/measured"/>
   <arg name="es_ekf_topic"  default="es_ekf/odom"/>
 
   <!-- Debug arguments -->
@@ -20,11 +15,6 @@
 
     <param name="config_yaml"     value="$(arg config_yaml)" />
     <param name="imu_topic"       value="$(arg imu_topic)" />
-    <param name="/use_sim_time"   value="false"/>
-    <param name="acc_topic"       value="$(arg acc_topic)" />
-    <param name="odom_topic"      value="$(arg odom_topic)" />
-    <param name="gyro_topic"      value="$(arg gyro_topic)" />
-    <param name="posix_topic"     value="$(arg posix_topic)" />
     <param name="es_ekf_topic"    value="$(arg es_ekf_topic)" />
   </node>
 

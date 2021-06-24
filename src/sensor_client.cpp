@@ -8,17 +8,9 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
     imu_(params.model, nh_private)
 {
   // TODO makni flag
-  std::string acc_topic, gyro_topic, es_ekf_topic;
-  nh_private.getParam("acc_topic", acc_topic);
-  nh_private.getParam("gyro_topic", gyro_topic);
+  std::string es_ekf_topic;
   nh_private.getParam("es_ekf_topic", es_ekf_topic);
-
-  camera_acc_sub_ =
-    node_handle_.subscribe(acc_topic, 1, &SensorClient::camera_acc_callback, this);
-  camera_gyro_sub_ =
-    node_handle_.subscribe(gyro_topic, 1, &SensorClient::camera_gyro_callback, this);
   estimate_pub_ = node_handle_.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
-
 
   for (int i = 0; i < params_.sensors.size(); ++i) {
     sensor_vec_.push_back(new Sensor(params_.sensors.at(i)));
@@ -26,19 +18,18 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
   while (ros::ok()) {
     ros::Duration(0.25).sleep();
     ros::spinOnce();
-    if (((this->camera_imu_ready() && params.use_cam_imu)
-         or (!params.use_cam_imu && imu_.isInit()))) {
+    if (imu_.isInit()) {
       int k = 0;
       for (int i = 0; i < params_.sensors.size(); ++i) {
-        if (sensor_vec_.at(i)->newMeasurement()) k++;
+        if (sensor_vec_.at(i)->newMeasurement()) { k++; }
       }
       if (k == params_.sensors.size()) {
-        ROS_INFO("SENSOR INITIALIZED");
+        ROS_INFO_STREAM("SensorClient::SensorClient() - Sensor Initialized!");
         break;
-      } else {
-        ROS_INFO_STREAM("Waiting for all sensors. Initialized: ["
-                        << k << "/" << params_.sensors.size() << "]");
       }
+
+      ROS_INFO_STREAM("Waiting for all sensors. Initialized: ["
+                      << k << "/" << params_.sensors.size() << "]");
 
     } else {
       ROS_WARN("Now we wait for sensors...");
@@ -50,38 +41,10 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
     node_handle_.createTimer(ros::Duration(0.01), &SensorClient::state_estimation, this);
 }
 
-void SensorClient::camera_acc_callback(const sensor_msgs::Imu& msg)
+bool SensorClient::outlier_detection(const Matrix<double, 3, 1>& measurement)
 {
-  // ROS_INFO("camera_acc_callback");
-  if (start_imu_) {
-    start_imu_ = false;
-    old_time_  = msg.header.stamp.toSec();
-    return;
-  }
-  delta_t_  = msg.header.stamp.toSec() - old_time_;
-  old_time_ = msg.header.stamp.toSec();
-
-  new_measurement_camera_acc_ = true;
-  camera_acc_.x()             = msg.linear_acceleration.x;
-  camera_acc_.y()             = msg.linear_acceleration.y;
-  camera_acc_.z()             = msg.linear_acceleration.z;
-}
-
-void SensorClient::camera_gyro_callback(const sensor_msgs::Imu& msg)
-{
-  // ROS_INFO("camera_gyro_callback");
-  new_measurement_camera_gyro_ = true;
-  camera_gyro_.x()             = msg.angular_velocity.x;
-  camera_gyro_.y()             = msg.angular_velocity.y;
-  camera_gyro_.z()             = msg.angular_velocity.z;
-}
-
-bool SensorClient::outlier_detection(Matrix<double, 3, 1> measurement)
-{
-  ;
   return ((measurement - es_ekf_.getP()).norm() < params_.outlier_constant);
 }
-
 
 void SensorClient::state_estimation(const ros::TimerEvent& msg)
 {
@@ -104,18 +67,7 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
     ROS_WARN_THROTTLE(5.0, "IMU not ready");
     return;
   }
-  if (params_.use_cam_imu && this->camera_imu_ready()) {
-    Matrix<double, 3, 3> cam_imu_to_cam = MatrixXd::Zero(3, 3);
-    cam_imu_to_cam(0, 2)                = 1;
-    cam_imu_to_cam(1, 0)                = 1;
-    cam_imu_to_cam(2, 1)                = 1;
-    es_ekf_.prediction(cam_imu_to_cam * this->get_acc(),
-                       params_.model.Q_f,
-                       cam_imu_to_cam * this->get_angular_vel(),
-                       params_.model.Q_w,
-                       delta_t_);
-    prediction = true;
-  } else if (imu_.newMeasurement()) {
+  if (imu_.newMeasurement()) {
     // std::cout << "Linear acc -> " << imu_.get_acc();
     es_ekf_.prediction(imu_.get_acc(),
                        params_.model.Q_f,
