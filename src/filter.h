@@ -43,6 +43,7 @@ private:
   bool                               init;
   Translation3d                      p_drift;
   Matrix3d                           var_imu_fb, var_imu_wb;
+  const Matrix<double, 3, 3>         I3x3 = Matrix<double, 3, 3>::Identity();
 
 public:
   // Constructor

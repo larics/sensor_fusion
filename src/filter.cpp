@@ -60,14 +60,14 @@ void EsEkf2::prediction(Matrix<double, 3, 1> imu_f,
                         double               delta_t)
 {
   // 1. Update state with IMU inputs
+  auto rot_est = q_est.toRotationMatrix();
+
   p_est.vector() =
     p_est.vector() + delta_t * v_est.vector()
-    + pow(delta_t, 2) / 2
-        * (q_est.toRotationMatrix() * (imu_f - fb_est.vector()) + (g_est.vector()));
+    + pow(delta_t, 2) / 2.0 * (rot_est * (imu_f - fb_est.vector()) + (g_est.vector()));
 
   v_est.vector() =
-    v_est.vector()
-    + delta_t * (q_est.toRotationMatrix() * (imu_f - fb_est.vector()) + (g_est.vector()));
+    v_est.vector() + delta_t * (rot_est * (imu_f - fb_est.vector()) + (g_est.vector()));
 
   Quaterniond imu_q = euler2quat({ delta_t * (imu_w[0] - wb_est.x()),
                                    delta_t * (imu_w[1] - wb_est.y()),
@@ -75,30 +75,28 @@ void EsEkf2::prediction(Matrix<double, 3, 1> imu_f,
 
   q_est = q_est * imu_q;
   q_est.normalize();
+  rot_est = q_est.toRotationMatrix();
 
   // 1.1 Linearize the motion model
   // and compute Jacobians (Scola (311))
-  Matrix<double, N_STATES, N_STATES> f_jac;
-  f_jac                   = MatrixXd::Identity(N_STATES, N_STATES);
-  f_jac.block<3, 3>(0, 3) = delta_t * MatrixXd::Identity(3, 3);
+  Matrix<double, N_STATES, N_STATES> f_jac =
+    Matrix<double, N_STATES, N_STATES>::Identity();
+  f_jac.block<3, 3>(0, 3) = delta_t * I3x3;
   // TODO transform imu maybe beore prediction????
-  f_jac.block<3, 3>(3, 6) =
-    -skew_symetric(q_est.toRotationMatrix() * (imu_f - fb_est.vector())) * delta_t;
-  f_jac.block<3, 3>(3, 9)  = -q_est.toRotationMatrix() * delta_t;
-  f_jac.block<3, 3>(3, 15) = delta_t * MatrixXd::Identity(3, 3);
-  f_jac.block<3, 3>(6, 12) = -q_est.toRotationMatrix() * delta_t;
-  f_jac.block<3, 3>(6, 6)  = MatrixXd::Identity(3, 3);
+  f_jac.block<3, 3>(3, 6) = -skew_symetric(rot_est * (imu_f - fb_est.vector())) * delta_t;
+  f_jac.block<3, 3>(3, 9) = -rot_est * delta_t;
+  f_jac.block<3, 3>(3, 15) = delta_t * I3x3;
+  f_jac.block<3, 3>(6, 12) = f_jac.block<3, 3>(3, 9);
+  f_jac.block<3, 3>(6, 6)  = I3x3;
 
   // std::cout << "f_jac:\n" << f_jac.block<12,12>(0,0) << "\n";
 
   // 2. Propagate uncertainty
-  Matrix<double, 12, 12> q_cov = MatrixXd::Identity(12, 12);
+  Matrix<double, 12, 12> q_cov = Matrix<double, 12, 12>::Identity();
   q_cov.block<3, 3>(0, 0)      = var_imu_f * pow(delta_t, 2);
   q_cov.block<3, 3>(3, 3)      = var_imu_w * pow(delta_t, 2);
   q_cov.block<3, 3>(6, 6)      = var_imu_fb * delta_t;
   q_cov.block<3, 3>(9, 9)      = var_imu_wb * delta_t;
-
-  Matrix<double, 24, 24> p_cov_temp = p_cov;
   p_cov = f_jac * p_cov * f_jac.transpose() + l_jac * q_cov * l_jac.transpose();
 
   ROS_INFO_THROTTLE(2.0, "Prediction");
