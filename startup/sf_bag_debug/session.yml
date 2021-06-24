@@ -21,6 +21,21 @@ windows:
           /$UAV_NAME/camera/accel/sample:=/$UAV_NAMESPACE/camera/accel/sample 
           /$UAV_NAME/camera/gyro/sample:=/$UAV_NAMESPACE/camera/gyro/sample
         - history -s "rosbag record -a -x \"/(.*)(image)(.*)\" -o $RECORD_BAG_NAME"
+  - transform:
+      layout: tiled
+      panes:
+        - waitForRos; waitFor /$UAV_NAMESPACE/es_ekf/odom;
+          rosrun topic_tools transform /$UAV_NAMESPACE/es_ekf/odom/pose/pose/orientation /$UAV_NAMESPACE/ekf_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAME/es_ekf/odom;
+          rosrun topic_tools transform /$UAV_NAME/es_ekf/odom/pose/pose/orientation /$UAV_NAME/ekf_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/camera_transformed_pose;
+          rosrun topic_tools transform /$UAV_NAMESPACE/camera_transformed_pose/pose/orientation /$UAV_NAMESPACE/camera_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/pozyx_transformed_pose;
+          rosrun topic_tools transform /$UAV_NAMESPACE/pozyx_transformed_pose/pose/orientation /$UAV_NAMESPACE/pozyx_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
   - plot:
       layout: tiled
       panes:
