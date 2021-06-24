@@ -55,11 +55,6 @@ int main(int argc, char** argv)
               << params.sensors.at(i).translation << "\n  ";
   }
 
-  // TODO IZBRISI
-  // EsEkf esEkf;
-  // Camera camera(params,&esEkf,nh_private);
-
-  // EsEkf2 esEkf2(params);
   SensorClient sensors(params, nh_private);
 
   ROS_INFO("[main] - Starting sensor client");

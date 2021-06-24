@@ -1,35 +1,32 @@
 #include "sensor_client.h"
 
 SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_private)
-  : params_(params), es_ekf_(params), start_flag_(true), start_camera_imu_(true),
-    start_imu_(true), new_measurement_camera_odom_(false),
-    new_measurement_camera_gyro_(false), new_measurement_camera_acc_(false),
-    new_measurement_imu_(false), new_measurement_posix_(false),
-    imu_(params.model, nh_private)
+  : m_ekf_params(params), m_es_ekf(params), m_start_flag(true),
+    m_imu_sensor(params.model, nh_private)
 {
   // TODO makni flag
   std::string es_ekf_topic;
   nh_private.getParam("es_ekf_topic", es_ekf_topic);
-  estimate_pub_ = node_handle_.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
+  m_estimate_pub = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
 
-  for (int i = 0; i < params_.sensors.size(); ++i) {
-    sensor_vec_.push_back(new Sensor(params_.sensors.at(i)));
+  for (int i = 0; i < m_ekf_params.sensors.size(); ++i) {
+    m_sensor_vector.push_back(new Sensor(m_ekf_params.sensors.at(i)));
   }
   while (ros::ok()) {
     ros::Duration(0.25).sleep();
     ros::spinOnce();
-    if (imu_.isInit()) {
+    if (m_imu_sensor.isInit()) {
       int k = 0;
-      for (int i = 0; i < params_.sensors.size(); ++i) {
-        if (sensor_vec_.at(i)->newMeasurement()) { k++; }
+      for (int i = 0; i < m_ekf_params.sensors.size(); ++i) {
+        if (m_sensor_vector.at(i)->newMeasurement()) { k++; }
       }
-      if (k == params_.sensors.size()) {
+      if (k == m_ekf_params.sensors.size()) {
         ROS_INFO_STREAM("SensorClient::SensorClient() - Sensor Initialized!");
         break;
       }
 
       ROS_INFO_STREAM("Waiting for all sensors. Initialized: ["
-                      << k << "/" << params_.sensors.size() << "]");
+                      << k << "/" << m_ekf_params.sensors.size() << "]");
 
     } else {
       ROS_WARN("Now we wait for sensors...");
@@ -37,24 +34,24 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
     }
   }
   // TODO izvuci van
-  update_timer_ =
-    node_handle_.createTimer(ros::Duration(0.01), &SensorClient::state_estimation, this);
+  m_update_timer =
+    m_node_handle.createTimer(ros::Duration(0.01), &SensorClient::state_estimation, this);
 }
 
 bool SensorClient::outlier_detection(const Matrix<double, 3, 1>& measurement)
 {
-  return ((measurement - es_ekf_.getP()).norm() < params_.outlier_constant);
+  return ((measurement - m_es_ekf.getP()).norm() < m_ekf_params.outlier_constant);
 }
 
 void SensorClient::state_estimation(const ros::TimerEvent& msg)
 {
-  if (start_flag_) {
-    if (sensor_vec_.at(0)->newMeasurement()) {
-      es_ekf_.setP(sensor_vec_.at(0)->getPose());
+  if (m_start_flag) {
+    if (m_sensor_vector.at(0)->newMeasurement()) {
+      m_es_ekf.setP(m_sensor_vector.at(0)->getPose());
       // TODO if orientaion vector
-      es_ekf_.setQ(sensor_vec_.at(0)->getOrientationVector());
-      es_ekf_.setV({ 0, 0, 0 });
-      start_flag_ = false;
+      m_es_ekf.setQ(m_sensor_vector.at(0)->getOrientationVector());
+      m_es_ekf.setV({ 0, 0, 0 });
+      m_start_flag = false;
     }
     return;
   }
@@ -63,52 +60,52 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
   bool               measurement = false;
   nav_msgs::Odometry ekf_pose_;
   // TODO ovo makni, provjerava se u inicijalizaciji
-  if (!imu_.isInit()) {
+  if (!m_imu_sensor.isInit()) {
     ROS_WARN_THROTTLE(5.0, "IMU not ready");
     return;
   }
-  if (imu_.newMeasurement()) {
-    // std::cout << "Linear acc -> " << imu_.get_acc();
-    es_ekf_.prediction(imu_.get_acc(),
-                       params_.model.Q_f,
-                       imu_.get_angular_vel(),
-                       params_.model.Q_w,
-                       imu_.getDeltaT());
+  if (m_imu_sensor.newMeasurement()) {
+    // std::cout << "Linear acc -> " << m_imu_sensor.get_acc();
+    m_es_ekf.prediction(m_imu_sensor.get_acc(),
+                        m_ekf_params.model.Q_f,
+                        m_imu_sensor.get_angular_vel(),
+                        m_ekf_params.model.Q_w,
+                        m_imu_sensor.getDeltaT());
     prediction = true;
   }
 
-  for (int i = 0; i < sensor_vec_.size(); ++i) {
-    if (sensor_vec_.at(i)->newMeasurement()) {
+  for (int i = 0; i < m_sensor_vector.size(); ++i) {
+    if (m_sensor_vector.at(i)->newMeasurement()) {
 
-      if (sensor_vec_.at(i)->estimateDrift()
-          && outlier_detection(sensor_vec_.at(i)->getDriftedPose(es_ekf_.getQDrift(),
-                                                                 es_ekf_.getPDrift()))) {
+      if (m_sensor_vector.at(i)->estimateDrift()
+          && outlier_detection(m_sensor_vector.at(i)->getDriftedPose(
+            m_es_ekf.getQDrift(), m_es_ekf.getPDrift()))) {
         measurement = true;
-        es_ekf_.poseMeasurementUpdateDrift(sensor_vec_.at(i)->getRPose(),
-                                           sensor_vec_.at(i)->getPose());
+        m_es_ekf.poseMeasurementUpdateDrift(m_sensor_vector.at(i)->getRPose(),
+                                            m_sensor_vector.at(i)->getPose());
 
-        if (sensor_vec_.at(i)->isOrientationSensor()) {
-          es_ekf_.angleMeasurementUpdate(sensor_vec_.at(i)->getROrientation(),
-                                         sensor_vec_.at(i)->getOrientation());
+        if (m_sensor_vector.at(i)->isOrientationSensor()) {
+          m_es_ekf.angleMeasurementUpdate(m_sensor_vector.at(i)->getROrientation(),
+                                          m_sensor_vector.at(i)->getOrientation());
         }
-        sensor_vec_.at(i)->publishState(true);
+        m_sensor_vector.at(i)->publishState(true);
 
-      } else if (outlier_detection(sensor_vec_.at(i)->getPose())) {
+      } else if (outlier_detection(m_sensor_vector.at(i)->getPose())) {
         measurement = true;
-        es_ekf_.poseMeasurementUpdate(sensor_vec_.at(i)->getRPose(),
-                                      sensor_vec_.at(i)->getPose());
-        sensor_vec_.at(i)->publishState(true);
+        m_es_ekf.poseMeasurementUpdate(m_sensor_vector.at(i)->getRPose(),
+                                       m_sensor_vector.at(i)->getPose());
+        m_sensor_vector.at(i)->publishState(true);
       } else {
-        sensor_vec_.at(i)->publishState(false);
+        m_sensor_vector.at(i)->publishState(false);
       }
     }
 
-    sensor_vec_.at(i)->publishTransformedPose();
+    m_sensor_vector.at(i)->publishTransformedPose();
   }
 
   if (measurement or prediction) {
     Matrix<double, 10, 1> state;
-    state = es_ekf_.getState();
+    state = m_es_ekf.getState();
 
     ekf_pose_.pose.pose.position.x = state[0];
     ekf_pose_.pose.pose.position.y = state[1];
@@ -123,6 +120,6 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
     ekf_pose_.pose.pose.orientation.y = state[8];
     ekf_pose_.pose.pose.orientation.z = state[9];
     ekf_pose_.header.stamp            = ros::Time::now();
-    estimate_pub_.publish(ekf_pose_);
+    m_estimate_pub.publish(ekf_pose_);
   }
 }

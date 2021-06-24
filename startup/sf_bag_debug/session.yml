@@ -39,5 +39,5 @@ windows:
   - plot:
       layout: tiled
       panes:
-        - waitForRos; sleep 7; rqt --perspective-file custom_config/sf_debug.perspective
+        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; rqt --perspective-file custom_config/sf_debug.perspective
 
