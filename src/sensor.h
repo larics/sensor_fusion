@@ -78,10 +78,11 @@ public:
     // ROS_INFO("camera_posix_callback");
     m_fresh_measurement = true;
     if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
+      ROS_INFO_STREAM(getSensorID() << " origin initialized at first measurement");
       m_first_measurement             = true;
-      m_sensor_params.translation.x() = -msg.transform.translation.x;
-      m_sensor_params.translation.y() = -msg.transform.translation.y;
-      m_sensor_params.translation.z() = -msg.transform.translation.z;
+      m_sensor_params.translation.x() = msg.transform.translation.x;
+      m_sensor_params.translation.y() = msg.transform.translation.y;
+      m_sensor_params.translation.z() = msg.transform.translation.z;
     }
     m_sensor_position.x() = msg.transform.translation.x;
     m_sensor_position.y() = msg.transform.translation.y;
@@ -97,6 +98,14 @@ public:
   {
     m_fresh_measurement = true;
 
+    if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
+      ROS_INFO_STREAM(getSensorID() << " origin initialized at first measurement");
+      m_first_measurement             = true;
+      m_sensor_params.translation.x() = msg->pose.pose.position.x;
+      m_sensor_params.translation.y() = msg->pose.pose.position.y;
+      m_sensor_params.translation.z() = msg->pose.pose.position.z;
+    }
+
     m_sensor_position.x() = msg->pose.pose.position.x;
     m_sensor_position.y() = msg->pose.pose.position.y;
     m_sensor_position.z() = msg->pose.pose.position.z;
@@ -111,7 +120,7 @@ public:
   {
     m_fresh_measurement = false;
     return (m_sensor_params.rotation_mat * m_sensor_position).translation()
-           + m_sensor_params.rotation_mat * m_sensor_params.translation;
+           - m_sensor_params.rotation_mat * m_sensor_params.translation;
   }
 
   const Quaterniond& getOrientation()
@@ -126,6 +135,7 @@ public:
     m_fresh_measurement = false;
     return { m_sensor_q.w(), m_sensor_q.x(), m_sensor_q.y(), m_sensor_q.z() };
   }
+
   bool newMeasurement() { return m_fresh_measurement; }
   bool isOrientationSensor() { return m_sensor_params.is_orientation_sensor; }
   bool estimateDrift() { return m_sensor_params.estimate_drift; }
