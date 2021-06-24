@@ -59,6 +59,7 @@ struct EsEkfParams
   std::vector<SensorParams> sensors;
   ModelCovariance           model;
   double                    outlier_constant;
+  double                    estimation_frequncy;
   Translation3d             g;
   double                    init_pose_p_cov;
   double                    init_v_p_cov;

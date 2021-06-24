@@ -39,9 +39,11 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
       if (ros::isShuttingDown()) { break; }
     }
   }
-  // TODO(lmark): estimation rate should be a parameter
+  
   m_update_timer =
-    m_node_handle.createTimer(ros::Duration(0.01), &SensorClient::state_estimation, this);
+    m_node_handle.createTimer(ros::Duration(1. / m_ekf_params.estimation_frequncy),
+                              &SensorClient::state_estimation,
+                              this);
 }
 
 bool SensorClient::outlier_detection(const Matrix<double, 3, 1>& measurement)

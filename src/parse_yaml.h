@@ -11,12 +11,13 @@ EsEkfParams parse_yaml(const std::string& config_file)
   const YAML::Node config = YAML::LoadFile(config_file);
 
   EsEkfParams params;
-  params.model.Q_f(0, 0) = config["Q_acc_x"].as<double>();
-  params.model.Q_f(1, 1) = config["Q_acc_y"].as<double>();
-  params.model.Q_f(2, 2) = config["Q_acc_z"].as<double>();
-  params.model.Q_w(0, 0) = config["Q_angular_x"].as<double>();
-  params.model.Q_w(1, 1) = config["Q_angular_y"].as<double>();
-  params.model.Q_w(2, 2) = config["Q_angular_z"].as<double>();
+  params.estimation_frequncy = config["estimation_frequency"].as<double>();
+  params.model.Q_f(0, 0)     = config["Q_acc_x"].as<double>();
+  params.model.Q_f(1, 1)     = config["Q_acc_y"].as<double>();
+  params.model.Q_f(2, 2)     = config["Q_acc_z"].as<double>();
+  params.model.Q_w(0, 0)     = config["Q_angular_x"].as<double>();
+  params.model.Q_w(1, 1)     = config["Q_angular_y"].as<double>();
+  params.model.Q_w(2, 2)     = config["Q_angular_z"].as<double>();
 
   // vector of all sensor parameters
   SensorParams        sensor;

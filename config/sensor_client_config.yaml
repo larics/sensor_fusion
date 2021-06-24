@@ -1,3 +1,5 @@
+estimation_frequency: 100
+
 Q_acc_x: 0.0001
 Q_acc_y: 0.0001
 Q_acc_z: 0.0001
