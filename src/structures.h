@@ -28,6 +28,8 @@ struct ModelCovariance
   }
 };
 
+enum SensorState { ORIENTATION_UPDATE = 2, POSE_UPDATE = 4, POSE_AND_DRIFT_UPDATE = 8 };
+
 struct SensorCovariance
 {
   Matrix3d             R_pose;

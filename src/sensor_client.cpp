@@ -83,30 +83,35 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
   }
 
   for (const auto& sensor_ptr : m_sensor_vector) {
+
+    int sensor_state = 0;
+
+    // There are no new measurements
     if (!sensor_ptr->newMeasurement()) { continue; }
+
+    // Update orientation
+    // TODO(lmark): Add outlier checking for orientation
+    if (sensor_ptr->isOrientationSensor()) {
+      m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(),
+                                      sensor_ptr->getOrientation());
+      sensor_state += SensorState::ORIENTATION_UPDATE;
+    }
 
     if (sensor_ptr->estimateDrift()
         && outlier_detection(
           sensor_ptr->getDriftedPose(m_es_ekf.getQDrift(), m_es_ekf.getPDrift()))) {
-      measurement = true;
+      // If the sensor should estimate drift - Update drift and position
       m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(), sensor_ptr->getPose());
-
-      // TODO(lmark): Only sensor that estimate drift can be orientation sensors ??
-      if (sensor_ptr->isOrientationSensor()) {
-        m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(),
-                                        sensor_ptr->getOrientation());
-      }
-      sensor_ptr->publishState(true);
+      sensor_state += SensorState::POSE_AND_DRIFT_UPDATE;
 
     } else if (outlier_detection(sensor_ptr->getPose())) {
-      measurement = true;
+      // Otherwise sensor does a regular measurement update
       m_es_ekf.poseMeasurementUpdate(sensor_ptr->getRPose(), sensor_ptr->getPose());
-      sensor_ptr->publishState(true);
-    } else {
-      sensor_ptr->publishState(false);
+      sensor_state += SensorState::POSE_UPDATE;
     }
 
-
+    if (sensor_state > 0) { measurement = true; }
+    sensor_ptr->publishState(sensor_state);
     sensor_ptr->publishTransformedPose();
   }
 

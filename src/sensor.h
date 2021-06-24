@@ -7,7 +7,7 @@
 #include "ros/ros.h"
 #include "structures.h"
 #include "geometry_msgs/TransformStamped.h"
-#include "std_msgs/Bool.h"
+#include "std_msgs/Int32.h"
 #include <geometry_msgs/PoseStamped.h>
 
 using namespace Eigen;
@@ -42,7 +42,7 @@ public:
         m_sensor_params.topic, 1, &Sensor::callback_sensor_pozyx, this);
     }
     m_sensor_state_pub =
-      m_node_handle.advertise<std_msgs::Bool>(m_sensor_params.id + "_state", 1);
+      m_node_handle.advertise<std_msgs::Int32>(m_sensor_params.id + "_state", 1);
     m_transformed_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
       m_sensor_params.id + "_transformed_pose", 1);
 
@@ -52,9 +52,9 @@ public:
     m_sensor_q.z() = 0;
   }
   void setR(Matrix3d R) { m_sensor_params.cov.R_pose = R; }
-  void publishState(bool state)
+  void publishState(int state)
   {
-    std_msgs::Bool state_msg;
+    std_msgs::Int32 state_msg;
     state_msg.data = state;
     m_sensor_state_pub.publish(state_msg);
   }

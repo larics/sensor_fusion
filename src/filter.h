@@ -45,7 +45,9 @@ private:
   Matrix3d                           m_acc_bias_variance;
   Matrix3d                           m_gyro_bias_variance;
 
-  const Matrix<double, 3, 3> I3x3 = Matrix<double, 3, 3>::Identity();
+  const Matrix<double, 3, 3>               Identity3x3 = Matrix<double, 3, 3>::Identity();
+  const Matrix<double, N_STATES, N_STATES> IdentityNxN =
+    Matrix<double, N_STATES, N_STATES>::Identity();
 
 public:
   /**
