@@ -9,18 +9,19 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
   nh_private.getParam("es_ekf_topic", es_ekf_topic);
   m_estimate_pub = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
 
-  for (int i = 0; i < m_ekf_params.sensors.size(); ++i) {
-    m_sensor_vector.push_back(new Sensor(m_ekf_params.sensors.at(i)));
+  for (const auto& sensor_params : m_ekf_params.sensors) {
+    m_sensor_vector.push_back(std::make_shared<Sensor>(sensor_params));
   }
+
   while (ros::ok()) {
     ros::Duration(0.25).sleep();
     ros::spinOnce();
     if (m_imu_sensor.isInit()) {
       int k = 0;
-      for (int i = 0; i < m_ekf_params.sensors.size(); ++i) {
-        if (m_sensor_vector.at(i)->newMeasurement()) { k++; }
+      for (const auto& sensor_ptr : m_sensor_vector) {
+        if (sensor_ptr->newMeasurement()) { k++; }
       }
-      if (k == m_ekf_params.sensors.size()) {
+      if (k == m_sensor_vector.size()) {
         ROS_INFO_STREAM("SensorClient::SensorClient() - Sensor Initialized!");
         break;
       }
@@ -30,21 +31,24 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
 
     } else {
       ROS_WARN("Now we wait for sensors...");
-      if (ros::isShuttingDown()) break;
+      if (ros::isShuttingDown()) { break; }
     }
   }
-  // TODO izvuci van
+  // TODO(lmark): estimation rate should be a parameter
   m_update_timer =
     m_node_handle.createTimer(ros::Duration(0.01), &SensorClient::state_estimation, this);
 }
 
 bool SensorClient::outlier_detection(const Matrix<double, 3, 1>& measurement)
 {
+  // TODO(lmark): Move outlier detection to sensor.h
   return ((measurement - m_es_ekf.getP()).norm() < m_ekf_params.outlier_constant);
 }
 
 void SensorClient::state_estimation(const ros::TimerEvent& msg)
 {
+  // TODO(lmark): Maybe choose a sensor to initialize EKF (don't initialize it with a
+  // random 0th sensor, who knows which one is that?)
   if (m_start_flag) {
     if (m_sensor_vector.at(0)->newMeasurement()) {
       m_es_ekf.setP(m_sensor_vector.at(0)->getPose());
@@ -55,17 +59,16 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
     }
     return;
   }
+
   // PREDICTION
-  bool               prediction  = false;
-  bool               measurement = false;
-  nav_msgs::Odometry ekf_pose_;
+  bool prediction  = false;
+  bool measurement = false;
   // TODO ovo makni, provjerava se u inicijalizaciji
   if (!m_imu_sensor.isInit()) {
     ROS_WARN_THROTTLE(5.0, "IMU not ready");
     return;
   }
   if (m_imu_sensor.newMeasurement()) {
-    // std::cout << "Linear acc -> " << m_imu_sensor.get_acc();
     m_es_ekf.prediction(m_imu_sensor.get_acc(),
                         m_ekf_params.model.Q_f,
                         m_imu_sensor.get_angular_vel(),
@@ -74,39 +77,39 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
     prediction = true;
   }
 
-  for (int i = 0; i < m_sensor_vector.size(); ++i) {
-    if (m_sensor_vector.at(i)->newMeasurement()) {
+  for (const auto& sensor_ptr : m_sensor_vector) {
+    if (!sensor_ptr->newMeasurement()) { continue; }
 
-      if (m_sensor_vector.at(i)->estimateDrift()
-          && outlier_detection(m_sensor_vector.at(i)->getDriftedPose(
-            m_es_ekf.getQDrift(), m_es_ekf.getPDrift()))) {
-        measurement = true;
-        m_es_ekf.poseMeasurementUpdateDrift(m_sensor_vector.at(i)->getRPose(),
-                                            m_sensor_vector.at(i)->getPose());
+    if (sensor_ptr->estimateDrift()
+        && outlier_detection(
+          sensor_ptr->getDriftedPose(m_es_ekf.getQDrift(), m_es_ekf.getPDrift()))) {
+      measurement = true;
+      m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(), sensor_ptr->getPose());
 
-        if (m_sensor_vector.at(i)->isOrientationSensor()) {
-          m_es_ekf.angleMeasurementUpdate(m_sensor_vector.at(i)->getROrientation(),
-                                          m_sensor_vector.at(i)->getOrientation());
-        }
-        m_sensor_vector.at(i)->publishState(true);
-
-      } else if (outlier_detection(m_sensor_vector.at(i)->getPose())) {
-        measurement = true;
-        m_es_ekf.poseMeasurementUpdate(m_sensor_vector.at(i)->getRPose(),
-                                       m_sensor_vector.at(i)->getPose());
-        m_sensor_vector.at(i)->publishState(true);
-      } else {
-        m_sensor_vector.at(i)->publishState(false);
+      // TODO(lmark): Only sensor that estimate drift can be orientation sensors ??
+      if (sensor_ptr->isOrientationSensor()) {
+        m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(),
+                                        sensor_ptr->getOrientation());
       }
+      sensor_ptr->publishState(true);
+
+    } else if (outlier_detection(sensor_ptr->getPose())) {
+      measurement = true;
+      m_es_ekf.poseMeasurementUpdate(sensor_ptr->getRPose(), sensor_ptr->getPose());
+      sensor_ptr->publishState(true);
+    } else {
+      sensor_ptr->publishState(false);
     }
 
-    m_sensor_vector.at(i)->publishTransformedPose();
+
+    sensor_ptr->publishTransformedPose();
   }
 
   if (measurement or prediction) {
     Matrix<double, 10, 1> state;
     state = m_es_ekf.getState();
 
+    nav_msgs::Odometry ekf_pose_;
     ekf_pose_.pose.pose.position.x = state[0];
     ekf_pose_.pose.pose.position.y = state[1];
     ekf_pose_.pose.pose.position.z = state[2];

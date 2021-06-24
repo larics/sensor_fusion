@@ -12,7 +12,7 @@ windows:
       panes:
         - roscore
         - waitForRos; inspection_ws; rosparam set use_sim_time true; roslaunch sensor_fusion sensor_fusion.launch 
-          config_yaml:=$(rospack find sensor_fusion)/startup/sf_bag_debug/custom_config/sensor_client_config.yaml
+          config_yaml:=$(realpath custom_config/sensor_client_config.yaml)
   - bags:
       layout: tiled
       panes:

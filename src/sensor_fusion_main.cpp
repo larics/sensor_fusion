@@ -19,9 +19,7 @@ int main(int argc, char** argv)
   // Next we parse data from the yaml file
   std::string config_file;
   nh_private.getParam("config_yaml", config_file);
-
-  YAML::Node config = YAML::LoadFile(config_file);
-
+  YAML::Node  config = YAML::LoadFile(config_file);
   EsEkfParams params = parse_yaml(config_file);
 
   std::cout << "\n\nModel parameters:\n Q_f \n"
@@ -42,17 +40,17 @@ int main(int argc, char** argv)
             << "Translation drift: " << params.init_p_drift << '\n'
             << "Rotatation drift: " << params.init_q_drift << '\n';
 
-  for (int i = 0; i < params.sensors.size(); ++i) {
-    std::cout << "\n\nTopic: " << params.sensors.at(i).topic << "\n"
-              << "Msg Type: " << params.sensors.at(i).msg_type << '\n'
-              << "Orientation: " << params.sensors.at(i).is_orientation_sensor << "\n"
-              << "Drift: " << params.sensors.at(i).estimate_drift << "\n"
+  for (const auto& sensor : params.sensors) {
+    std::cout << "\n\nTopic: " << sensor.topic << "\n"
+              << "Msg Type: " << sensor.msg_type << '\n'
+              << "Orientation: " << sensor.is_orientation_sensor << "\n"
+              << "Drift: " << sensor.estimate_drift << "\n"
               << "R: \n"
-              << params.sensors.at(i).cov.R_pose << "\n"
+              << sensor.cov.R_pose << "\n"
               << "Rotation:\n"
-              << params.sensors.at(i).rotation_mat << "\n"
+              << sensor.rotation_mat << "\n"
               << "Translation:\n"
-              << params.sensors.at(i).translation << "\n  ";
+              << sensor.translation << "\n  ";
   }
 
   SensorClient sensors(params, nh_private);

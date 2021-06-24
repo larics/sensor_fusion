@@ -13,6 +13,7 @@
 #include "imu.h"
 #include "filter.cpp"
 #include "sensor.h"
+#include <memory>
 
 class SensorClient
 {
@@ -23,14 +24,14 @@ public:
   bool outlier_detection(const Matrix<double, 3, 1>& measurement);
 
 private:
-  ros::Publisher       m_estimate_pub;
-  ros::Timer           m_update_timer;
-  EsEkfParams          m_ekf_params;
-  EsEkf2               m_es_ekf;
-  Imu                  m_imu_sensor;
-  std::vector<Sensor*> m_sensor_vector;
-  ros::NodeHandle      m_node_handle;
-  bool                 m_start_flag;
+  ros::Publisher                       m_estimate_pub;
+  ros::Timer                           m_update_timer;
+  EsEkfParams                          m_ekf_params;
+  EsEkf2                               m_es_ekf;
+  Imu                                  m_imu_sensor;
+  std::vector<std::shared_ptr<Sensor>> m_sensor_vector;
+  ros::NodeHandle                      m_node_handle;
+  bool                                 m_start_flag;
 };
 
 #endif// SENSOR_FUSION_SENSOR_CLIENT_H
