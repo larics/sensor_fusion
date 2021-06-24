@@ -10,7 +10,8 @@
  * filter. Also we set up all ros subscribers and publishers.
  */
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   ros::init(argc, argv, "Sensor_Fusion");
   ros::NodeHandle node_handle;
   ros::NodeHandle nh_private("~");
@@ -45,8 +46,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < params.sensors.size(); ++i) {
     std::cout << "\n\nTopic: " << params.sensors.at(i).topic << "\n"
               << "Msg Type: " << params.sensors.at(i).msg_type << '\n'
-              << "Orientation: " << params.sensors.at(i)
-                                        .is_orientation_sensor << "\n"
+              << "Orientation: " << params.sensors.at(i).is_orientation_sensor << "\n"
               << "Drift: " << params.sensors.at(i).estimate_drift << "\n"
               << "R: \n"
               << params.sensors.at(i).cov.R_pose << "\n"
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
               << params.sensors.at(i).translation << "\n  ";
   }
 
-//TODO IZBRISI
+  // TODO IZBRISI
   // EsEkf esEkf;
   // Camera camera(params,&esEkf,nh_private);
 
@@ -64,8 +64,8 @@ int main(int argc, char** argv) {
   SensorClient sensors(params, nh_private);
 
   ROS_INFO("Starting sensor client");
-  ros::MultiThreadedSpinner spinner(0);  // Use max number of threads
-  spinner.spin();  // spin() will not return until the node has been shutdown
-  
+  ros::MultiThreadedSpinner spinner(0);// Use max number of threads
+  spinner.spin();// spin() will not return until the node has been shutdown
+
   return 0;
 }

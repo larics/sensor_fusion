@@ -12,7 +12,8 @@ static const double pi = 3.14159265358979323846;
     Some discussion about alternative implementations:
     https://stackoverflow.com/questions/4633177/c-how-to-wrap-a-float-to-the-interval-pi-pi
  */
-inline double wrapToPi(double angle) {
+inline double wrapToPi(double angle)
+{
   // Naive solution assumes that we're wrapping regularly,
   // So that the angle argument will never be much bigger than 2pi
   // or much smaller than -2pi
@@ -23,13 +24,15 @@ inline double wrapToPi(double angle) {
   return angle;
 }
 
-Matrix<double, 3, 3> skew_symetric(Matrix<double, 3, 1> m) {
+Matrix<double, 3, 3> skew_symetric(Matrix<double, 3, 1> m)
+{
   Matrix<double, 3, 3> a;
   a << 0, -m(2), m(1), m(2), 0, -m(0), -m(1), m(0), 0;
   return a;
 }
 
-Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle) {
+Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle)
+{
   double norm = axis_angle.norm();
   double w, x, y, z;
   w = cos(norm / 2);
@@ -47,10 +50,11 @@ Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle) {
   return result;
 }
 
-Quaternion<double> euler2quat(Matrix<double, 3, 1> euler) {
-  double roll = euler(0);
+Quaternion<double> euler2quat(Matrix<double, 3, 1> euler)
+{
+  double roll  = euler(0);
   double pitch = euler(1);
-  double yaw = euler(2);
+  double yaw   = euler(2);
 
   double cy = cos(yaw * 0.5);
   double sy = sin(yaw * 0.5);
@@ -67,51 +71,57 @@ Quaternion<double> euler2quat(Matrix<double, 3, 1> euler) {
   return Quaternion<double>(w, x, y, z);
 }
 
-Matrix<double, 4, 3> firstOrderApprox(Quaterniond q) {
+Matrix<double, 4, 3> firstOrderApprox(Quaterniond q)
+{
   Matrix<double, 4, 3> m;
-  m << -q.x(), -q.y(), -q.z(), q.w(), q.z(), -q.y(), -q.z(), q.w(), q.x(),
-      q.y(), -q.x(), q.w();
+  m << -q.x(), -q.y(), -q.z(), q.w(), q.z(), -q.y(), -q.z(), q.w(), q.x(), q.y(), -q.x(),
+    q.w();
   return m;
 }
 
-Matrix<double, 4, 3> firstOrderApproxLocal(Quaterniond q) {
+Matrix<double, 4, 3> firstOrderApproxLocal(Quaterniond q)
+{
   Matrix<double, 4, 3> m;
-  m << -q.x(), -q.y(), -q.z(), q.w(), -q.z(), q.y(), q.z(), q.w(), -q.x(),
-      -q.y(), q.x(), q.w();
+  m << -q.x(), -q.y(), -q.z(), q.w(), -q.z(), q.y(), q.z(), q.w(), -q.x(), -q.y(), q.x(),
+    q.w();
   return m;
 }
 
-Matrix<double, 4, 4> leftQuatProdMat(Quaterniond q) {
+Matrix<double, 4, 4> leftQuatProdMat(Quaterniond q)
+{
   Matrix<double, 4, 4> m;
-  m << q.w(), -q.x(), -q.y(), -q.z(), q.x(), q.w(), -q.z(), q.y(), q.y(), q.z(),
-      q.w(), -q.x(), q.z(), -q.y(), q.x(), q.w();
+  m << q.w(), -q.x(), -q.y(), -q.z(), q.x(), q.w(), -q.z(), q.y(), q.y(), q.z(), q.w(),
+    -q.x(), q.z(), -q.y(), q.x(), q.w();
   return m;
 }
 
-Matrix<double, 4, 4> rightQuatProdMat(Quaterniond q) {
+Matrix<double, 4, 4> rightQuatProdMat(Quaterniond q)
+{
   Matrix<double, 4, 4> m;
-  m << q.w(), -q.x(), -q.y(), -q.z(), q.x(), q.w(), q.z(), -q.y(), q.y(),
-      -q.z(), q.w(), q.x(), q.z(), q.y(), -q.x(), q.w();
+  m << q.w(), -q.x(), -q.y(), -q.z(), q.x(), q.w(), q.z(), -q.y(), q.y(), -q.z(), q.w(),
+    q.x(), q.z(), q.y(), -q.x(), q.w();
   return m;
 }
 
-Matrix<double, 3, 4> JacobianWithRespectToQuat(Quaterniond q, Vector3d a) {
-  Vector3d v = {q.x(), q.y(), q.z()};
-  double w = q.w();
+Matrix<double, 3, 4> JacobianWithRespectToQuat(Quaterniond q, Vector3d a)
+{
+  Vector3d v  = { q.x(), q.y(), q.z() };
+  double   w  = q.w();
   Vector3d dw = 2 * (w * a + v.cross(a));
   // std::cout << "dw-> " << dw.transpose() << '\n';
-  Matrix3d I = Matrix3d::Identity();
-  Matrix3d dv = 2 * (v.transpose() * a * I + v * a.transpose() -
-                     a * v.transpose() - w * skew_symetric(a));
+  Matrix3d I  = Matrix3d::Identity();
+  Matrix3d dv = 2
+                * (v.transpose() * a * I + v * a.transpose() - a * v.transpose()
+                   - w * skew_symetric(a));
 
   // std::cout << "Dv->\n" << dv << '\n';
 
   Matrix<double, 3, 4> m = MatrixXd::Zero(3, 4);
-  m.block<3, 1>(0, 0) = dw;
+  m.block<3, 1>(0, 0)    = dw;
   // std::cout << "M\n" << m << '\n';
   m.bottomRightCorner(3, 3) = dv;
   // std::cout << "M\n" << m << '\n';
   return m;
 }
 
-#endif  // SENSOR_FUSION_UTILS_H
+#endif// SENSOR_FUSION_UTILS_H

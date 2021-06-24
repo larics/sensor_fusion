@@ -10,7 +10,7 @@
 #include "utils.h"
 
 // nuber of error states
-#define N_STATES 24  // 18
+#define N_STATES 24// 18
 
 /*
  * Error state Kalman filter implementation based on:
@@ -29,8 +29,9 @@
  */
 
 using namespace Eigen;
-class EsEkf2 {
- private:
+class EsEkf2
+{
+private:
   // State (pose,lin vel, gyroscope bias,
   // accelerometer bias, gravity)
   Translation3d p_est, v_est, wb_est, fb_est, g_est;
@@ -38,12 +39,12 @@ class EsEkf2 {
   Quaterniond q_est, q_drift;
   // State covariance matrix
   Matrix<double, N_STATES, N_STATES> p_cov;
-  Matrix<double, N_STATES, 12> l_jac;
-  bool init;
-  Translation3d p_drift;
-  Matrix3d var_imu_fb, var_imu_wb;
+  Matrix<double, N_STATES, 12>       l_jac;
+  bool                               init;
+  Translation3d                      p_drift;
+  Matrix3d                           var_imu_fb, var_imu_wb;
 
- public:
+public:
   // Constructor
   // Set gravity vector and bias vectors
   EsEkf2(EsEkfParams params);
@@ -51,19 +52,18 @@ class EsEkf2 {
    * The prediction step. Here we use imu measurements to get an
    * estimate of the pose, velocity and orientation.
    */
-  void prediction(Matrix<double, 3, 1> imu_f, Matrix3d var_imu_f,
-                  Matrix<double, 3, 1> imu_w, Matrix3d var_imu_w,
-                  double delta_t);
+  void prediction(Matrix<double, 3, 1> imu_f,
+                  Matrix3d             var_imu_f,
+                  Matrix<double, 3, 1> imu_w,
+                  Matrix3d             var_imu_w,
+                  double               delta_t);
   /*
    * Measurement update. Use sensor measurement of pose to
    * update the estimation and reduce uncertainty.
    */
   void poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y);
-
   void angleMeasurementUpdate(Matrix<double, 4, 4> R_cov, Quaterniond y);
-
   void poseMeasurementUpdateDrift(Matrix3d R_cov, Matrix<double, 3, 1> y);
-
   void angleMeasurementUpdateDrift(Matrix<double, 4, 4> R_cov, Quaterniond y);
 
   // Setters
@@ -71,7 +71,8 @@ class EsEkf2 {
   void setV(Matrix<double, 3, 1> v) { v_est.vector() = v; }
   void setWb(Matrix<double, 3, 1> wb) { wb_est.vector() = wb; }
   void setFb(Matrix<double, 3, 1> fb) { fb_est.vector() = fb; }
-  void setQ(Matrix<double, 4, 1> q) {
+  void setQ(Matrix<double, 4, 1> q)
+  {
     q_est.w() = q[0];
     q_est.x() = q[1];
     q_est.y() = q[2];
@@ -79,15 +80,15 @@ class EsEkf2 {
     std::cout << "q" << q.transpose() << std::endl;
   }
   // Getters
-  Matrix<double, 10, 1> getState() {
+  Matrix<double, 10, 1> getState()
+  {
     Matrix<double, 10, 1> state;
-    state << p_est.vector(), v_est.vector(), q_est.w(), q_est.x(), q_est.y(),
-        q_est.z();
+    state << p_est.vector(), v_est.vector(), q_est.w(), q_est.x(), q_est.y(), q_est.z();
     return state;
   }
   Matrix<double, 3, 1> getP() { return p_est.vector(); }
   Matrix<double, 3, 1> getPDrift() { return p_drift.vector(); }
-  Matrix3d getQDrift() { return q_drift.toRotationMatrix(); }
+  Matrix3d             getQDrift() { return q_drift.toRotationMatrix(); }
 };
 
-#endif  // SENSOR_FUSION_FILTER_H
+#endif// SENSOR_FUSION_FILTER_H
