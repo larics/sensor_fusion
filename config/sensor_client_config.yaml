@@ -1,3 +1,5 @@
+estimation_frequency: 100
+
 Q_acc_x: 0.0001
 Q_acc_y: 0.0001
 Q_acc_z: 0.0001
@@ -13,8 +15,6 @@ angle_p_cov: 0.01
 
 p_drift_p_cov: 0.0001
 q_drift_p_cov: 0.0001
-
-use_cam_imu: 1
 
 estimate_acc_bias: 1
 acc_bias_var: [ 0.001,0.001,0.001]

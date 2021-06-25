@@ -32,63 +32,100 @@ using namespace Eigen;
 class EsEkf2
 {
 private:
-  // State (pose,lin vel, gyroscope bias,
-  // accelerometer bias, gravity)
-  Translation3d p_est, v_est, wb_est, fb_est, g_est;
-  // Orientation in quaternions
-  Quaterniond q_est, q_drift;
-  // State covariance matrix
-  Matrix<double, N_STATES, N_STATES> p_cov;
-  Matrix<double, N_STATES, 12>       l_jac;
-  bool                               init;
-  Translation3d                      p_drift;
-  Matrix3d                           var_imu_fb, var_imu_wb;
+  Translation3d                      m_est_position;
+  Translation3d                      m_est_lin_velocity;
+  Translation3d                      m_est_gyro_bias;
+  Translation3d                      m_est_acc_bias;
+  Translation3d                      m_est_gravity;
+  Quaterniond                        m_est_quaternion;
+  Quaterniond                        m_est_quaternion_drift;
+  Matrix<double, N_STATES, N_STATES> m_p_covariance;
+  Matrix<double, N_STATES, 12>       m_jacobian;
+  Translation3d                      m_position_drift;
+  Matrix3d                           m_acc_bias_variance;
+  Matrix3d                           m_gyro_bias_variance;
+
+  const Matrix<double, 3, 3>               Identity3x3 = Matrix<double, 3, 3>::Identity();
+  const Matrix<double, N_STATES, N_STATES> IdentityNxN =
+    Matrix<double, N_STATES, N_STATES>::Identity();
 
 public:
-  // Constructor
-  // Set gravity vector and bias vectors
-  EsEkf2(EsEkfParams params);
-  /*
-   * The prediction step. Here we use imu measurements to get an
-   * estimate of the pose, velocity and orientation.
+  /**
+   * @brief Construct a new EsEkf2 object
+   *
+   * @param params EKF Parameters
    */
-  void prediction(Matrix<double, 3, 1> imu_f,
-                  Matrix3d             var_imu_f,
-                  Matrix<double, 3, 1> imu_w,
-                  Matrix3d             var_imu_w,
-                  double               delta_t);
-  /*
-   * Measurement update. Use sensor measurement of pose to
-   * update the estimation and reduce uncertainty.
+  EsEkf2(const EsEkfParams& params);
+
+  /**
+   * @brief Prediction step. Use imu to predict position, velocity and orientation.
+   *
+   * @param imu_f Linear acceleration from IMU.
+   * @param var_imu_f Variance of the linear acceleration.
+   * @param imu_w Angular velocity from IMU.
+   * @param var_imu_w Variance of the angular velocity.
+   * @param delta_t Time step.
    */
-  void poseMeasurementUpdate(Matrix3d R_cov, Matrix<double, 3, 1> y);
-  void angleMeasurementUpdate(Matrix<double, 4, 4> R_cov, Quaterniond y);
-  void poseMeasurementUpdateDrift(Matrix3d R_cov, Matrix<double, 3, 1> y);
-  void angleMeasurementUpdateDrift(Matrix<double, 4, 4> R_cov, Quaterniond y);
+  void prediction(const Matrix<double, 3, 1>& imu_f,
+                  const Matrix3d&             var_imu_f,
+                  const Matrix<double, 3, 1>& imu_w,
+                  const Matrix3d&             var_imu_w,
+                  const double                delta_t);
+
+  /**
+   * @brief Measurement update. Use sensor measurement of pose to update the position
+   * estimation and reduce uncertainty.
+   *
+   * @param R_cov Measurements covariance matrix.
+   * @param measurements New measurements.
+   */
+  void poseMeasurementUpdate(const Matrix3d&             R_cov,
+                             const Matrix<double, 3, 1>& measurements);
+
+  /**
+   * @brief Measurement update. Use sensor measurement of pose to update the orientation
+   * estimation and reduce uncertainty.
+   *
+   * @param R_cov Measurements covariance matrix.
+   * @param measurements New measurements.
+   */
+  void angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
+                              const Quaterniond&          measurements);
+
+  /**
+   * @brief Measurement update including position drift. Use sensor measurement of pose to
+   * update the position estimation and reduce uncertainty.
+   *
+   * @param R_cov Measurements covariance matrix.
+   * @param measurements New measurements.
+   */
+  void poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
+                                  const Matrix<double, 3, 1>& measurements);
 
   // Setters
-  void setP(Matrix<double, 3, 1> p) { p_est.vector() = p; }
-  void setV(Matrix<double, 3, 1> v) { v_est.vector() = v; }
-  void setWb(Matrix<double, 3, 1> wb) { wb_est.vector() = wb; }
-  void setFb(Matrix<double, 3, 1> fb) { fb_est.vector() = fb; }
+  void setP(Matrix<double, 3, 1> p) { m_est_position.vector() = std::move(p); }
+  void setV(Matrix<double, 3, 1> v) { m_est_lin_velocity.vector() = std::move(v); }
+  void setWb(Matrix<double, 3, 1> wb) { m_est_gyro_bias.vector() = std::move(wb); }
+  void setFb(Matrix<double, 3, 1> fb) { m_est_acc_bias.vector() = std::move(fb); }
   void setQ(Matrix<double, 4, 1> q)
   {
-    q_est.w() = q[0];
-    q_est.x() = q[1];
-    q_est.y() = q[2];
-    q_est.z() = q[3];
-    std::cout << "q" << q.transpose() << std::endl;
+    m_est_quaternion.w() = q[0];
+    m_est_quaternion.x() = q[1];
+    m_est_quaternion.y() = q[2];
+    m_est_quaternion.z() = q[3];
+    ROS_INFO_STREAM("EsEkf2::setQ() - q = " << q.transpose());
   }
   // Getters
-  Matrix<double, 10, 1> getState()
+  const Matrix<double, 10, 1> getState()
   {
     Matrix<double, 10, 1> state;
-    state << p_est.vector(), v_est.vector(), q_est.w(), q_est.x(), q_est.y(), q_est.z();
+    state << m_est_position.vector(), m_est_lin_velocity.vector(), m_est_quaternion.w(),
+      m_est_quaternion.x(), m_est_quaternion.y(), m_est_quaternion.z();
     return state;
   }
-  Matrix<double, 3, 1> getP() { return p_est.vector(); }
-  Matrix<double, 3, 1> getPDrift() { return p_drift.vector(); }
-  Matrix3d             getQDrift() { return q_drift.toRotationMatrix(); }
+  const Matrix<double, 3, 1>& getP() { return m_est_position.vector(); }
+  const Matrix<double, 3, 1>& getPDrift() { return m_position_drift.vector(); }
+  const Matrix3d getQDrift() { return m_est_quaternion_drift.toRotationMatrix(); }
 };
 
 #endif// SENSOR_FUSION_FILTER_H
