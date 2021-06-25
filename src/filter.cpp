@@ -36,7 +36,6 @@ EsEkf2::EsEkf2(const EsEkfParams& params)
   m_p_covariance.block<3, 3>(9, 9)   = params.init_ab_p_cov * Identity3x3;
   m_p_covariance.block<3, 3>(12, 12) = params.init_wb_p_cov * Identity3x3;
   m_p_covariance.block<3, 3>(15, 15) = params.init_g_cov * Identity3x3;
-
   m_p_covariance.block<3, 3>(18, 18) = params.init_p_drift * Identity3x3;
   m_p_covariance.block<3, 3>(21, 21) = params.init_q_drift * Identity3x3;
 

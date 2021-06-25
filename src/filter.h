@@ -126,6 +126,9 @@ public:
   const Matrix<double, 3, 1>& getP() { return m_est_position.vector(); }
   const Matrix<double, 3, 1>& getPDrift() { return m_position_drift.vector(); }
   const Matrix3d getQDrift() { return m_est_quaternion_drift.toRotationMatrix(); }
+  const Matrix3d getPositionCov() { return m_p_covariance.block<3, 3>(0, 0); }
+  const Matrix3d getLinVelocityCov() { return m_p_covariance.block<3, 3>(3, 3); }
+  const Matrix3d getOrientationCov() { return m_p_covariance.block<3, 3>(6, 6); }
 };
 
 #endif// SENSOR_FUSION_FILTER_H

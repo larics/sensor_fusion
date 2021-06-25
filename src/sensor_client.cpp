@@ -131,23 +131,35 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
   }
 
   if (measurement or prediction) {
-    Matrix<double, 10, 1> state;
-    state = m_es_ekf.getState();
+    auto        state   = m_es_ekf.getState();
+    const auto& pos_cov = m_es_ekf.getPositionCov();
+    const auto& vel_cov = m_es_ekf.getLinVelocityCov();
+    const auto& q_cov   = m_es_ekf.getOrientationCov();
 
     nav_msgs::Odometry ekf_pose_;
-    ekf_pose_.pose.pose.position.x = state[0];
-    ekf_pose_.pose.pose.position.y = state[1];
-    ekf_pose_.pose.pose.position.z = state[2];
-
-    ekf_pose_.twist.twist.linear.x = state[3];
-    ekf_pose_.twist.twist.linear.y = state[4];
-    ekf_pose_.twist.twist.linear.z = state[5];
-
+    ekf_pose_.header.stamp            = ros::Time::now();
+    ekf_pose_.header.frame_id         = "world";
+    ekf_pose_.pose.pose.position.x    = state[0];
+    ekf_pose_.pose.pose.position.y    = state[1];
+    ekf_pose_.pose.pose.position.z    = state[2];
+    ekf_pose_.twist.twist.linear.x    = state[3];
+    ekf_pose_.twist.twist.linear.y    = state[4];
+    ekf_pose_.twist.twist.linear.z    = state[5];
     ekf_pose_.pose.pose.orientation.w = state[6];
     ekf_pose_.pose.pose.orientation.x = state[7];
     ekf_pose_.pose.pose.orientation.y = state[8];
     ekf_pose_.pose.pose.orientation.z = state[9];
-    ekf_pose_.header.stamp            = ros::Time::now();
+    ekf_pose_.pose.covariance         = boost::array<double, 36>();
+    ekf_pose_.pose.covariance[0]      = pos_cov(0, 0);
+    ekf_pose_.pose.covariance[7]      = pos_cov(1, 1);
+    ekf_pose_.pose.covariance[14]     = pos_cov(2, 2);
+    ekf_pose_.pose.covariance[21]     = q_cov(0, 0);
+    ekf_pose_.pose.covariance[27]     = q_cov(1, 1);
+    ekf_pose_.pose.covariance[35]     = q_cov(2, 2);
+    ekf_pose_.twist.covariance        = boost::array<double, 36>();
+    ekf_pose_.twist.covariance[0]     = vel_cov(0, 0);
+    ekf_pose_.twist.covariance[7]     = vel_cov(1, 1);
+    ekf_pose_.twist.covariance[14]    = vel_cov(2, 2);
     m_estimate_pub.publish(ekf_pose_);
   }
 }
