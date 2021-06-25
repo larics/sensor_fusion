@@ -11,6 +11,8 @@
 #include <geometry_msgs/PoseStamped.h>
 
 using namespace Eigen;
+class Sensor;
+using SensorPtr = std::shared_ptr<Sensor>;
 
 /*
  * We define sensor subscriber and when an odometry msg comes we
@@ -136,12 +138,12 @@ public:
     return { m_sensor_q.w(), m_sensor_q.x(), m_sensor_q.y(), m_sensor_q.z() };
   }
 
-  bool newMeasurement() { return m_fresh_measurement; }
-  bool isOrientationSensor() { return m_sensor_params.is_orientation_sensor; }
-  bool estimateDrift() { return m_sensor_params.estimate_drift; }
-  const std::string&          getSensorID() { return m_sensor_params.id; }
-  const Matrix3d&             getRPose() { return m_sensor_params.cov.R_pose; }
-  const Matrix<double, 4, 4>& getROrientation()
+  bool newMeasurement() const { return m_fresh_measurement; }
+  bool isOrientationSensor() const { return m_sensor_params.is_orientation_sensor; }
+  bool estimateDrift() const { return m_sensor_params.estimate_drift; }
+  const std::string&          getSensorID() const { return m_sensor_params.id; }
+  const Matrix3d&             getRPose() const { return m_sensor_params.cov.R_pose; }
+  const Matrix<double, 4, 4>& getROrientation() const
   {
     return m_sensor_params.cov.R_orientation;
   }

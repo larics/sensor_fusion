@@ -46,13 +46,13 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
                               this);
 }
 
-bool SensorClient::outlier_detection(const Matrix<double, 3, 1>& measurement)
+bool SensorClient::outlierDetection(const Matrix<double, 3, 1>& measurement)
 {
   // TODO(lmark): Move outlier detection to sensor.h
   return ((measurement - m_es_ekf.getP()).norm() < m_ekf_params.outlier_constant);
 }
 
-void SensorClient::state_estimation(const ros::TimerEvent& msg)
+void SensorClient::state_estimation(const ros::TimerEvent& /* unused */)
 {
   // TODO(lmark): Maybe choose a sensor to initialize EKF (don't initialize it with a
   // random 0th sensor, who knows which one is that?)
@@ -113,13 +113,13 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
     }
 
     if (sensor_ptr->estimateDrift()
-        && outlier_detection(
+        && outlierDetection(
           sensor_ptr->getDriftedPose(m_es_ekf.getQDrift(), m_es_ekf.getPDrift()))) {
       // If the sensor should estimate drift - Update drift and position
       m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(), sensor_ptr->getPose());
       sensor_state += SensorState::POSE_AND_DRIFT_UPDATE;
 
-    } else if (outlier_detection(sensor_ptr->getPose())) {
+    } else if (outlierDetection(sensor_ptr->getPose())) {
       // Otherwise sensor does a regular measurement update
       m_es_ekf.poseMeasurementUpdate(sensor_ptr->getRPose(), sensor_ptr->getPose());
       sensor_state += SensorState::POSE_UPDATE;
