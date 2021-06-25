@@ -18,7 +18,8 @@ EsEkfParams parse_yaml(const std::string& config_file)
   params.model.Q_w(0, 0)     = config["Q_angular_x"].as<double>();
   params.model.Q_w(1, 1)     = config["Q_angular_y"].as<double>();
   params.model.Q_w(2, 2)     = config["Q_angular_z"].as<double>();
-
+  params.initial_sensor_id   = config["initial_sensor"].as<std::string>();
+  
   // vector of all sensor parameters
   SensorParams        sensor;
   std::vector<double> R, translation, rotation;

@@ -57,6 +57,7 @@ struct SensorParams
 struct EsEkfParams
 {
   std::vector<SensorParams> sensors;
+  std::string               initial_sensor_id;
   ModelCovariance           model;
   double                    outlier_constant;
   double                    estimation_frequncy;

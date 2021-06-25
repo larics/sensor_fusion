@@ -39,7 +39,7 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
       if (ros::isShuttingDown()) { break; }
     }
   }
-  
+
   m_update_timer =
     m_node_handle.createTimer(ros::Duration(1. / m_ekf_params.estimation_frequncy),
                               &SensorClient::state_estimation,
@@ -57,12 +57,25 @@ void SensorClient::state_estimation(const ros::TimerEvent& msg)
   // TODO(lmark): Maybe choose a sensor to initialize EKF (don't initialize it with a
   // random 0th sensor, who knows which one is that?)
   if (m_start_flag) {
-    if (m_sensor_vector.at(0)->newMeasurement()) {
-      m_es_ekf.setP(m_sensor_vector.at(0)->getPose());
+    auto sensor_it = std::find_if(
+      m_sensor_vector.begin(), m_sensor_vector.end(), [&](const auto& sensor_ptr) {
+        return sensor_ptr->getSensorID() == m_ekf_params.initial_sensor_id;
+      });
+
+    if (sensor_it == m_sensor_vector.end()) {
+      ROS_WARN_STREAM_THROTTLE(
+        2.0, "Unable to initialize EKF with sensor: " << m_ekf_params.initial_sensor_id);
+      return;
+    }
+
+    if ((*sensor_it)->newMeasurement()) {
+      m_es_ekf.setP((*sensor_it)->getPose());
       // TODO if orientaion vector
-      m_es_ekf.setQ(m_sensor_vector.at(0)->getOrientationVector());
+      m_es_ekf.setQ((*sensor_it)->getOrientationVector());
       m_es_ekf.setV({ 0, 0, 0 });
       m_start_flag = false;
+      ROS_INFO_STREAM("SensorClient::state_estimation - EKF initialized with sensor: "
+                      << m_ekf_params.initial_sensor_id);
     }
     return;
   }
