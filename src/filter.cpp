@@ -6,24 +6,20 @@
 
 EsEkf2::EsEkf2(const EsEkfParams& params)
 {
-  m_est_gravity = params.g;
+
   // motion model noise jacobian
   m_jacobian                     = MatrixXd::Zero(N_STATES, 12);
   m_jacobian.block<12, 12>(3, 0) = MatrixXd::Identity(12, 12);
 
   // initial state for pose, linear velocity and orientation
-  m_est_position     = { 0, 0, 0 };
-  m_est_lin_velocity = { 0, 0, 0 };
-  m_est_quaternion   = { 1, 0, 0, 0 };
-
-  // initial state for imu accelerometer and gyroscope bias
-  m_est_acc_bias       = { 0, 0, 0 };
-  m_acc_bias_variance  = params.acc_bias_variance;
-  m_gyro_bias_variance = params.gyro_bias_variance;
-  m_est_gyro_bias      = { 0, 0, 0 };
-  // m_est_gravity = { 0,0,0};
-
-  // drift
+  m_est_position         = { 0, 0, 0 };
+  m_est_lin_velocity     = { 0, 0, 0 };
+  m_est_quaternion       = { 1, 0, 0, 0 };
+  m_est_acc_bias         = { 0, 0, 0 };
+  m_acc_bias_variance    = params.acc_bias_variance;
+  m_gyro_bias_variance   = params.gyro_bias_variance;
+  m_est_gyro_bias        = { 0, 0, 0 };
+  m_est_gravity          = params.g;
   m_position_drift       = { 0, 0, 0 };
   m_est_quaternion_drift = Identity3x3;
 

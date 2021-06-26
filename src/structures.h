@@ -29,7 +29,12 @@ struct ModelCovariance
 };
 
 enum SensorMsgType { ODOMETRY = 0, TRANSFORM_STAMPED = 1 };
-enum SensorState { ORIENTATION_UPDATE = 2, POSE_UPDATE = 4, POSE_AND_DRIFT_UPDATE = 8 };
+enum SensorState {
+  ORIENTATION_UPDATE    = 2,
+  POSE_UPDATE           = 4,
+  POSE_AND_DRIFT_UPDATE = 8,
+  LIN_VELOCITY_UPDATE   = 16
+};
 
 struct SensorCovariance
 {
@@ -46,12 +51,16 @@ struct SensorParams
   std::string          topic;
   std::string          id;
   bool                 is_orientation_sensor;
+  bool                 is_velocity_sensor;
   bool                 estimate_drift;
   bool                 origin_at_first_measurement = false;
   int                  msg_type;
   Matrix<double, 3, 3> rotation_mat;
   Matrix<double, 3, 1> translation;
   SensorCovariance     cov;// correlation matrix of the sensor
+  Vector3d             position_outlier_lim;
+  Vector3d             veclocity_outlier_lim;
+  Vector3d             orientation_outlier_lim;
 };
 
 struct OutlierChecks
@@ -60,6 +69,11 @@ struct OutlierChecks
   bool drifted_position_outlier = false;
   bool lin_velocity_outlier     = false;
   bool orientation_outlier      = false;
+
+  bool positionValid() const { return !position_outlier; }
+  bool driftPositionValid() const { return !drifted_position_outlier; }
+  bool linVelocityValid() const { return !lin_velocity_outlier; }
+  bool orientationValid() const { return !orientation_outlier; }
 };
 
 struct EsEkfParams
@@ -67,7 +81,6 @@ struct EsEkfParams
   std::vector<SensorParams> sensors;
   std::string               initial_sensor_id;
   ModelCovariance           model;
-  double                    outlier_constant;
   double                    estimation_frequncy;
   Translation3d             g;
   double                    init_pose_p_cov;

@@ -174,14 +174,69 @@ public:
                                  const Quaterniond& rotation)
   {
     OutlierChecks checks;
-    // TODO(lmark): Add sensor outlier parameters for each axis
-    // TODO(lmark): Calculate outliers
+
+    // Orientation checks
+    if (isOrientationSensor()) {
+      // TODO(lmark): Calculate orientation checks
+      checks.orientation_outlier = false;
+      if (checks.orientation_outlier) {
+        ROS_WARN_STREAM_THROTTLE(
+          2.0,
+          "Sensor::getOutlierChecks - orientation outlier check failed for sensor: "
+            << getSensorID());
+      }
+    }
+
+    // Drift position checks
+    if (estimateDrift()) {
+      auto abs_error = (position - m_sensor_drifted_position).cwiseAbs();
+      checks.drifted_position_outlier =
+        abs_error.x() > m_sensor_params.position_outlier_lim.x()
+        || abs_error.y() > m_sensor_params.position_outlier_lim.y()
+        || abs_error.z() > m_sensor_params.position_outlier_lim.z();
+
+      if (checks.drifted_position_outlier) {
+        ROS_WARN_STREAM_THROTTLE(
+          2.0,
+          "Sensor::getOutlierChecks - drifted position outlier check failed for sensor: "
+            << getSensorID());
+      }
+    }
+
+    // Regular position checks
+    if (!estimateDrift()) {
+      auto abs_error = (position - m_sensor_transformed_position).cwiseAbs();
+      checks.position_outlier =
+        abs_error.x() > m_sensor_params.position_outlier_lim.x()
+        || abs_error.y() > m_sensor_params.position_outlier_lim.y()
+        || abs_error.z() > m_sensor_params.position_outlier_lim.z();
+
+      if (checks.position_outlier) {
+        ROS_WARN_STREAM_THROTTLE(
+          2.0,
+          "Sensor::getOutlierChecks - position outlier check failed for sensor: "
+            << getSensorID());
+      }
+    }
+
+    if (isVelocitySensor()) {
+      // TODO(lmark): Calculate velocity checks
+      checks.lin_velocity_outlier = false;
+      if (checks.lin_velocity_outlier) {
+        ROS_WARN_STREAM_THROTTLE(
+          2.0,
+          "Sensor::getOutlierChecks - linear velocity outlier check failed for sensor: "
+            << getSensorID());
+      }
+    }
+
     return checks;
   }
 
   void setR(Matrix3d R) { m_sensor_params.cov.R_pose = std::move(R); }
   bool newMeasurement() const { return m_fresh_measurement; }
   bool isOrientationSensor() const { return m_sensor_params.is_orientation_sensor; }
+  bool isVelocitySensor() const { return false; }
   bool estimateDrift() const { return m_sensor_params.estimate_drift; }
   const std::string&          getSensorID() const { return m_sensor_params.id; }
   const Matrix3d&             getRPose() const { return m_sensor_params.cov.R_pose; }

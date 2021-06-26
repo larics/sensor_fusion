@@ -20,8 +20,7 @@ class SensorClient
 public:
   SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_private);
 
-  void state_estimation(const ros::TimerEvent& msg);
-  bool outlierDetection(const Matrix<double, 3, 1>& measurement);
+  void stateEstimation(const ros::TimerEvent& msg);
 
 private:
   ros::Publisher         m_estimate_pub;

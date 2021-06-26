@@ -123,8 +123,10 @@ public:
       m_est_quaternion.x(), m_est_quaternion.y(), m_est_quaternion.z();
     return state;
   }
-  const Matrix<double, 3, 1>& getP() const { return m_est_position.vector(); }
-  const Matrix<double, 3, 1>& getPDrift() const { return m_position_drift.vector(); }
+  const Vector3d&    getP() const { return m_est_position.vector(); }
+  const Vector3d&    getLinVelocity() const { return m_est_lin_velocity.vector(); }
+  const Quaterniond& getOrientation() const { return m_est_quaternion; }
+  const Vector3d&    getPDrift() const { return m_position_drift.vector(); }
   const Matrix3d getQDrift() const { return m_est_quaternion_drift.toRotationMatrix(); }
   const Matrix3d getPositionCov() const { return m_p_covariance.block<3, 3>(0, 0); }
   const Matrix3d getLinVelocityCov() const { return m_p_covariance.block<3, 3>(3, 3); }
