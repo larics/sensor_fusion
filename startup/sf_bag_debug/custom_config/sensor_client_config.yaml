@@ -54,4 +54,4 @@ pozyx_msg_type: 1
 pozyx_rotation: [0.0, -1.0, 0.0,1.0, 0.0, 0,0, 0.0, 1.0]
 pozyx_translation: [-4.048,3.654,0.176]
 pozyx_origin_at_first_measurement: 1
-pozyx_position_outlier_lim: [1, 1, 2]
+pozyx_position_outlier_lim: [1.5, 1.5, 2]
