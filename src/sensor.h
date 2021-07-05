@@ -151,15 +151,19 @@ public:
 
   const Vector3d& getDriftedPose(const Matrix3d& R, const Vector3d& d)
   {
-    m_fresh_measurement = false;
-    update_drifted_position(R, d);
+    if (estimateDrift()) {
+      m_fresh_measurement = false;
+      update_drifted_position(R, d);
+    }
     return m_sensor_drifted_position;
   }
 
   const Quaterniond& getOrientation()
   {
-    // TODO(mkovac): add transformation for the orientation
-    m_fresh_measurement = false;
+    if (isOrientationSensor()) {
+      // TODO(mkovac): add transformation for the orientation
+      m_fresh_measurement = false;
+    }
     return m_sensor_q;
   }
 
