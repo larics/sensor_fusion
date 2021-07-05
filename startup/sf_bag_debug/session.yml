@@ -1,6 +1,6 @@
 name: sf_debug 
 root: ./
-startup_window: bags 
+startup_window: roscore 
 pre_window: 
   export UAV_NAMESPACE=sf_debug &&
   export BAG_NAME=$HOME/Bags/danieli1_compassless/pozyx_state_correct_fusion_2021-06-23-13-16-27.bag && 
