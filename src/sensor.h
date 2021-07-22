@@ -30,6 +30,8 @@ private:
   SensorParams    m_sensor_params;
   Translation3d   m_sensor_position;
   Quaterniond     m_sensor_q;
+  Quaterniond     m_sensor_transformed_q;
+  Quaterniond     m_sensor_drifted_q;
   Vector3d        m_rotated_translation;
   bool            m_fresh_measurement = false;
   bool            m_first_measurement = false;
@@ -41,6 +43,10 @@ private:
     m_sensor_transformed_position =
       (m_sensor_params.rotation_mat * m_sensor_position).translation()
       - m_rotated_translation;
+
+    if (isOrientationSensor()) {
+      m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
+    }
   }
 
   void update_drifted_position(const Matrix3d& R, const Vector3d& d)
@@ -48,6 +54,8 @@ private:
     const auto r_inverse = R.inverse();
     m_sensor_drifted_position =
       r_inverse * m_sensor_position.translation() - r_inverse * d;
+
+    if (isOrientationSensor()) { m_sensor_drifted_q = r_inverse * m_sensor_q; }
   }
 
   void initialize_sensor_origin(double x, double y, double z)
@@ -75,12 +83,10 @@ public:
     m_transformed_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
       m_sensor_params.id + "_transformed_pose", 1);
 
-    m_sensor_q.w() = 1;
-    m_sensor_q.x() = 0;
-    m_sensor_q.y() = 0;
-    m_sensor_q.z() = 0;
-
-    m_rotated_translation = m_sensor_params.rotation_mat * m_sensor_params.translation;
+    m_sensor_q             = Quaterniond::Identity();
+    m_sensor_transformed_q = Quaterniond::Identity();
+    m_sensor_drifted_q     = Quaterniond::Identity();
+    m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
   }
 
   void publishState(int state)
@@ -160,11 +166,9 @@ public:
 
   const Quaterniond& getOrientation()
   {
-    if (isOrientationSensor()) {
-      // TODO(mkovac): add transformation for the orientation
-      m_fresh_measurement = false;
-    }
-    return m_sensor_q;
+    if (isOrientationSensor()) { m_fresh_measurement = false; }
+    if (estimateDrift()) { return m_sensor_drifted_q; }
+    return m_sensor_transformed_q;
   }
 
   Matrix<double, 4, 1> getOrientationVector()

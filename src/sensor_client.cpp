@@ -117,12 +117,13 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     // Update drifted position
     if (sensor_ptr->estimateDrift() && outlier_checks.driftPositionValid()) {
       m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(),
-                                          sensor_transformed_position);
+                                          sensor_drifted_position);
       sensor_state += SensorState::POSE_AND_DRIFT_UPDATE;
     }
 
     // Update regular position
     if (!sensor_ptr->estimateDrift() && outlier_checks.positionValid()) {
+      // TODO(lmark): Do the update with sensor_drifted_position
       m_es_ekf.poseMeasurementUpdate(sensor_ptr->getRPose(), sensor_transformed_position);
       sensor_state += SensorState::POSE_UPDATE;
     }
