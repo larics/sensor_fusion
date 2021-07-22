@@ -26,6 +26,16 @@
  * that imu measurements have at least a few times higher
  * rate than the sensors used for pose measurements
  * (eg. imu: 100hz and sensor: 25 hz )
+ * 
+ * "True State" (266)
+ *  [ Position 3x1 , Lin. Velocity 3x1, Quaternion 4x1, Lin. Acceleration bias 3x1, 
+ *    Angular velocity bias 3x1, gravity 3x1, drift translation 3x1, drift rotation 4x1 ]
+ * 
+ *  Error state 
+ * 
+ * [ Position 3x1 , Lin. Velocity 3x1, Angle Axis 3x1, Lin. Acceleration bias 3x1, 
+ *    Angular velocity bias 3x1, gravity 3x1, drift translation 3x1, drift angle axis 3x1 ]
+ * 
  */
 
 using namespace Eigen;
@@ -38,12 +48,18 @@ private:
   Translation3d                      m_est_acc_bias;
   Translation3d                      m_est_gravity;
   Quaterniond                        m_est_quaternion;
-  Quaterniond                        m_est_quaternion_drift;
   Matrix<double, N_STATES, N_STATES> m_p_covariance;
-  Matrix<double, N_STATES, 12>       m_jacobian;
-  Translation3d                      m_position_drift;
   Matrix3d                           m_acc_bias_variance;
   Matrix3d                           m_gyro_bias_variance;
+
+  // m_jacobian -> pg. 61 (271)
+  Matrix<double, N_STATES, 12> m_jacobian;
+
+  // TODO(lmark): Only one drift sensor, generalize this!
+  // m_position_drift -> m_est_position_drift
+  // TODO(lmark): Move position and rotation drift to Sensor class
+  Translation3d                            m_position_drift;
+  Quaterniond                              m_est_quaternion_drift;
 
   const Matrix<double, 3, 3>               Identity3x3 = Matrix<double, 3, 3>::Identity();
   const Matrix<double, N_STATES, N_STATES> IdentityNxN =

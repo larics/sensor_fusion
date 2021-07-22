@@ -52,6 +52,9 @@ private:
   void update_drifted_position(const Matrix3d& R, const Vector3d& d)
   {
     const auto r_inverse = R.inverse();
+
+    // TODO(lmark): R rotation and d translation are wrt. the Global coordinate system.
+    // m_sensor_position.translation() -> m_sensor_transformed_position
     m_sensor_drifted_position =
       r_inverse * m_sensor_position.translation() - r_inverse * d;
 

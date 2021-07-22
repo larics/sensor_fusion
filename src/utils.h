@@ -31,6 +31,12 @@ Matrix<double, 3, 3> skew_symetric(Matrix<double, 3, 1> m)
   return a;
 }
 
+/**
+ * @brief Convert angle axis to quaternion
+ * 
+ * @param axis_angle 
+ * @return Matrix<double, 4, 1> 
+ */
 Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle)
 {
   double norm = axis_angle.norm();
@@ -71,6 +77,12 @@ Quaternion<double> euler2quat(Matrix<double, 3, 1> euler)
   return Quaternion<double>(w, x, y, z);
 }
 
+/**
+ * @brief (313c)
+ * 
+ * @param q 
+ * @return Matrix<double, 4, 3> 
+ */
 Matrix<double, 4, 3> firstOrderApprox(Quaterniond q)
 {
   Matrix<double, 4, 3> m;
@@ -79,6 +91,12 @@ Matrix<double, 4, 3> firstOrderApprox(Quaterniond q)
   return m;
 }
 
+/**
+ * @brief (281)
+ * 
+ * @param q 
+ * @return Matrix<double, 4, 3> 
+ */
 Matrix<double, 4, 3> firstOrderApproxLocal(Quaterniond q)
 {
   Matrix<double, 4, 3> m;
@@ -119,6 +137,7 @@ Matrix<double, 3, 4> JacobianWithRespectToQuat(Quaterniond q, Vector3d a)
   Matrix<double, 3, 4> m = MatrixXd::Zero(3, 4);
   m.block<3, 1>(0, 0)    = dw;
   // std::cout << "M\n" << m << '\n';
+  // TODO: Maybe like this - m.block<3, 3>(0, 1) = dv;
   m.bottomRightCorner(3, 3) = dv;
   // std::cout << "M\n" << m << '\n';
   return m;
