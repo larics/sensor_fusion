@@ -20,7 +20,7 @@ EsEkf2::EsEkf2(const EsEkfParams& params)
   m_gyro_bias_variance   = params.gyro_bias_variance;
   m_est_gyro_bias        = { 0, 0, 0 };
   m_est_gravity          = params.g;
-  m_est_position_drift       = { 0, 0, 0 };
+  m_est_position_drift   = { 0, 0, 0 };
   m_est_quaternion_drift = Identity3x3;
 
   // initital state error is zero (can be anything else),18 nuber of core states
@@ -135,8 +135,6 @@ void EsEkf2::poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3
   const auto& angle_axis_vector = delta_x.block<3, 1>(6, 0);
   Quaterniond delta_q;
   delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
-  // Matrix<double, 4, 1> quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(6, 0));
-  // Quaterniond q(quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
 
   // pg. 68 (303)
   m_est_quaternion = delta_q * m_est_quaternion;
@@ -181,32 +179,33 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
   m_est_quaternion = m_est_quaternion * m_est_quaternion_drift;
 
   Matrix<double, N_STATES, 1> delta_x;
-  Matrix<double, 4, 1>        delta_quat;
+  Quaterniond                 delta_quat;
 
-  // TODO(lmark): This is not a difference of quaternions!
-  // maybe: delta_quat = y * m_est_quaternion.inverse();
-  delta_quat << y.w() - m_est_quaternion.w(), y.x() - m_est_quaternion.x(),
-    y.y() - m_est_quaternion.y(), y.z() - m_est_quaternion.z();
-  delta_x = K * (delta_quat);
+  delta_quat = y * m_est_quaternion.inverse();
+  delta_x =
+    K * Eigen::Vector4d{ delta_quat.w(), delta_quat.x(), delta_quat.y(), delta_quat.z() };
 
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
 
-  // TODO(lmaark): Angle axis with eigen
-  Matrix<double, 4, 1> quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(6, 0));
-  Quaterniond q(quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
-
-  m_est_quaternion = q * m_est_quaternion;
+  const auto& angle_axis_vector = delta_x.block<3, 1>(6, 0);
+  Quaterniond delta_q;
+  delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
+  m_est_quaternion = delta_q * m_est_quaternion;
   m_est_quaternion.normalize();
 
-  m_est_acc_bias.vector()   = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
-  m_est_gyro_bias.vector()  = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
-  m_est_gravity.vector()    = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
-  m_est_position_drift.vector() = m_est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
-  Matrix<double, 4, 1> quat_from_aa2 = axixs_angle2quat(delta_x.block<3, 1>(21, 0));
-  Quaterniond q2(quat_from_aa2(0), quat_from_aa2(1), quat_from_aa2(2), quat_from_aa2(3));
+  m_est_acc_bias.vector()  = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
+  m_est_gyro_bias.vector() = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
+  m_est_gravity.vector()   = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
+  m_est_position_drift.vector() =
+    m_est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
 
-  m_est_quaternion_drift = m_est_quaternion_drift * q2;
+  const auto& angle_axis_drift_vector = delta_x.block<3, 1>(21, 0);
+  Quaterniond delta_q_drift;
+  delta_q_drift = Eigen::AngleAxisd(angle_axis_drift_vector.norm(),
+                                    angle_axis_drift_vector.normalized());
+
+  m_est_quaternion_drift = m_est_quaternion_drift * delta_q_drift;
   m_est_quaternion_drift.normalize();
 
   m_p_covariance =
@@ -256,24 +255,25 @@ void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
 
+  const auto& angle_axis_vector = delta_x.block<3, 1>(6, 0);
+  Quaterniond delta_q;
+  delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
 
-  Matrix<double, 4, 1> quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(6, 0));
-  Quaterniond q(quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
-
-  m_est_quaternion = q * m_est_quaternion;
+  m_est_quaternion = delta_q * m_est_quaternion;
   m_est_quaternion.normalize();
 
-  m_est_acc_bias.vector()   = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
-  m_est_gyro_bias.vector()  = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
-  m_est_gravity.vector()    = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
-  m_est_position_drift.vector() = m_est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
+  m_est_acc_bias.vector()  = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
+  m_est_gyro_bias.vector() = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
+  m_est_gravity.vector()   = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
+  m_est_position_drift.vector() =
+    m_est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
 
-  // TODO(lmark) Change this to eigen angle axis
-  quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(21, 0));
-  Quaternion<double> q2(
-    quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
+  const auto& angle_axis_drift_vector = delta_x.block<3, 1>(21, 0);
+  Quaterniond delta_q_drift;
+  delta_q_drift = Eigen::AngleAxisd(angle_axis_drift_vector.norm(),
+                                    angle_axis_drift_vector.normalized());
 
-  m_est_quaternion_drift = m_est_quaternion_drift * q2;
+  m_est_quaternion_drift = m_est_quaternion_drift * delta_q_drift;
   m_est_quaternion_drift.normalize();
 
   m_p_covariance =

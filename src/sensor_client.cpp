@@ -48,8 +48,6 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
 
 void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 {
-  // TODO(lmark): Maybe choose a sensor to initialize EKF (don't initialize it with a
-  // random 0th sensor, who knows which one is that?)
   if (m_start_flag) {
     auto sensor_it = std::find_if(
       m_sensor_vector.begin(), m_sensor_vector.end(), [&](const auto& sensor_ptr) {
