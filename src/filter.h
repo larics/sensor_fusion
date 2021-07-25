@@ -58,7 +58,7 @@ private:
   // TODO(lmark): Only one drift sensor, generalize this!
   // m_position_drift -> m_est_position_drift
   // TODO(lmark): Move position and rotation drift to Sensor class
-  Translation3d                            m_position_drift;
+  Translation3d                            m_est_position_drift;
   Quaterniond                              m_est_quaternion_drift;
 
   const Matrix<double, 3, 3>               Identity3x3 = Matrix<double, 3, 3>::Identity();
@@ -142,7 +142,7 @@ public:
   const Vector3d&    getP() const { return m_est_position.vector(); }
   const Vector3d&    getLinVelocity() const { return m_est_lin_velocity.vector(); }
   const Quaterniond& getOrientation() const { return m_est_quaternion; }
-  const Vector3d&    getPDrift() const { return m_position_drift.vector(); }
+  const Vector3d&    getPDrift() const { return m_est_position_drift.vector(); }
   const Matrix3d getQDrift() const { return m_est_quaternion_drift.toRotationMatrix(); }
   const Matrix3d getPositionCov() const { return m_p_covariance.block<3, 3>(0, 0); }
   const Matrix3d getLinVelocityCov() const { return m_p_covariance.block<3, 3>(3, 3); }

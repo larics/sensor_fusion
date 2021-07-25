@@ -20,7 +20,7 @@ EsEkf2::EsEkf2(const EsEkfParams& params)
   m_gyro_bias_variance   = params.gyro_bias_variance;
   m_est_gyro_bias        = { 0, 0, 0 };
   m_est_gravity          = params.g;
-  m_position_drift       = { 0, 0, 0 };
+  m_est_position_drift       = { 0, 0, 0 };
   m_est_quaternion_drift = Identity3x3;
 
   // initital state error is zero (can be anything else),18 nuber of core states
@@ -202,7 +202,7 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
   m_est_acc_bias.vector()   = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
   m_est_gyro_bias.vector()  = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
   m_est_gravity.vector()    = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
-  m_position_drift.vector() = m_position_drift.vector() + delta_x.block<3, 1>(18, 0);
+  m_est_position_drift.vector() = m_est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
   Matrix<double, 4, 1> quat_from_aa2 = axixs_angle2quat(delta_x.block<3, 1>(21, 0));
   Quaterniond q2(quat_from_aa2(0), quat_from_aa2(1), quat_from_aa2(2), quat_from_aa2(3));
 
@@ -250,7 +250,7 @@ void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
   delta_x = K
             * (y// #1
                - (m_est_quaternion_drift.toRotationMatrix() * m_est_position.vector()// #2
-                  + m_position_drift.vector()));
+                  + m_est_position_drift.vector()));
 
   // 3.3 Correct predicted state
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
@@ -266,7 +266,7 @@ void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
   m_est_acc_bias.vector()   = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
   m_est_gyro_bias.vector()  = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
   m_est_gravity.vector()    = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
-  m_position_drift.vector() = m_position_drift.vector() + delta_x.block<3, 1>(18, 0);
+  m_est_position_drift.vector() = m_est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
 
   // TODO(lmark) Change this to eigen angle axis
   quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(21, 0));

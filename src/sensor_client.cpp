@@ -100,8 +100,6 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 
     // Get All the measurements
     const auto& sensor_transformed_position = sensor_ptr->getPose();
-    const auto& sensor_drifted_position =
-      sensor_ptr->getDriftedPose(m_es_ekf.getQDrift(), m_es_ekf.getPDrift());
     const auto& sensor_orientation = sensor_ptr->getOrientation();
 
     // Call this function after getting all the sensor measurements;
