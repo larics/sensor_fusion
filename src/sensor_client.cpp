@@ -98,7 +98,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 
     // Get All the measurements
     const auto& sensor_transformed_position = sensor_ptr->getPose();
-    const auto& sensor_orientation = sensor_ptr->getOrientation();
+    const auto& sensor_orientation          = sensor_ptr->getOrientation();
 
     // Call this function after getting all the sensor measurements;
     const auto outlier_checks = sensor_ptr->getOutlierChecks(
@@ -106,14 +106,19 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 
     // Update orientation
     if (sensor_ptr->isOrientationSensor() && outlier_checks.orientationValid()) {
-      m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(), sensor_orientation);
+      m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(),
+                                      sensor_orientation,
+                                      sensor_ptr->getTranslationDrift(),
+                                      sensor_ptr->getQuaternionDrift());
       sensor_state += SensorState::ORIENTATION_UPDATE;
     }
 
     // Update drifted position
     if (sensor_ptr->estimateDrift() && outlier_checks.driftPositionValid()) {
       m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(),
-                                          sensor_transformed_position);
+                                          sensor_transformed_position,
+                                          sensor_ptr->getTranslationDrift(),
+                                          sensor_ptr->getQuaternionDrift());
       sensor_state += SensorState::POSE_AND_DRIFT_UPDATE;
     }
 

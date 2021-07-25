@@ -35,6 +35,8 @@ private:
   bool            m_fresh_measurement = false;
   bool            m_first_measurement = false;
   Vector3d        m_sensor_transformed_position;
+  Translation3d   m_est_position_drift;
+  Quaterniond     m_est_quaternion_drift;
 
   void update_position()
   {
@@ -74,6 +76,8 @@ public:
     m_sensor_q             = Quaterniond::Identity();
     m_sensor_transformed_q = Quaterniond::Identity();
     m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
+    m_est_position_drift   = { 0, 0, 0 };
+    m_est_quaternion_drift = Quaterniond::Identity();
   }
 
   void publishState(int state)
@@ -225,7 +229,8 @@ public:
   {
     return m_sensor_params.cov.R_orientation;
   }
-
+  Quaterniond&   getQuaternionDrift() { return m_est_quaternion_drift; }
+  Translation3d& getTranslationDrift() { return m_est_position_drift; }
   ~Sensor() { std::cout << "SENSOR DESTRUCTOR" << '\n'; }
 };
 #endif
