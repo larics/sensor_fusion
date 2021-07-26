@@ -24,14 +24,14 @@ inline double wrapToPi(double angle)
   return angle;
 }
 
-Matrix<double, 3, 3> skew_symetric(Matrix<double, 3, 1> m)
+Matrix<double, 3, 3> skew_symetric(const Matrix<double, 3, 1>& m)
 {
   Matrix<double, 3, 3> a;
   a << 0, -m(2), m(1), m(2), 0, -m(0), -m(1), m(0), 0;
   return a;
 }
 
-Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle)
+Matrix<double, 4, 1> axixs_angle2quat(const Matrix<double, 3, 1>& axis_angle)
 {
   double norm = axis_angle.norm();
   double w, x, y, z;
@@ -50,7 +50,7 @@ Matrix<double, 4, 1> axixs_angle2quat(Matrix<double, 3, 1> axis_angle)
   return result;
 }
 
-Quaternion<double> euler2quat(Matrix<double, 3, 1> euler)
+Quaternion<double> euler2quat(const Matrix<double, 3, 1>& euler)
 {
   double roll  = euler(0);
   double pitch = euler(1);
@@ -71,7 +71,7 @@ Quaternion<double> euler2quat(Matrix<double, 3, 1> euler)
   return Quaternion<double>(w, x, y, z);
 }
 
-Matrix<double, 4, 3> firstOrderApprox(Quaterniond q)
+Matrix<double, 4, 3> firstOrderApprox(const Quaterniond& q)
 {
   Matrix<double, 4, 3> m;
   m << -q.x(), -q.y(), -q.z(), q.w(), q.z(), -q.y(), -q.z(), q.w(), q.x(), q.y(), -q.x(),
@@ -79,7 +79,7 @@ Matrix<double, 4, 3> firstOrderApprox(Quaterniond q)
   return m;
 }
 
-Matrix<double, 4, 3> firstOrderApproxLocal(Quaterniond q)
+Matrix<double, 4, 3> firstOrderApproxLocal(const Quaterniond& q)
 {
   Matrix<double, 4, 3> m;
   m << -q.x(), -q.y(), -q.z(), q.w(), -q.z(), q.y(), q.z(), q.w(), -q.x(), -q.y(), q.x(),
@@ -87,7 +87,7 @@ Matrix<double, 4, 3> firstOrderApproxLocal(Quaterniond q)
   return m;
 }
 
-Matrix<double, 4, 4> leftQuatProdMat(Quaterniond q)
+Matrix<double, 4, 4> leftQuatProdMat(const Quaterniond& q)
 {
   Matrix<double, 4, 4> m;
   m << q.w(), -q.x(), -q.y(), -q.z(), q.x(), q.w(), -q.z(), q.y(), q.y(), q.z(), q.w(),
@@ -95,7 +95,7 @@ Matrix<double, 4, 4> leftQuatProdMat(Quaterniond q)
   return m;
 }
 
-Matrix<double, 4, 4> rightQuatProdMat(Quaterniond q)
+Matrix<double, 4, 4> rightQuatProdMat(const Quaterniond& q)
 {
   Matrix<double, 4, 4> m;
   m << q.w(), -q.x(), -q.y(), -q.z(), q.x(), q.w(), q.z(), -q.y(), q.y(), -q.z(), q.w(),
@@ -103,7 +103,7 @@ Matrix<double, 4, 4> rightQuatProdMat(Quaterniond q)
   return m;
 }
 
-Matrix<double, 3, 4> JacobianWithRespectToQuat(Quaterniond q, Vector3d a)
+Matrix<double, 3, 4> JacobianWithRespectToQuat(const Quaterniond& q, const Vector3d& a)
 {
   Vector3d v  = { q.x(), q.y(), q.z() };
   double   w  = q.w();
