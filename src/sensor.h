@@ -30,10 +30,13 @@ private:
   SensorParams    m_sensor_params;
   Translation3d   m_sensor_position;
   Quaterniond     m_sensor_q;
+  Quaterniond     m_sensor_transformed_q;
   Vector3d        m_rotated_translation;
   bool            m_fresh_measurement = false;
   bool            m_first_measurement = false;
   Vector3d        m_sensor_transformed_position;
+  Translation3d   m_est_position_drift;
+  Quaterniond     m_est_quaternion_drift;
 
   void update_position()
   {
@@ -66,12 +69,11 @@ public:
     m_transformed_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
       m_sensor_params.id + "_transformed_pose", 1);
 
-    m_sensor_q.w() = 1;
-    m_sensor_q.x() = 0;
-    m_sensor_q.y() = 0;
-    m_sensor_q.z() = 0;
-
-    m_rotated_translation = m_sensor_params.rotation_mat * m_sensor_params.translation;
+    m_sensor_q             = Quaterniond::Identity();
+    m_sensor_transformed_q = Quaterniond::Identity();
+    m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
+    m_est_position_drift   = { 0, 0, 0 };
+    m_est_quaternion_drift = Quaterniond::Identity();
   }
 
   void publishState(int state)
@@ -88,10 +90,10 @@ public:
     transformed_msg.pose.position.x    = m_sensor_transformed_position.x();
     transformed_msg.pose.position.y    = m_sensor_transformed_position.y();
     transformed_msg.pose.position.z    = m_sensor_transformed_position.z();
-    transformed_msg.pose.orientation.x = m_sensor_q.x();
-    transformed_msg.pose.orientation.y = m_sensor_q.y();
-    transformed_msg.pose.orientation.z = m_sensor_q.z();
-    transformed_msg.pose.orientation.w = m_sensor_q.w();
+    transformed_msg.pose.orientation.x = m_sensor_transformed_q.x();
+    transformed_msg.pose.orientation.y = m_sensor_transformed_q.y();
+    transformed_msg.pose.orientation.z = m_sensor_transformed_q.z();
+    transformed_msg.pose.orientation.w = m_sensor_transformed_q.w();
     m_transformed_pub.publish(transformed_msg);
   }
 
@@ -143,10 +145,12 @@ public:
   const Quaterniond& getOrientation()
   {
     if (isOrientationSensor()) {
-      // TODO(mkovac): add transformation for the orientation
-      m_fresh_measurement = false;
+      m_fresh_measurement    = false;
+      m_sensor_transformed_q = m_sensor_q;
+      // TODO(lmark): When carto orientation is transformed to global frame transformation estimation breaks
+      //m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
     }
-    return m_sensor_q;
+    return m_sensor_transformed_q;
   }
 
   Matrix<double, 4, 1> getOrientationVector()
@@ -175,7 +179,7 @@ public:
 
     // Drift position checks
     if (estimateDrift()) {
-      // TODO(lmark): Calculate drift position checks
+      // TODO(lmark): Add drifted position outlier
       checks.drifted_position_outlier = false;
       if (checks.drifted_position_outlier) {
         ROS_WARN_STREAM_THROTTLE(
@@ -226,7 +230,8 @@ public:
   {
     return m_sensor_params.cov.R_orientation;
   }
-
+  Quaterniond&   getQuaternionDrift() { return m_est_quaternion_drift; }
+  Translation3d& getTranslationDrift() { return m_est_position_drift; }
   ~Sensor() { std::cout << "SENSOR DESTRUCTOR" << '\n'; }
 };
 #endif
