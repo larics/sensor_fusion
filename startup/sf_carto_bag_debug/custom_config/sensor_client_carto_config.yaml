@@ -41,7 +41,7 @@ camera_R_angle: [0.01, 0.01, 0.01, 0.01]
 camera_rotation: [1,0,0,0,1,0,0,0,1]
 camera_translation: [0,0,0]
 camera_origin_at_first_measurement: 0
-camera_position_outlier_lim: [0.5, 0.5, 0.5]
+camera_position_outlier_lim: [10, 10, 10]
 camera_orientation_outlier_lim: [0, 0, 0]
 
 #pozyx
@@ -54,18 +54,18 @@ pozyx_msg_type: 1
 pozyx_rotation: [0.0, -1.0, 0.0,1.0, 0.0, 0,0, 0.0, 1.0]
 pozyx_translation: [-4.048,3.654,0.176]
 pozyx_origin_at_first_measurement: 1
-pozyx_position_outlier_lim: [1.5, 1.5, 2]
+pozyx_position_outlier_lim: [1, 1, 2]
 
 #carto
-carto_R_pose: [0.05, 0.05, 0.01]
-carto_R_angle: [0.01, 0.01, 0.01, 0.01]
-carto_is_orientation_sensor: 1
+carto_R_pose: [0.5, 0.5, 1]
+carto_R_angle: [0.25, 0.25, 0.25, 0.25]
+carto_is_orientation_sensor: 0
 carto_is_velocity_sensor: 0
-carto_estimate_drift: 1
+carto_estimate_drift: 0
 carto_topic: uav/cartographer/transform
 carto_msg_type: 1
-carto_rotation: [0.0, 1.0, 0.0, 1.0, 0.0, 0,0, 0.0, 1.0]
+carto_rotation: [0.0, -1.0, 0.0, 1.0, 0.0, 0,0, 0.0, 1.0]
 carto_translation: [-4.048,3.654,0.176]
 carto_origin_at_first_measurement: 1
-carto_position_outlier_lim: [1, 1, 5]
+carto_position_outlier_lim: [10, 10, 10]
 carto_orientation_outlier_lim: [0, 0, 0]
