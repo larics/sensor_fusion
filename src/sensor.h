@@ -34,20 +34,12 @@ private:
   bool            m_fresh_measurement = false;
   bool            m_first_measurement = false;
   Vector3d        m_sensor_transformed_position;
-  Vector3d        m_sensor_drifted_position;
 
   void update_position()
   {
     m_sensor_transformed_position =
       (m_sensor_params.rotation_mat * m_sensor_position).translation()
       - m_rotated_translation;
-  }
-
-  void update_drifted_position(const Matrix3d& R, const Vector3d& d)
-  {
-    const auto r_inverse = R.inverse();
-    m_sensor_drifted_position =
-      r_inverse * m_sensor_position.translation() - r_inverse * d;
   }
 
   void initialize_sensor_origin(double x, double y, double z)
@@ -60,8 +52,7 @@ private:
 
 public:
   Sensor(const SensorParams& params)
-    : m_sensor_params(params), m_sensor_transformed_position(Vector3d::Zero()),
-      m_sensor_drifted_position(Vector3d::Zero())
+    : m_sensor_params(params), m_sensor_transformed_position(Vector3d::Zero())
   {
     if (m_sensor_params.msg_type == SensorMsgType::ODOMETRY) {
       m_sensor_sub = m_node_handle.subscribe(
@@ -149,15 +140,6 @@ public:
     return m_sensor_transformed_position;
   }
 
-  const Vector3d& getDriftedPose(const Matrix3d& R, const Vector3d& d)
-  {
-    if (estimateDrift()) {
-      m_fresh_measurement = false;
-      update_drifted_position(R, d);
-    }
-    return m_sensor_drifted_position;
-  }
-
   const Quaterniond& getOrientation()
   {
     if (isOrientationSensor()) {
@@ -193,12 +175,8 @@ public:
 
     // Drift position checks
     if (estimateDrift()) {
-      auto abs_error = (position - m_sensor_drifted_position).cwiseAbs();
-      checks.drifted_position_outlier =
-        abs_error.x() > m_sensor_params.position_outlier_lim.x()
-        || abs_error.y() > m_sensor_params.position_outlier_lim.y()
-        || abs_error.z() > m_sensor_params.position_outlier_lim.z();
-
+      // TODO(lmark): Calculate drift position checks
+      checks.drifted_position_outlier = false;
       if (checks.drifted_position_outlier) {
         ROS_WARN_STREAM_THROTTLE(
           2.0,
