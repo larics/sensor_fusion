@@ -12,16 +12,14 @@ EsEkf2::EsEkf2(const EsEkfParams& params)
   m_jacobian.block<12, 12>(3, 0) = MatrixXd::Identity(12, 12);
 
   // initial state for pose, linear velocity and orientation
-  m_est_position         = { 0, 0, 0 };
-  m_est_lin_velocity     = { 0, 0, 0 };
-  m_est_quaternion       = { 1, 0, 0, 0 };
-  m_est_acc_bias         = { 0, 0, 0 };
-  m_acc_bias_variance    = params.acc_bias_variance;
-  m_gyro_bias_variance   = params.gyro_bias_variance;
-  m_est_gyro_bias        = { 0, 0, 0 };
-  m_est_gravity          = params.g;
-  m_position_drift       = { 0, 0, 0 };
-  m_est_quaternion_drift = Identity3x3;
+  m_est_position       = { 0, 0, 0 };
+  m_est_lin_velocity   = { 0, 0, 0 };
+  m_est_quaternion     = { 1, 0, 0, 0 };
+  m_est_acc_bias       = { 0, 0, 0 };
+  m_acc_bias_variance  = params.acc_bias_variance;
+  m_gyro_bias_variance = params.gyro_bias_variance;
+  m_est_gyro_bias      = { 0, 0, 0 };
+  m_est_gravity        = params.g;
 
   // initital state error is zero (can be anything else),18 nuber of core states
   // p,v,q,ab,wb,g
@@ -88,11 +86,15 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
   f_jac.block<3, 3>(3, 9)  = -rot_est * delta_t;
   f_jac.block<3, 3>(3, 15) = delta_t * Identity3x3;
   f_jac.block<3, 3>(6, 12) = f_jac.block<3, 3>(3, 9);
-  f_jac.block<3, 3>(6, 6)  = Identity3x3;
+
+  // TODO(lmark): Maybe comment out this line, should set at #83
+  f_jac.block<3, 3>(6, 6) = Identity3x3;
 
   // std::cout << "f_jac:\n" << f_jac.block<12,12>(0,0) << "\n";
 
   // 2. Propagate uncertainty
+  // Components on pg. 60 (262-265)
+  // Definition on pg. 70 (312)
   Matrix<double, 12, 12> q_cov = Matrix<double, 12, 12>::Identity();
   q_cov.block<3, 3>(0, 0)      = var_imu_f * pow(delta_t, 2);
   q_cov.block<3, 3>(3, 3)      = var_imu_w * pow(delta_t, 2);
@@ -106,7 +108,11 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
 
 void EsEkf2::poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3, 1>& y)
 {
-  // measurement model jacobian
+  // Definition on pg. 62 (272) onwards
+
+  // measurement model jacobian (278) - (279)
+  // X_{error_x} = I, H = H_{x}
+  // TODO(lmark): Maybe add h_jac as a constant - always the same!
   Matrix<double, 3, N_STATES> h_jac = MatrixXd::Zero(3, N_STATES);
   h_jac.block<3, 3>(0, 0)           = Identity3x3;
 
@@ -123,28 +129,37 @@ void EsEkf2::poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3
   // 3.3 Correct predicted state
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
-  Matrix<double, 4, 1> quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(6, 0));
-  Quaterniond q(quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
 
-  m_est_quaternion = q * m_est_quaternion;
+  const auto& angle_axis_vector = delta_x.block<3, 1>(6, 0);
+  Quaterniond delta_q;
+  delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
+
+  // pg. 68 (303)
+  m_est_quaternion = delta_q * m_est_quaternion;
   m_est_quaternion.normalize();
 
   m_est_acc_bias.vector()  = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
   m_est_gyro_bias.vector() = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
   m_est_gravity.vector()   = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
+
+  // Better numerical stability, pg. 63. Footnote "Joseph form"
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
     + K * R_cov * K.transpose();
 }
 
 void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
-                                    const Quaterniond&          y)
+                                    const Quaterniond&          y,
+                                    Translation3d&              est_position_drift,
+                                    Quaterniond&                est_quaternion_drift)
 {
   // Sola equation:(278)
   Matrix<double, 4, N_STATES + 2> H = MatrixXd::Zero(4, N_STATES + 2);
   // We measure quaternions directly this a standard
   // measurement model Jacobian for an extended Kalman filter
-  H.block<4, 4>(0, 6)  = rightQuatProdMat(m_est_quaternion_drift);
+
+  // TODO(lmark) check if m_est_quaternion_drift <-> m_est_quaternion
+  H.block<4, 4>(0, 6)  = rightQuatProdMat(est_quaternion_drift);
   H.block<4, 4>(0, 22) = leftQuatProdMat(m_est_quaternion);
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx = MatrixXd::Zero(N_STATES + 2, N_STATES);
@@ -152,7 +167,7 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
   H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
   H_dx.block<4, 3>(6, 6)    = 0.5 * firstOrderApprox(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
-  H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(m_est_quaternion_drift);
+  H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(est_quaternion_drift);
 
   Matrix<double, 4, N_STATES> h_jac = MatrixXd::Zero(4, N_STATES);
 
@@ -161,8 +176,9 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
   K                             = m_p_covariance * h_jac.transpose()
       * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
 
-  m_est_quaternion = m_est_quaternion * m_est_quaternion_drift;
+  m_est_quaternion = m_est_quaternion * est_quaternion_drift;
 
+  // TODO(lmark): This is wrong but it somehow works ?!
   Matrix<double, N_STATES, 1> delta_x;
   Matrix<double, 4, 1>        delta_quat;
   delta_quat << y.w() - m_est_quaternion.w(), y.x() - m_est_quaternion.x(),
@@ -172,47 +188,53 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
 
-  Matrix<double, 4, 1> quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(6, 0));
-  Quaterniond q(quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
-
-  m_est_quaternion = q * m_est_quaternion;
+  const auto& angle_axis_vector = delta_x.block<3, 1>(6, 0);
+  Quaterniond delta_q;
+  delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
+  m_est_quaternion = delta_q * m_est_quaternion;
   m_est_quaternion.normalize();
 
-  m_est_acc_bias.vector()   = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
-  m_est_gyro_bias.vector()  = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
-  m_est_gravity.vector()    = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
-  m_position_drift.vector() = m_position_drift.vector() + delta_x.block<3, 1>(18, 0);
-  Matrix<double, 4, 1> quat_from_aa2 = axixs_angle2quat(delta_x.block<3, 1>(21, 0));
-  Quaterniond q2(quat_from_aa2(0), quat_from_aa2(1), quat_from_aa2(2), quat_from_aa2(3));
+  m_est_acc_bias.vector()     = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
+  m_est_gyro_bias.vector()    = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
+  m_est_gravity.vector()      = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
+  est_position_drift.vector() = est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
 
-  m_est_quaternion_drift = m_est_quaternion_drift * q2;
-  m_est_quaternion_drift.normalize();
+  const auto& angle_axis_drift_vector = delta_x.block<3, 1>(21, 0);
+  Quaterniond delta_q_drift;
+  delta_q_drift = Eigen::AngleAxisd(angle_axis_drift_vector.norm(),
+                                    angle_axis_drift_vector.normalized());
+
+  est_quaternion_drift = est_quaternion_drift * delta_q_drift;
+  est_quaternion_drift.normalize();
 
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
     + K * R_cov * K.transpose();
 }
-
 void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
-                                        const Matrix<double, 3, 1>& y)
+                                        const Matrix<double, 3, 1>& y,
+                                        Translation3d&              est_position_drift,
+                                        Quaterniond&                est_quaternion_drift)
 {
+  // pg. 63 (278)
+  //  + 2 - This H is wrt. the "true" UAV state quaternion-based representation
   Matrix<double, 3, N_STATES + 2> H = MatrixXd::Zero(3, N_STATES + 2);
-  H.block<3, 3>(0, 0)               = m_est_quaternion_drift.toRotationMatrix();
+  H.block<3, 3>(0, 0)               = est_quaternion_drift.toRotationMatrix();// (170)
+  H.block<3, 3>(0, 19)              = Identity3x3;// Position drift
 
-  H.block<3, 3>(0, 19) = Identity3x3;
+  // Jacobian with respect to the quaternion pg 41 (174)
   H.block<3, 4>(0, 22) =
-    JacobianWithRespectToQuat(m_est_quaternion_drift, m_est_position.vector());
+    JacobianWithRespectToQuat(est_quaternion_drift, m_est_position.vector());
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx = MatrixXd::Zero(N_STATES + 2, N_STATES);
   // Scola equation:(280)
   H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
   H_dx.block<4, 3>(6, 6)    = 0.5 * firstOrderApprox(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
-  H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(m_est_quaternion_drift);
+  H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(est_quaternion_drift);
 
   Matrix<double, 3, N_STATES> h_jac = MatrixXd::Zero(3, N_STATES);
-
-  h_jac = H * H_dx;
+  h_jac                             = H * H_dx;
 
   Matrix<double, N_STATES, 3> K = MatrixXd::Zero(N_STATES, 3);
   K                             = m_p_covariance * h_jac.transpose()
@@ -220,32 +242,38 @@ void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
   // delta_x -> Error state
   Matrix<double, N_STATES, 1> delta_x;
 
+  // #1 and #2 should be in the same coordinate system - they are!
+  // 1) Don't apply transform to #2 - both in GLOBAL
+  // 2) Make sure y is also in drifted coordinate system
+  // Y IS ALREADY IN A DFRIFTED COORDINATE SYSATEM (if we assume the sensor drifts)
   delta_x = K
-            * (y
-               - (m_est_quaternion_drift.toRotationMatrix() * m_est_position.vector()
-                  + m_position_drift.vector()));
+            * (y// #1
+               - (est_quaternion_drift.toRotationMatrix() * m_est_position.vector()// #2
+                  + est_position_drift.vector()));
 
   // 3.3 Correct predicted state
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
-  Matrix<double, 4, 1> quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(6, 0));
-  Quaterniond q(quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
 
-  m_est_quaternion = q * m_est_quaternion;
+  const auto& angle_axis_vector = delta_x.block<3, 1>(6, 0);
+  Quaterniond delta_q;
+  delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
+
+  m_est_quaternion = delta_q * m_est_quaternion;
   m_est_quaternion.normalize();
 
-  m_est_acc_bias.vector()  = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
-  m_est_gyro_bias.vector() = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
-  m_est_gravity.vector()   = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
+  m_est_acc_bias.vector()     = m_est_acc_bias.vector() + delta_x.block<3, 1>(9, 0);
+  m_est_gyro_bias.vector()    = m_est_gyro_bias.vector() + delta_x.block<3, 1>(12, 0);
+  m_est_gravity.vector()      = m_est_gravity.vector() + delta_x.block<3, 1>(15, 0);
+  est_position_drift.vector() = est_position_drift.vector() + delta_x.block<3, 1>(18, 0);
 
-  m_position_drift.vector() = m_position_drift.vector() + delta_x.block<3, 1>(18, 0);
+  const auto& angle_axis_drift_vector = delta_x.block<3, 1>(21, 0);
+  Quaterniond delta_q_drift;
+  delta_q_drift = Eigen::AngleAxisd(angle_axis_drift_vector.norm(),
+                                    angle_axis_drift_vector.normalized());
 
-  quat_from_aa = axixs_angle2quat(delta_x.block<3, 1>(21, 0));
-  Quaternion<double> q2(
-    quat_from_aa(0), quat_from_aa(1), quat_from_aa(2), quat_from_aa(3));
-
-  m_est_quaternion_drift = m_est_quaternion_drift * q2;
-  m_est_quaternion_drift.normalize();
+  est_quaternion_drift = est_quaternion_drift * delta_q_drift;
+  est_quaternion_drift.normalize();
 
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
