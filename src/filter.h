@@ -94,7 +94,8 @@ public:
                              const Matrix<double, 3, 1>& measurements);
 
   /**
-   * @brief Measurement update. Use sensor measurement of pose to update the orientation
+   * @brief Measurement update for the heading angle. Also performs a drift update if it
+   * is a drift sensor. Use sensor measurement of pose to update the orientation
    * estimation and reduce uncertainty.
    *
    * @param R_cov Measurements covariance matrix.
@@ -107,6 +108,14 @@ public:
                               Translation3d&              est_position_drift,
                               Quaterniond&                est_quaternion_drift);
 
+  /**
+   * @brief Measurement update for the heading angle.
+   *
+   * @param R_cov Measurement covariance matrix
+   * @param measurements New orientation measurements.
+   */
+  void angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
+                                   const Quaterniond&          measurements);
   /**
    * @brief Measurement update including position drift. Use sensor measurement of pose to
    * update the position estimation and reduce uncertainty.
