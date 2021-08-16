@@ -148,7 +148,7 @@ void EsEkf2::poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3
     + K * R_cov * K.transpose();
 }
 
-void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
+void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
                                     const Quaterniond&          y,
                                     Translation3d&              est_position_drift,
                                     Quaterniond&                est_quaternion_drift)
@@ -211,6 +211,7 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
     + K * R_cov * K.transpose();
 }
+
 void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
                                         const Matrix<double, 3, 1>& y,
                                         Translation3d&              est_position_drift,
