@@ -24,6 +24,7 @@ class Sensor
 {
 private:
   ros::Subscriber m_sensor_sub;
+  ros::Publisher  m_sensor_drift_pub;
   ros::Publisher  m_sensor_state_pub;
   ros::Publisher  m_transformed_pub;
   ros::NodeHandle m_node_handle;
@@ -69,6 +70,11 @@ public:
     m_transformed_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
       m_sensor_params.id + "_transformed_pose", 1);
 
+    if (m_sensor_params.estimate_drift) {
+      m_sensor_drift_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
+        m_sensor_params.id + "_drift", 1);
+    }
+
     m_sensor_q             = Quaterniond::Identity();
     m_sensor_transformed_q = Quaterniond::Identity();
     m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
@@ -82,6 +88,7 @@ public:
     state_msg.data = state;
     m_sensor_state_pub.publish(state_msg);
   }
+
   void publishTransformedPose()
   {
     geometry_msgs::PoseStamped transformed_msg;
@@ -95,6 +102,22 @@ public:
     transformed_msg.pose.orientation.z = m_sensor_transformed_q.z();
     transformed_msg.pose.orientation.w = m_sensor_transformed_q.w();
     m_transformed_pub.publish(transformed_msg);
+  }
+
+  void publishDrift()
+  {
+    if (!m_sensor_params.estimate_drift) { return; }
+    geometry_msgs::PoseStamped drift_pose;
+    drift_pose.header.frame_id    = "world";
+    drift_pose.header.stamp       = ros::Time::now();
+    drift_pose.pose.position.x    = m_est_position_drift.x();
+    drift_pose.pose.position.y    = m_est_position_drift.y();
+    drift_pose.pose.position.z    = m_est_position_drift.z();
+    drift_pose.pose.orientation.x = m_est_quaternion_drift.x();
+    drift_pose.pose.orientation.y = m_est_quaternion_drift.y();
+    drift_pose.pose.orientation.z = m_est_quaternion_drift.z();
+    drift_pose.pose.orientation.w = m_est_quaternion_drift.w();
+    m_sensor_drift_pub.publish(drift_pose);
   }
 
   void callbackTransformStamped(const geometry_msgs::TransformStamped& msg)
@@ -147,8 +170,9 @@ public:
     if (isOrientationSensor()) {
       m_fresh_measurement    = false;
       m_sensor_transformed_q = m_sensor_q;
-      // TODO(lmark): When carto orientation is transformed to global frame transformation estimation breaks
-      //m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
+      // TODO(lmark): When carto orientation is transformed to global frame transformation
+      // estimation breaks
+      // m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
     }
     return m_sensor_transformed_q;
   }

@@ -104,9 +104,9 @@ public:
    * @param est_quaternion_drift Current estimated quaternion drift.
    */
   void angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
-                              const Quaterniond&          measurements,
-                              Translation3d&              est_position_drift,
-                              Quaterniond&                est_quaternion_drift);
+                                   const Quaterniond&          measurements,
+                                   Translation3d&              est_position_drift,
+                                   Quaterniond&                est_quaternion_drift);
 
   /**
    * @brief Measurement update for the heading angle.

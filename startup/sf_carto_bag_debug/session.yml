@@ -56,6 +56,12 @@ windows:
         - waitForRos; waitFor /$UAV_NAMESPACE/carto_transformed_pose;
           rosrun topic_tools transform /$UAV_NAMESPACE/carto_transformed_pose/pose/orientation /$UAV_NAMESPACE/carto_euler 
           geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/carto_drift;
+          rosrun topic_tools transform /$UAV_NAMESPACE/carto_drift/pose/orientation /$UAV_NAMESPACE/carto_drift_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/camera_drift;
+          rosrun topic_tools transform /$UAV_NAMESPACE/camera_drift/pose/orientation /$UAV_NAMESPACE/camera_drift_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
   - plot:
       layout: tiled
       panes:
