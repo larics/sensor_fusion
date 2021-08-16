@@ -106,7 +106,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 
     // Update orientation
     if (sensor_ptr->isOrientationSensor() && outlier_checks.orientationValid()) {
-      m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(),
+      m_es_ekf.angleMeasurementUpdateDrift(sensor_ptr->getROrientation(),
                                       sensor_orientation,
                                       sensor_ptr->getTranslationDrift(),
                                       sensor_ptr->getQuaternionDrift());

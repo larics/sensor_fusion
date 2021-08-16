@@ -102,7 +102,7 @@ public:
    * @param est_position_drift Current estimated position drift.
    * @param est_quaternion_drift Current estimated quaternion drift.
    */
-  void angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
+  void angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
                               const Quaterniond&          measurements,
                               Translation3d&              est_position_drift,
                               Quaterniond&                est_quaternion_drift);
