@@ -177,12 +177,6 @@ public:
     return m_sensor_transformed_q;
   }
 
-  Matrix<double, 4, 1> getOrientationVector()
-  {
-    m_fresh_measurement = false;
-    return { m_sensor_q.w(), m_sensor_q.x(), m_sensor_q.y(), m_sensor_q.z() };
-  }
-
   OutlierChecks getOutlierChecks(const Vector3d&    position,
                                  const Vector3d&    lin_vel,
                                  const Quaterniond& rotation)

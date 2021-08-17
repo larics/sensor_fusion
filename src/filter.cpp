@@ -56,23 +56,22 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
                         const Matrix3d&             var_imu_w,
                         const double                delta_t)
 {
-  // 1. Update state with IMU inputs
+  // 1. Update nominal state with IMU inputs
   auto rot_est = m_est_quaternion.toRotationMatrix();
 
-  m_est_position.vector() =
-    m_est_position.vector() + delta_t * m_est_lin_velocity.vector()
+  m_est_position.vector() +=
+    +delta_t * m_est_lin_velocity.vector()
     + pow(delta_t, 2) / 2.0
-        * (rot_est * (imu_f - m_est_acc_bias.vector()) + (m_est_gravity.vector()));
+        * (rot_est * (imu_f - m_est_acc_bias.vector()) + m_est_gravity.vector());
 
-  m_est_lin_velocity.vector() =
-    m_est_lin_velocity.vector()
-    + delta_t * (rot_est * (imu_f - m_est_acc_bias.vector()) + (m_est_gravity.vector()));
+  m_est_lin_velocity.vector() +=
+    +delta_t * (rot_est * (imu_f - m_est_acc_bias.vector()) + (m_est_gravity.vector()));
 
-  Quaterniond imu_q = euler2quat({ delta_t * (imu_w[0] - m_est_gyro_bias.x()),
-                                   delta_t * (imu_w[1] - m_est_gyro_bias.y()),
-                                   delta_t * (imu_w[2] - m_est_gyro_bias.z()) });
-
-  m_est_quaternion = m_est_quaternion * imu_q;
+  Quaterniond delta_q;
+  delta_q = AngleAxisd(delta_t * (imu_w[0] - m_est_gyro_bias.x()), Vector3d::UnitX())
+            * AngleAxisd(delta_t * (imu_w[1] - m_est_gyro_bias.y()), Vector3d::UnitY())
+            * AngleAxisd(delta_t * (imu_w[2] - m_est_gyro_bias.z()), Vector3d::UnitZ());
+  m_est_quaternion = m_est_quaternion * delta_q;
   m_est_quaternion.normalize();
   rot_est = m_est_quaternion.toRotationMatrix();
 
@@ -192,9 +191,9 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
 }
 
 void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
-                                    const Quaterniond&          y,
-                                    Translation3d&              est_position_drift,
-                                    Quaterniond&                est_quaternion_drift)
+                                         const Quaterniond&          y,
+                                         Translation3d&              est_position_drift,
+                                         Quaterniond&                est_quaternion_drift)
 {
   // Sola equation:(278)
   Matrix<double, 4, N_STATES + 2> H = MatrixXd::Zero(4, N_STATES + 2);
@@ -205,19 +204,17 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
   H.block<4, 4>(0, 6)  = rightQuatProdMat(est_quaternion_drift);
   H.block<4, 4>(0, 22) = leftQuatProdMat(m_est_quaternion);
 
-  Matrix<double, N_STATES + 2, N_STATES> H_dx = MatrixXd::Zero(N_STATES + 2, N_STATES);
+  Matrix<double, N_STATES + 2, N_STATES> H_dx =
+    Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
   // Scola equation:(280)
-  H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
+  H_dx.block<6, 6>(0, 0)    = Matrix<double, 6, 6>::Identity(6, 6);
   H_dx.block<4, 3>(6, 6)    = 0.5 * firstOrderApprox(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
   H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(est_quaternion_drift);
 
-  Matrix<double, 4, N_STATES> h_jac = MatrixXd::Zero(4, N_STATES);
-
-  h_jac                         = H * H_dx;
-  Matrix<double, N_STATES, 4> K = MatrixXd::Zero(N_STATES, 4);
-  K                             = m_p_covariance * h_jac.transpose()
-      * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
+  auto h_jac = H * H_dx;
+  auto K     = m_p_covariance * h_jac.transpose()
+           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
 
   m_est_quaternion = m_est_quaternion * est_quaternion_drift;
 
