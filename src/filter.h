@@ -115,7 +115,7 @@ public:
    * @param measurements New orientation measurements.
    */
   void angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
-                                   const Quaterniond&          measurements);
+                              const Quaterniond&          measurements);
   /**
    * @brief Measurement update including position drift. Use sensor measurement of pose to
    * update the position estimation and reduce uncertainty.
@@ -135,14 +135,7 @@ public:
   void setV(Matrix<double, 3, 1> v) { m_est_lin_velocity.vector() = std::move(v); }
   void setWb(Matrix<double, 3, 1> wb) { m_est_gyro_bias.vector() = std::move(wb); }
   void setFb(Matrix<double, 3, 1> fb) { m_est_acc_bias.vector() = std::move(fb); }
-  void setQ(Matrix<double, 4, 1> q)
-  {
-    m_est_quaternion.w() = q[0];
-    m_est_quaternion.x() = q[1];
-    m_est_quaternion.y() = q[2];
-    m_est_quaternion.z() = q[3];
-    ROS_INFO_STREAM("EsEkf2::setQ() - q = " << q.transpose());
-  }
+  void setQ(Quaterniond q) { m_est_quaternion = std::move(q); }
   // Getters
   const Matrix<double, 10, 1> getState()
   {

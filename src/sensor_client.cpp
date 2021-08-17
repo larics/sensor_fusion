@@ -60,10 +60,10 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       return;
     }
 
-    if ((*sensor_it)->newMeasurement()) {
-      m_es_ekf.setP((*sensor_it)->getPose());
-      // TODO if orientaion vector
-      m_es_ekf.setQ((*sensor_it)->getOrientationVector());
+    const auto& sensor = *sensor_it;
+    if (sensor->newMeasurement()) {
+      m_es_ekf.setP(sensor->getPose());
+      m_es_ekf.setQ(sensor->getOrientation());
       m_es_ekf.setV({ 0, 0, 0 });
       m_start_flag = false;
       ROS_INFO_STREAM("SensorClient::stateEstimation - EKF initialized with sensor: "
