@@ -216,8 +216,6 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
   auto K     = m_p_covariance * h_jac.transpose()
            * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
 
-  m_est_quaternion = m_est_quaternion * est_quaternion_drift;
-
   // TODO(lmark): This is wrong but it somehow works ?!
   Matrix<double, N_STATES, 1> delta_x;
   Matrix<double, 4, 1>        delta_quat;
@@ -245,7 +243,9 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
                                     angle_axis_drift_vector.normalized());
 
   est_quaternion_drift = est_quaternion_drift * delta_q_drift;
+  m_est_quaternion     = m_est_quaternion * delta_q_drift;
   est_quaternion_drift.normalize();
+  m_est_quaternion.normalize();
 
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
