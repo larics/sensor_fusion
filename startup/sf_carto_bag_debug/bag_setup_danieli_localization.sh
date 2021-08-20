@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export UAV_NAMESPACE=danieli2
 export BAG_NAME=$HOME/FER/cartographer_experiments/Danieli/Localization/localization_2.bag
 export CONFIGURATION_BASENAME=localization_pozyx.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config

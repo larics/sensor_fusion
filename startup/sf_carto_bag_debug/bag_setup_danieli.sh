@@ -1,11 +1,13 @@
 #!/bin/bash
 
+export UAV_NAMESPACE=danieli2
 export BAG_NAME=$HOME/FER/cartographer_experiments/Danieli/Sensor_fusion/sensor_fusion_1.bag
 export CONFIGURATION_BASENAME=ouster_pozyx.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro
 
 export PURE_LOCALIZATION=false
+export PBSTREAM_NAME=
 
 # Starter parameters
 export ENABLE_STARTER=true
