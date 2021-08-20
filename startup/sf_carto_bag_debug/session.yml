@@ -1,10 +1,9 @@
-name: carto_bag
+name: sf_carto_bag
 root: ./
 startup_window: roscore
-pre_window: 
-  source ~/Workspace/inspection_ws/devel/setup.zsh &&
-  export UAV_NAMESPACE=danieli2 &&
-  source custom_config/bag_setup_danieli.sh
+pre_window: |
+  source ~/Workspace/inspection_ws/devel/setup.zsh
+  source <%= @settings["setup_name"] %>
 windows:
   - roscore:
       layout: tiled
@@ -22,10 +21,17 @@ windows:
         - waitForRos; rosparam set use_sim_time true; 
           roslaunch uav_ros_general cartographer.launch 
           simulation:=false 
-          enable_starter:=$ENABLE_STARTER use_fixed_yaw:=$USE_FIXED_YAW fixed_yaw:=$FIXED_YAW starter_transform:=$TRANSFORM_TOPIC
+          enable_starter:=$ENABLE_STARTER
+          use_fixed_yaw:=$USE_FIXED_YAW
+          fixed_yaw:=$FIXED_YAW
+          starter_transform:=$TRANSFORM_TOPIC
           configuration_directory:=$CONFIGURATION_DIRECTORY
           configuration_basename:=$CONFIGURATION_BASENAME
-          imu:=$IMU_TOPIC points2:=$POINT_TOPIC transform:=$TRANSFORM_TOPIC
+          imu:=$IMU_TOPIC
+          points2:=$POINT_TOPIC
+          transform:=$TRANSFORM_TOPIC
+          cartographer_state_filename:=$PBSTREAM_NAME
+          pure_localization:=$PURE_LOCALIZATION
         - waitForRos; rosrun cartographer_ros cartographer_occupancy_grid_node __ns:=$UAV_NAMESPACE
         - waitForRos; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/display_bag.rviz > custom_config/.display_bag.rviz;
