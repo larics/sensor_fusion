@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export UAV_NAMESPACE=danieli2
-export BAG_NAME=$HOME/FER/cartographer_experiments/Danieli/Localization/localization_2.bag
+export BAG_NAME=$HOME/Bags/danieli1_compassless/sensor_fusion_ouster_slow.bag
 export CONFIGURATION_BASENAME=localization_pozyx.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro

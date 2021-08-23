@@ -68,10 +68,9 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
     +delta_t * (rot_est * (imu_f - m_est_acc_bias.vector()) + (m_est_gravity.vector()));
 
   Quaterniond delta_q;
-  delta_q = AngleAxisd(delta_t * (imu_w[0] - m_est_gyro_bias.x()), Vector3d::UnitX())
-            * AngleAxisd(delta_t * (imu_w[1] - m_est_gyro_bias.y()), Vector3d::UnitY())
-            * AngleAxisd(delta_t * (imu_w[2] - m_est_gyro_bias.z()), Vector3d::UnitZ());
-  m_est_quaternion = m_est_quaternion * delta_q;
+  auto        delta_theta = delta_t * (imu_w - m_est_gyro_bias.translation());
+  delta_q                 = AngleAxisd(delta_theta.norm(), delta_theta.normalized());
+  m_est_quaternion        = m_est_quaternion * delta_q;
   m_est_quaternion.normalize();
   rot_est = m_est_quaternion.toRotationMatrix();
 
@@ -81,7 +80,7 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
   f_jac.block<3, 3>(0, 3)                  = delta_t * Identity3x3;
   // TODO transform imu maybe beore prediction????
   f_jac.block<3, 3>(3, 6) =
-    -skew_symetric(rot_est * (imu_f - m_est_acc_bias.vector())) * delta_t;
+    -sf::skew_symetric(rot_est * (imu_f - m_est_acc_bias.vector())) * delta_t;
   f_jac.block<3, 3>(3, 9)  = -rot_est * delta_t;
   f_jac.block<3, 3>(3, 15) = delta_t * Identity3x3;
   f_jac.block<3, 3>(6, 12) = f_jac.block<3, 3>(3, 9);
@@ -158,7 +157,7 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
     Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
   // Scola equation:(280)
   H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
-  H_dx.block<4, 3>(6, 6)    = 0.5 * firstOrderApprox(m_est_quaternion);
+  H_dx.block<4, 3>(6, 6)    = 0.5 * sf::firstOrderApprox(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
 
   auto h_jac = H * H_dx;
@@ -201,16 +200,16 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
   // measurement model Jacobian for an extended Kalman filter
 
   // TODO(lmark) check if m_est_quaternion_drift <-> m_est_quaternion
-  H.block<4, 4>(0, 6)  = rightQuatProdMat(est_quaternion_drift);
-  H.block<4, 4>(0, 22) = leftQuatProdMat(m_est_quaternion);
+  H.block<4, 4>(0, 6)  = sf::rightQuatProdMat(est_quaternion_drift);
+  H.block<4, 4>(0, 22) = sf::leftQuatProdMat(m_est_quaternion);
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx =
     Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
   // Scola equation:(280)
   H_dx.block<6, 6>(0, 0)    = Matrix<double, 6, 6>::Identity(6, 6);
-  H_dx.block<4, 3>(6, 6)    = 0.5 * firstOrderApprox(m_est_quaternion);
+  H_dx.block<4, 3>(6, 6)    = 0.5 * sf::firstOrderApprox(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
-  H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(est_quaternion_drift);
+  H_dx.block<4, 3>(22, 21)  = 0.5 * sf::firstOrderApproxLocal(est_quaternion_drift);
 
   auto h_jac = H * H_dx;
   auto K     = m_p_covariance * h_jac.transpose()
@@ -265,14 +264,14 @@ void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
 
   // Jacobian with respect to the quaternion pg 41 (174)
   H.block<3, 4>(0, 22) =
-    JacobianWithRespectToQuat(est_quaternion_drift, m_est_position.vector());
+    sf::JacobianWithRespectToQuat(est_quaternion_drift, m_est_position.vector());
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx = MatrixXd::Zero(N_STATES + 2, N_STATES);
   // Scola equation:(280)
   H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
-  H_dx.block<4, 3>(6, 6)    = 0.5 * firstOrderApprox(m_est_quaternion);
+  H_dx.block<4, 3>(6, 6)    = 0.5 * sf::firstOrderApprox(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
-  H_dx.block<4, 3>(22, 21)  = 0.5 * firstOrderApproxLocal(est_quaternion_drift);
+  H_dx.block<4, 3>(22, 21)  = 0.5 * sf::firstOrderApproxLocal(est_quaternion_drift);
 
   Matrix<double, 3, N_STATES> h_jac = MatrixXd::Zero(3, N_STATES);
   h_jac                             = H * H_dx;

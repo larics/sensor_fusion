@@ -33,8 +33,10 @@ private:
   Quaterniond     m_sensor_q;
   Quaterniond     m_sensor_transformed_q;
   Vector3d        m_rotated_translation;
-  bool            m_fresh_measurement = false;
-  bool            m_first_measurement = false;
+  std::string     m_sensor_name;
+  bool            m_fresh_position_measurement    = false;
+  bool            m_fresh_orientation_measurement = false;
+  bool            m_first_measurement             = false;
   Vector3d        m_sensor_transformed_position;
   Translation3d   m_est_position_drift;
   Quaterniond     m_est_quaternion_drift;
@@ -56,7 +58,8 @@ private:
 
 public:
   Sensor(const SensorParams& params)
-    : m_sensor_params(params), m_sensor_transformed_position(Vector3d::Zero())
+    : m_sensor_params(params), m_sensor_transformed_position(Vector3d::Zero()),
+      m_sensor_name(params.id)
   {
     if (m_sensor_params.msg_type == SensorMsgType::ODOMETRY) {
       m_sensor_sub = m_node_handle.subscribe(
@@ -123,57 +126,65 @@ public:
   void callbackTransformStamped(const geometry_msgs::TransformStamped& msg)
   {
     // ROS_INFO("camera_posix_callback");
-    m_fresh_measurement = true;
+    m_fresh_position_measurement = true;
     if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
       m_first_measurement = true;
       initialize_sensor_origin(msg.transform.translation.x,
                                msg.transform.translation.y,
                                msg.transform.translation.z);
     }
-    m_sensor_position.x() = msg.transform.translation.x;
-    m_sensor_position.y() = msg.transform.translation.y;
-    m_sensor_position.z() = msg.transform.translation.z;
 
-    m_sensor_q.w() = msg.transform.rotation.w;
-    m_sensor_q.x() = msg.transform.rotation.x;
-    m_sensor_q.y() = msg.transform.rotation.y;
-    m_sensor_q.z() = msg.transform.rotation.z;
+    m_fresh_position_measurement = true;
+    m_sensor_position.x()        = msg.transform.translation.x;
+    m_sensor_position.y()        = msg.transform.translation.y;
+    m_sensor_position.z()        = msg.transform.translation.z;
+
+    m_fresh_orientation_measurement = true;
+    m_sensor_q.w()                  = msg.transform.rotation.w;
+    m_sensor_q.x()                  = msg.transform.rotation.x;
+    m_sensor_q.y()                  = msg.transform.rotation.y;
+    m_sensor_q.z()                  = msg.transform.rotation.z;
   }
 
   void callbackOdometry(const nav_msgs::OdometryPtr& msg)
   {
-    m_fresh_measurement = true;
     if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
       m_first_measurement = true;
       initialize_sensor_origin(
         msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
     }
-    m_sensor_position.x() = msg->pose.pose.position.x;
-    m_sensor_position.y() = msg->pose.pose.position.y;
-    m_sensor_position.z() = msg->pose.pose.position.z;
 
-    m_sensor_q.w() = msg->pose.pose.orientation.w;
-    m_sensor_q.x() = msg->pose.pose.orientation.x;
-    m_sensor_q.y() = msg->pose.pose.orientation.y;
-    m_sensor_q.z() = msg->pose.pose.orientation.z;
+    m_fresh_position_measurement = true;
+    m_sensor_position.x()        = msg->pose.pose.position.x;
+    m_sensor_position.y()        = msg->pose.pose.position.y;
+    m_sensor_position.z()        = msg->pose.pose.position.z;
+
+    m_fresh_orientation_measurement = true;
+    m_sensor_q.w()                  = msg->pose.pose.orientation.w;
+    m_sensor_q.x()                  = msg->pose.pose.orientation.x;
+    m_sensor_q.y()                  = msg->pose.pose.orientation.y;
+    m_sensor_q.z()                  = msg->pose.pose.orientation.z;
   }
 
   const Vector3d& getPose()
   {
-    m_fresh_measurement = false;
-    update_position();
+    if (m_fresh_position_measurement) {
+      m_fresh_position_measurement = false;
+      update_position();
+    }
     return m_sensor_transformed_position;
   }
 
   const Quaterniond& getOrientation()
   {
-    if (isOrientationSensor()) {
-      m_fresh_measurement    = false;
-      m_sensor_transformed_q = m_sensor_q;
+    if (isOrientationSensor() && m_fresh_orientation_measurement) {
+      m_fresh_position_measurement = false;
+      // m_sensor_transformed_q       = m_sensor_q;
       // TODO(lmark): When carto orientation is transformed to global frame transformation
       // estimation breaks
-      // m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
+      m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
     }
+
     return m_sensor_transformed_q;
   }
 
@@ -237,8 +248,20 @@ public:
     return checks;
   }
 
-  void setR(Matrix3d R) { m_sensor_params.cov.R_pose = std::move(R); }
-  bool newMeasurement() const { return m_fresh_measurement; }
+  Vector3d getDriftedPose() const
+  {
+    return m_est_quaternion_drift * m_sensor_transformed_position
+           + m_est_position_drift.translation();
+  }
+  Quaterniond getDriftedRotation() const
+  {
+    return m_est_quaternion_drift * m_sensor_transformed_q;
+  }
+  const std::string& getName() const { return m_sensor_name; }
+  const Vector3d&    getPose() const { return m_sensor_transformed_position; }
+  const Quaterniond& getOrientation() const { return m_sensor_transformed_q; }
+  void               setR(Matrix3d R) { m_sensor_params.cov.R_pose = std::move(R); }
+  bool               newMeasurement() const { return m_fresh_position_measurement; }
   bool isOrientationSensor() const { return m_sensor_params.is_orientation_sensor; }
   bool isVelocitySensor() const { return false; }
   bool estimateDrift() const { return m_sensor_params.estimate_drift; }

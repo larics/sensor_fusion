@@ -4,6 +4,7 @@
   <arg name="imu_topic"     default="mavros/imu/data"/>
   <arg name="config_yaml"   default="$(find sensor_fusion)/config/sensor_client_config.yaml"/>
   <arg name="es_ekf_topic"  default="es_ekf/odom"/>
+  <arg name="uav_name"      default="eagle"/>
 
   <!-- Debug arguments -->
   <arg name="debug"           default="false" />
@@ -16,6 +17,7 @@
     <param name="config_yaml"     value="$(arg config_yaml)" />
     <param name="imu_topic"       value="$(arg imu_topic)" />
     <param name="es_ekf_topic"    value="$(arg es_ekf_topic)" />
+    <param name="uav_name"        value="$(arg uav_name)" />
   </node>
 
 </launch>

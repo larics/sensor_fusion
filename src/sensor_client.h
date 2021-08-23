@@ -13,11 +13,15 @@
 #include "imu.h"
 #include "filter.cpp"
 #include "sensor.h"
+#include "sensor_tf.h"
 #include <memory>
 
 class SensorClient
 {
 public:
+  SensorClient(const EsEkfParams& params,
+               ros::NodeHandle&   nh_private,
+               std::string        uav_name);
   SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_private);
 
   void stateEstimation(const ros::TimerEvent& msg);
@@ -31,6 +35,8 @@ private:
   std::vector<SensorPtr> m_sensor_vector;
   ros::NodeHandle        m_node_handle;
   bool                   m_start_flag;
+  std::string            m_uav_name;
+  sf::SensorTF           m_sensor_tf;
 };
 
 #endif// SENSOR_FUSION_SENSOR_CLIENT_H
