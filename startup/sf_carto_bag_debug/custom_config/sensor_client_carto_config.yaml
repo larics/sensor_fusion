@@ -47,7 +47,7 @@ camera_orientation_outlier_lim: [0, 0, 0]
 #pozyx
 pozyx_R_pose: [1, 1, 3]
 pozyx_R_angle: [0.01, 0.01, 0.01, 0.01]
-pozyx_is_orientation_sensor: 1
+pozyx_is_orientation_sensor: 0
 pozyx_estimate_drift: 0
 pozyx_is_velocity_sensor: 0
 pozyx_topic: pozyx/measured

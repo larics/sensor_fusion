@@ -35,7 +35,7 @@ windows:
         - waitForRos; rosrun cartographer_ros cartographer_occupancy_grid_node __ns:=$UAV_NAMESPACE
         - waitForRos; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/display_bag.rviz > custom_config/.display_bag.rviz;
-          rosrun rviz rviz -d custom_config/.display_bag.rviz
+          rosrun rviz rviz -d custom_config/tf_viewer.rviz
   - sf:
       layout: tiled
       panes:
@@ -68,5 +68,3 @@ windows:
         - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/sf_debug.perspective > custom_config/.sf_debug.perspective;
           rqt --perspective-file custom_config/.sf_debug.perspective
-        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; sleep 2;
-          ~/.config/i3/layout_manager.sh custom_config/layout-TRIPLE.json

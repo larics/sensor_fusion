@@ -176,12 +176,9 @@ public:
 
   const Quaterniond& getOrientation()
   {
-    if (isOrientationSensor()) {
-      m_fresh_orientation_measurement = false;
-      m_sensor_transformed_q          = m_sensor_q;
-      // TODO(lmark): When carto orientation is transformed to global frame transformation
-      // estimation breaks
-      // m_sensor_transformed_q = m_sensor_params.rotation_mat * m_sensor_q;
+    if (isOrientationSensor() && m_fresh_orientation_measurement) {
+      m_fresh_position_measurement = false;
+      m_sensor_transformed_q       = m_sensor_params.rotation_mat * m_sensor_q;
     }
     return m_sensor_transformed_q;
   }

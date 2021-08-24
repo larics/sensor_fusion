@@ -68,10 +68,9 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
     +delta_t * (rot_est * (imu_f - m_est_acc_bias.vector()) + (m_est_gravity.vector()));
 
   Quaterniond delta_q;
-  delta_q = AngleAxisd(delta_t * (imu_w[0] - m_est_gyro_bias.x()), Vector3d::UnitX())
-            * AngleAxisd(delta_t * (imu_w[1] - m_est_gyro_bias.y()), Vector3d::UnitY())
-            * AngleAxisd(delta_t * (imu_w[2] - m_est_gyro_bias.z()), Vector3d::UnitZ());
-  m_est_quaternion = m_est_quaternion * delta_q;
+  auto        delta_theta = delta_t * (imu_w - m_est_gyro_bias.translation());
+  delta_q                 = AngleAxisd(delta_theta.norm(), delta_theta.normalized());
+  m_est_quaternion        = m_est_quaternion * delta_q;
   m_est_quaternion.normalize();
   rot_est = m_est_quaternion.toRotationMatrix();
 
@@ -150,27 +149,15 @@ void EsEkf2::poseMeasurementUpdate(const Matrix3d& R_cov, const Matrix<double, 3
 void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
                                     const Quaterniond&          y)
 {
-  // Sola equation:(278)
-  Matrix<double, 4, N_STATES + 2> H = Matrix<double, 4, N_STATES + 2>::Zero();
-  H.block<4, 4>(0, 6)               = Matrix4d::Identity();
+  Matrix3d                    R_cov_new = Matrix3d::Identity() * 0.2;
+  Matrix<double, 3, N_STATES> h_jac     = MatrixXd::Zero(3, N_STATES);
+  h_jac.block<3, 3>(0, 6)               = Identity3x3;
 
-  Matrix<double, N_STATES + 2, N_STATES> H_dx =
-    Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
-  // Scola equation:(280)
-  H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
-  H_dx.block<4, 3>(6, 6)    = 0.5 * sf::firstOrderApprox(m_est_quaternion);
-  H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
-
-  auto h_jac = H * H_dx;
-  auto K     = m_p_covariance * h_jac.transpose()
-           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
-
-  // TODO(lmark): This is wrong but it somehow works ?!
-  Matrix<double, N_STATES, 1> delta_x;
-  Matrix<double, 4, 1>        delta_quat;
-  delta_quat << y.w() - m_est_quaternion.w(), y.x() - m_est_quaternion.x(),
-    y.y() - m_est_quaternion.y(), y.z() - m_est_quaternion.z();
-  delta_x = K * (delta_quat);
+  AngleAxisd angle_axis_error(m_est_quaternion.conjugate() * y);
+  auto       K = m_p_covariance * h_jac.transpose()
+           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov_new).inverse();
+  auto delta_theta = angle_axis_error.angle() * angle_axis_error.axis();
+  auto delta_x     = K * delta_theta;
 
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
@@ -187,7 +174,7 @@ void EsEkf2::angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
 
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
-    + K * R_cov * K.transpose();
+    + K * R_cov_new * K.transpose();
 }
 
 void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
@@ -195,14 +182,15 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
                                          Translation3d&              est_position_drift,
                                          Quaterniond&                est_quaternion_drift)
 {
+  Matrix3d R_cov_new = Matrix3d::Identity() * 0.2;
   // Sola equation:(278)
-  Matrix<double, 4, N_STATES + 2> H = MatrixXd::Zero(4, N_STATES + 2);
+  Matrix<double, 3, N_STATES + 2> H = MatrixXd::Zero(4, N_STATES + 2);
   // We measure quaternions directly this a standard
   // measurement model Jacobian for an extended Kalman filter
 
   // TODO(lmark) check if m_est_quaternion_drift <-> m_est_quaternion
-  H.block<4, 4>(0, 6)  = sf::rightQuatProdMat(est_quaternion_drift);
-  H.block<4, 4>(0, 22) = sf::leftQuatProdMat(m_est_quaternion);
+  H.block<3, 3>(0, 6)  = Identity3x3;
+  H.block<3, 3>(0, 22) = Identity3x3;
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx =
     Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
@@ -214,14 +202,12 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
 
   auto h_jac = H * H_dx;
   auto K     = m_p_covariance * h_jac.transpose()
-           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
+           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov_new).inverse();
 
   // TODO(lmark): This is wrong but it somehow works ?!
-  Matrix<double, N_STATES, 1> delta_x;
-  Matrix<double, 4, 1>        delta_quat;
-  delta_quat << y.w() - m_est_quaternion.w(), y.x() - m_est_quaternion.x(),
-    y.y() - m_est_quaternion.y(), y.z() - m_est_quaternion.z();
-  delta_x = K * (delta_quat);
+  AngleAxisd angle_axis_error(m_est_quaternion.conjugate() * y);
+  auto       delta_theta = angle_axis_error.angle() * angle_axis_error.axis();
+  auto       delta_x     = K * delta_theta;
 
   m_est_position.vector()     = m_est_position.vector() + delta_x.block<3, 1>(0, 0);
   m_est_lin_velocity.vector() = m_est_lin_velocity.vector() + delta_x.block<3, 1>(3, 0);
@@ -249,7 +235,7 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
 
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
-    + K * R_cov * K.transpose();
+    + K * R_cov_new * K.transpose();
 }
 
 void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
