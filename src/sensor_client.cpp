@@ -1,8 +1,16 @@
 #include "sensor_client.h"
+#include <tf2/LinearMath/Transform.h>
 
 SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_private)
+  : SensorClient(params, nh_private, "default")
+{}
+
+SensorClient::SensorClient(const EsEkfParams& params,
+                           ros::NodeHandle&   nh_private,
+                           std::string        uav_name)
   : m_ekf_params(params), m_es_ekf(params), m_start_flag(true),
-    m_imu_sensor(params.model, nh_private)
+    m_imu_sensor(params.model, nh_private), m_uav_name(std::move(uav_name)),
+    m_sensor_tf(m_uav_name)
 {
   // TODO makni flag
   std::string es_ekf_topic;
@@ -146,6 +154,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     sensor_ptr->publishState(sensor_state);
     sensor_ptr->publishTransformedPose();
     sensor_ptr->publishDrift();
+    m_sensor_tf.publishSensorOrigin(*sensor_ptr);
   }
 
   if (!measurement && !prediction) {
@@ -183,4 +192,5 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
   ekf_pose_.twist.covariance[7]     = vel_cov(1, 1);
   ekf_pose_.twist.covariance[14]    = vel_cov(2, 2);
   m_estimate_pub.publish(ekf_pose_);
+  m_sensor_tf.publishOrigin(ekf_pose_, "ekf");
 }
