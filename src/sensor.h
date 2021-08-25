@@ -264,16 +264,13 @@ public:
   bool isOrientationSensor() const { return m_sensor_params.is_orientation_sensor; }
   bool isVelocitySensor() const { return false; }
   bool estimateDrift() const { return m_sensor_params.estimate_drift; }
-  const std::string&          getSensorID() const { return m_sensor_params.id; }
-  const Matrix3d&             getRPose() const { return m_sensor_params.cov.R_pose; }
-  const Matrix<double, 4, 4>& getROrientation() const
-  {
-    return m_sensor_params.cov.R_orientation;
-  }
-  Quaterniond& getQuaternionDrift() { return m_est_quaternion_drift; }
-  Vector3d&    getTranslationDrift() { return m_est_position_drift.vector(); }
-  Matrix3d&    getDriftPositionCov() { return m_position_drift_cov; }
-  Matrix3d&    getDriftRotationCov() { return m_rotation_drift_cov; }
+  const std::string& getSensorID() const { return m_sensor_params.id; }
+  const Matrix3d&    getRPose() const { return m_sensor_params.cov.R_pose; }
+  const Matrix3d&    getROrientation() const { return m_sensor_params.cov.R_orientation; }
+  Quaterniond&       getQuaternionDrift() { return m_est_quaternion_drift; }
+  Vector3d&          getTranslationDrift() { return m_est_position_drift.vector(); }
+  Matrix3d&          getDriftPositionCov() { return m_position_drift_cov; }
+  Matrix3d&          getDriftRotationCov() { return m_rotation_drift_cov; }
   ~Sensor() { std::cout << "SENSOR DESTRUCTOR" << '\n'; }
 };
 #endif

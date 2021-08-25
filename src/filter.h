@@ -121,7 +121,7 @@ public:
    * @param position_drift_cov
    * @param rotation_drift_cov
    */
-  void angleMeasurementUpdateDrift(const Matrix<double, 4, 4>& R_cov,
+  void angleMeasurementUpdateDrift(const Matrix<double, 3, 3>& R_cov,
                                    const Quaterniond&          measurements,
                                    Vector3d&                   est_position_drift,
                                    Quaterniond&                est_quaternion_drift,
@@ -134,7 +134,7 @@ public:
    * @param R_cov Measurement covariance matrix
    * @param measurements New orientation measurements.
    */
-  void angleMeasurementUpdate(const Matrix<double, 4, 4>& R_cov,
+  void angleMeasurementUpdate(const Matrix<double, 3, 3>& R_cov,
                               const Quaterniond&          measurements);
   /**
    * @brief Measurement update including position drift. Use sensor measurement of pose to

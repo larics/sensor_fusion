@@ -39,8 +39,8 @@ enum SensorState {
 
 struct SensorCovariance
 {
-  Matrix3d             R_pose;
-  Matrix<double, 4, 4> R_orientation;
+  Matrix3d R_pose;
+  Matrix3d R_orientation;
   SensorCovariance()
   {
     R_pose        = Matrix3d::Zero();

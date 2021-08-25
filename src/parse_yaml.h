@@ -34,7 +34,7 @@ EsEkfParams parse_yaml(const std::string& config_file)
     sensor.is_velocity_sensor    = config[sensor.id + "_is_velocity_sensor"].as<int>();
     if (sensor.is_orientation_sensor) {
       R = config[sensor.id + "_R_angle"].as<std::vector<double>>();
-      for (int j = 0; j < 4; ++j) { sensor.cov.R_orientation(j, j) = R[j]; }
+      for (int j = 0; j < 3; ++j) { sensor.cov.R_orientation(j, j) = R[j]; }
     }
     /*
      * To get transforamtion from sensor link to base link
