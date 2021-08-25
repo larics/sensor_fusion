@@ -35,7 +35,7 @@ windows:
         - waitForRos; rosrun cartographer_ros cartographer_occupancy_grid_node __ns:=$UAV_NAMESPACE
         - waitForRos; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/display_bag.rviz > custom_config/.display_bag.rviz;
-          rosrun rviz rviz -d custom_config/.display_bag.rviz
+          rosrun rviz rviz -d custom_config/tf_viewer.rviz
   - sf:
       layout: tiled
       panes:
@@ -56,11 +56,15 @@ windows:
         - waitForRos; waitFor /$UAV_NAMESPACE/carto_transformed_pose;
           rosrun topic_tools transform /$UAV_NAMESPACE/carto_transformed_pose/pose/orientation /$UAV_NAMESPACE/carto_euler 
           geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/carto_drift;
+          rosrun topic_tools transform /$UAV_NAMESPACE/carto_drift/pose/orientation /$UAV_NAMESPACE/carto_drift_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/camera_drift;
+          rosrun topic_tools transform /$UAV_NAMESPACE/camera_drift/pose/orientation /$UAV_NAMESPACE/camera_drift_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
   - plot:
       layout: tiled
       panes:
         - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/sf_debug.perspective > custom_config/.sf_debug.perspective;
           rqt --perspective-file custom_config/.sf_debug.perspective
-        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; sleep 2;
-          ~/.config/i3/layout_manager.sh custom_config/layout-TRIPLE.json

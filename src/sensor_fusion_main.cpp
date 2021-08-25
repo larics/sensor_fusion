@@ -16,9 +16,16 @@ int main(int argc, char** argv)
   ros::NodeHandle node_handle;
   ros::NodeHandle nh_private("~");
 
-  // Next we parse data from the yaml file
   std::string config_file;
-  nh_private.getParam("config_yaml", config_file);
+  std::string uav_name;
+  bool        initialized = nh_private.getParam("config_yaml", config_file)
+                     && nh_private.getParam("uav_name", uav_name);
+  if (!initialized) {
+    ROS_ERROR("[Sensor Fusion] Unable to initialize parameters. Exiting...");
+    return 1;
+  }
+
+  // Next we parse data from the yaml file
   YAML::Node  config = YAML::LoadFile(config_file);
   EsEkfParams params = parse_yaml(config_file);
 
@@ -53,7 +60,7 @@ int main(int argc, char** argv)
               << sensor.translation << "\n  ";
   }
 
-  SensorClient sensors(params, nh_private);
+  SensorClient sensors(params, nh_private, uav_name);
 
   ROS_INFO("[main] - Starting sensor client");
   ros::MultiThreadedSpinner spinner(0);// Use max number of threads

@@ -1,8 +1,6 @@
 #ifndef SENSOR_FUSION_PARSE_YAML_H
 #define SENSOR_FUSION_PARSE_YAML_H
 
-#include <iostream>
-
 #include "structures.h"
 #include "yaml-cpp/yaml.h"
 

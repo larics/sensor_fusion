@@ -1,8 +1,16 @@
 #include "sensor_client.h"
+#include <tf2/LinearMath/Transform.h>
 
 SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_private)
+  : SensorClient(params, nh_private, "default")
+{}
+
+SensorClient::SensorClient(const EsEkfParams& params,
+                           ros::NodeHandle&   nh_private,
+                           std::string        uav_name)
   : m_ekf_params(params), m_es_ekf(params), m_start_flag(true),
-    m_imu_sensor(params.model, nh_private)
+    m_imu_sensor(params.model, nh_private), m_uav_name(std::move(uav_name)),
+    m_sensor_tf(m_uav_name)
 {
   // TODO makni flag
   std::string es_ekf_topic;
@@ -48,8 +56,6 @@ SensorClient::SensorClient(const EsEkfParams& params, ros::NodeHandle& nh_privat
 
 void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 {
-  // TODO(lmark): Maybe choose a sensor to initialize EKF (don't initialize it with a
-  // random 0th sensor, who knows which one is that?)
   if (m_start_flag) {
     auto sensor_it = std::find_if(
       m_sensor_vector.begin(), m_sensor_vector.end(), [&](const auto& sensor_ptr) {
@@ -62,10 +68,10 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       return;
     }
 
-    if ((*sensor_it)->newMeasurement()) {
-      m_es_ekf.setP((*sensor_it)->getPose());
-      // TODO if orientaion vector
-      m_es_ekf.setQ((*sensor_it)->getOrientationVector());
+    const auto& sensor = *sensor_it;
+    if (sensor->newMeasurement()) {
+      m_es_ekf.setP(sensor->getPose());
+      m_es_ekf.setQ(sensor->getOrientation());
       m_es_ekf.setV({ 0, 0, 0 });
       m_start_flag = false;
       ROS_INFO_STREAM("SensorClient::stateEstimation - EKF initialized with sensor: "
@@ -100,9 +106,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 
     // Get All the measurements
     const auto& sensor_transformed_position = sensor_ptr->getPose();
-    const auto& sensor_drifted_position =
-      sensor_ptr->getDriftedPose(m_es_ekf.getQDrift(), m_es_ekf.getPDrift());
-    const auto& sensor_orientation = sensor_ptr->getOrientation();
+    const auto& sensor_orientation          = sensor_ptr->getOrientation();
 
     // Call this function after getting all the sensor measurements;
     const auto outlier_checks = sensor_ptr->getOutlierChecks(
@@ -114,15 +118,31 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       sensor_state += SensorState::ORIENTATION_UPDATE;
     }
 
+    if (sensor_ptr->isOrientationSensor() && sensor_ptr->estimateDrift()
+        && outlier_checks.orientationValid()) {
+      m_es_ekf.angleMeasurementUpdateDrift(sensor_ptr->getROrientation(),
+                                           sensor_orientation,
+                                           sensor_ptr->getTranslationDrift(),
+                                           sensor_ptr->getQuaternionDrift(),
+                                           sensor_ptr->getDriftPositionCov(),
+                                           sensor_ptr->getDriftRotationCov());
+      sensor_state += SensorState::ORIENTATION_AND_DRIFT_UPDATE;
+    }
+
     // Update drifted position
     if (sensor_ptr->estimateDrift() && outlier_checks.driftPositionValid()) {
       m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(),
-                                          sensor_transformed_position);
+                                          sensor_transformed_position,
+                                          sensor_ptr->getTranslationDrift(),
+                                          sensor_ptr->getQuaternionDrift(),
+                                          sensor_ptr->getDriftPositionCov(),
+                                          sensor_ptr->getDriftRotationCov());
       sensor_state += SensorState::POSE_AND_DRIFT_UPDATE;
     }
 
     // Update regular position
     if (!sensor_ptr->estimateDrift() && outlier_checks.positionValid()) {
+      // TODO(lmark): Do the update with sensor_drifted_position
       m_es_ekf.poseMeasurementUpdate(sensor_ptr->getRPose(), sensor_transformed_position);
       sensor_state += SensorState::POSE_UPDATE;
     }
@@ -137,6 +157,8 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     if (sensor_state > 0) { measurement = true; }
     sensor_ptr->publishState(sensor_state);
     sensor_ptr->publishTransformedPose();
+    sensor_ptr->publishDrift();
+    m_sensor_tf.publishSensorOrigin(*sensor_ptr);
   }
 
   if (!measurement && !prediction) {
@@ -174,4 +196,5 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
   ekf_pose_.twist.covariance[7]     = vel_cov(1, 1);
   ekf_pose_.twist.covariance[14]    = vel_cov(2, 2);
   m_estimate_pub.publish(ekf_pose_);
+  m_sensor_tf.publishOrigin(ekf_pose_, "ekf");
 }
