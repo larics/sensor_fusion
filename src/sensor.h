@@ -40,6 +40,8 @@ private:
   Vector3d        m_sensor_transformed_position;
   Translation3d   m_est_position_drift;
   Quaterniond     m_est_quaternion_drift;
+  Matrix3d        m_position_drift_cov;
+  Matrix3d        m_rotation_drift_cov;
 
   void update_position()
   {
@@ -83,6 +85,8 @@ public:
     m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
     m_est_position_drift   = { 0, 0, 0 };
     m_est_quaternion_drift = Quaterniond::Identity();
+    m_position_drift_cov   = Matrix3d::Identity() * 0.0001;
+    m_rotation_drift_cov   = Matrix3d::Identity() * 0.0001;
   }
 
   void publishState(int state)
@@ -266,8 +270,10 @@ public:
   {
     return m_sensor_params.cov.R_orientation;
   }
-  Quaterniond&   getQuaternionDrift() { return m_est_quaternion_drift; }
-  Translation3d& getTranslationDrift() { return m_est_position_drift; }
+  Quaterniond& getQuaternionDrift() { return m_est_quaternion_drift; }
+  Vector3d&    getTranslationDrift() { return m_est_position_drift.vector(); }
+  Matrix3d&    getDriftPositionCov() { return m_position_drift_cov; }
+  Matrix3d&    getDriftRotationCov() { return m_rotation_drift_cov; }
   ~Sensor() { std::cout << "SENSOR DESTRUCTOR" << '\n'; }
 };
 #endif

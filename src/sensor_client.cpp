@@ -123,7 +123,9 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       m_es_ekf.angleMeasurementUpdateDrift(sensor_ptr->getROrientation(),
                                            sensor_orientation,
                                            sensor_ptr->getTranslationDrift(),
-                                           sensor_ptr->getQuaternionDrift());
+                                           sensor_ptr->getQuaternionDrift(),
+                                           sensor_ptr->getDriftPositionCov(),
+                                           sensor_ptr->getDriftRotationCov());
       sensor_state += SensorState::ORIENTATION_AND_DRIFT_UPDATE;
     }
 
@@ -132,7 +134,9 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       m_es_ekf.poseMeasurementUpdateDrift(sensor_ptr->getRPose(),
                                           sensor_transformed_position,
                                           sensor_ptr->getTranslationDrift(),
-                                          sensor_ptr->getQuaternionDrift());
+                                          sensor_ptr->getQuaternionDrift(),
+                                          sensor_ptr->getDriftPositionCov(),
+                                          sensor_ptr->getDriftRotationCov());
       sensor_state += SensorState::POSE_AND_DRIFT_UPDATE;
     }
 
