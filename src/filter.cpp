@@ -200,9 +200,9 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix3d&    R_cov,
   // We measure quaternions directly this a standard
   // measurement model Jacobian for an extended Kalman filter
 
-  // TODO(lmark) check if m_est_quaternion_drift <-> m_est_quaternion
+  // These blocks are calculated according to pg. 44
   H.block<3, 3>(0, ANGLE_AXIS_IDX) = Identity3x3;
-  H.block<3, 3>(0, DRIFT_ROT_IDX)  = Identity3x3;
+  H.block<3, 3>(0, DRIFT_ROT_IDX)  = y.normalized().toRotationMatrix().transpose();
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx =
     Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
