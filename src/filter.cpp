@@ -224,8 +224,7 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix3d&    R_cov,
   auto K     = m_p_covariance * h_jac.transpose()
            * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
 
-  // TODO(lmark): This is wrong but it somehow works ?!
-  AngleAxisd angle_axis_error(m_est_quaternion.conjugate() * y);
+  AngleAxisd angle_axis_error((est_quaternion_drift * m_est_quaternion).conjugate() * y);
   auto       delta_theta = angle_axis_error.angle() * angle_axis_error.axis();
   Matrix<double, N_STATES, 1> delta_x = K * delta_theta;
 
