@@ -26,8 +26,7 @@ int main(int argc, char** argv)
   }
 
   // Next we parse data from the yaml file
-  YAML::Node  config = YAML::LoadFile(config_file);
-  EsEkfParams params = parse_yaml(config_file);
+  EsEkfParams params = sf_params::get_rosparam(nh_private);
 
   std::cout << "\n\nModel parameters:\n Q_f \n"
             << params.model.Q_f << "\n"

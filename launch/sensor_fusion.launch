@@ -13,7 +13,7 @@
 
   <node pkg="sensor_fusion" type="sensor_fusion" name="sensor_fusion" output="screen" ns="$(arg namespace)"
     launch-prefix="$(arg launch_prefix)">
-
+    <rosparam command="load"      file="$(arg config_yaml)" />
     <param name="config_yaml"     value="$(arg config_yaml)" />
     <param name="imu_topic"       value="$(arg imu_topic)" />
     <param name="es_ekf_topic"    value="$(arg es_ekf_topic)" />
