@@ -64,34 +64,23 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
                         const Matrix3d&             var_imu_w,
                         const double                delta_t)
 {
-  // 1. Update nominal state with IMU inputs
-  auto rot_est = m_est_quaternion.toRotationMatrix();
-
-  m_est_position +=
-    +delta_t * m_est_lin_velocity
-    + pow(delta_t, 2) / 2.0 * (rot_est * (imu_f - m_est_acc_bias) + m_est_gravity);
-
-  m_est_lin_velocity += +delta_t * (rot_est * (imu_f - m_est_acc_bias) + (m_est_gravity));
-
-  Quaterniond delta_q;
-  auto        delta_theta = delta_t * (imu_w - m_est_gyro_bias);
-  delta_q                 = AngleAxisd(delta_theta.norm(), delta_theta.normalized());
-  m_est_quaternion        = m_est_quaternion * delta_q;
-  m_est_quaternion.normalize();
-  rot_est = m_est_quaternion.toRotationMatrix();
 
   // TODO transform imu maybe beore prediction????
   // 1.1 Linearize the motion model
   // and compute Jacobians (Scola (311))
-  Matrix<double, N_STATES, N_STATES> f_jac      = IdentityNxN;
-  f_jac.block<3, 3>(POSITION_IDX, VELOCITY_IDX) = delta_t * Identity3x3;
+  Quaterniond delta_q;
+  auto        delta_theta = delta_t * (imu_w - m_est_gyro_bias);
+  delta_q                 = AngleAxisd(delta_theta.norm(), delta_theta.normalized());
+  auto                               rot_est       = m_est_quaternion.toRotationMatrix();
+  Matrix<double, N_STATES, N_STATES> f_jac         = IdentityNxN;
+  f_jac.block<3, 3>(POSITION_IDX, VELOCITY_IDX)    = delta_t * Identity3x3;
+  f_jac.block<3, 3>(VELOCITY_IDX, ACC_BIAS_IDX)    = -delta_t * rot_est;
+  f_jac.block<3, 3>(VELOCITY_IDX, GRAVITY_IDX)     = delta_t * Identity3x3;
+  f_jac.block<3, 3>(ANGLE_AXIS_IDX, GYRO_BIAS_IDX) = -delta_t * Identity3x3;
   f_jac.block<3, 3>(VELOCITY_IDX, ANGLE_AXIS_IDX) =
-    -sf::skew_symetric(rot_est * (imu_f - m_est_acc_bias)) * delta_t;
-  f_jac.block<3, 3>(VELOCITY_IDX, ACC_BIAS_IDX) = -rot_est * delta_t;
-  f_jac.block<3, 3>(VELOCITY_IDX, GRAVITY_IDX)  = delta_t * Identity3x3;
-  f_jac.block<3, 3>(ANGLE_AXIS_IDX, GYRO_BIAS_IDX) =
-    f_jac.block<3, 3>(VELOCITY_IDX, ACC_BIAS_IDX);
-  f_jac.block<3, 3>(ANGLE_AXIS_IDX, ANGLE_AXIS_IDX)   = Identity3x3;
+    -rot_est * sf::skew_symetric(imu_f - m_est_acc_bias) * delta_t;
+  f_jac.block<3, 3>(ANGLE_AXIS_IDX, ANGLE_AXIS_IDX) =
+    delta_q.toRotationMatrix().transpose();
   f_jac.block<6, 6>(DRIFT_TRANS_IDX, DRIFT_TRANS_IDX) = Matrix<double, 6, 6>::Zero();
 
   // 2. Propagate uncertainty
@@ -104,6 +93,17 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
   q_cov.block<3, 3>(9, 9)      = m_gyro_bias_variance * delta_t;
   m_p_covariance               = f_jac * m_p_covariance * f_jac.transpose()
                    + m_jacobian * q_cov * m_jacobian.transpose();
+
+  // Update nominal state with IMU inputs
+  // Use current 'rot_est' not the new updated one
+  m_est_position +=
+    +delta_t * m_est_lin_velocity
+    + pow(delta_t, 2) / 2.0 * (rot_est * (imu_f - m_est_acc_bias) + m_est_gravity);
+
+  m_est_lin_velocity += +delta_t * (rot_est * (imu_f - m_est_acc_bias) + (m_est_gravity));
+
+  m_est_quaternion = m_est_quaternion * delta_q;
+  m_est_quaternion.normalize();
 
   ROS_INFO_THROTTLE(2.0, "EsEkf2::prediction()");
 }
@@ -119,7 +119,7 @@ void EsEkf2::inject_error_state(const Matrix<double, N_STATES, 1>& error_state)
   delta_q = Eigen::AngleAxisd(angle_axis_vector.norm(), angle_axis_vector.normalized());
 
   // pg. 68 (303)
-  m_est_quaternion = delta_q * m_est_quaternion;
+  m_est_quaternion = m_est_quaternion * delta_q;
   m_est_quaternion.normalize();
 
   m_est_acc_bias += error_state.block<3, 1>(ACC_BIAS_IDX, 0);
