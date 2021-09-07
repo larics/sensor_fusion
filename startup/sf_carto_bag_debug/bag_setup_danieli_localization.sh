@@ -5,6 +5,7 @@ export BAG_NAME=$HOME/FER/cartographer_experiments/Danieli/Localization/localiza
 export CONFIGURATION_BASENAME=localization_pozyx.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro
+export SF_CONFIG=$(realpath custom_config/sensor_client_carto_config.yaml)
 
 export PURE_LOCALIZATION=true
 export PBSTREAM_NAME=$(pwd)/custom_config/hangar_map_1.pbstream

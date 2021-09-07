@@ -69,6 +69,9 @@ public:
     } else if (m_sensor_params.msg_type == SensorMsgType::TRANSFORM_STAMPED) {
       m_sensor_sub = m_node_handle.subscribe(
         m_sensor_params.topic, 1, &Sensor::callbackTransformStamped, this);
+    } else if (m_sensor_params.msg_type == SensorMsgType::POSE_STAMPED) {
+      m_sensor_sub = m_node_handle.subscribe(
+        m_sensor_params.topic, 1, &Sensor::callbackPoseStamped, this);
     }
     m_sensor_state_pub =
       m_node_handle.advertise<std_msgs::Int32>(m_sensor_params.id + "_state", 1);
@@ -99,6 +102,13 @@ public:
   void publishTransformedPose()
   {
     geometry_msgs::PoseStamped transformed_msg;
+    Vector3d position = m_sensor_transformed_position;
+    Quaterniond orientation = m_sensor_transformed_q;
+
+    if (estimateDrift()) {
+      position = getDriftedPose();
+      orientation = getDriftedRotation();
+    }
     transformed_msg.header.frame_id    = "world";
     transformed_msg.header.stamp       = ros::Time::now();
     transformed_msg.pose.position.x    = m_sensor_transformed_position.x();
@@ -125,6 +135,27 @@ public:
     drift_pose.pose.orientation.z = m_est_quaternion_drift.z();
     drift_pose.pose.orientation.w = m_est_quaternion_drift.w();
     m_sensor_drift_pub.publish(drift_pose);
+  }
+
+  void callbackPoseStamped(const geometry_msgs::PoseStamped& msg)
+  {
+    // ROS_INFO("camera_posix_callback");
+    if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
+      m_first_measurement = true;
+      initialize_sensor_origin(
+        msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+    }
+
+    m_fresh_position_measurement = true;
+    m_sensor_position.x()        = msg.pose.position.x;
+    m_sensor_position.y()        = msg.pose.position.y;
+    m_sensor_position.z()        = msg.pose.position.z;
+
+    m_fresh_orientation_measurement = true;
+    m_sensor_q.w()                  = msg.pose.orientation.w;
+    m_sensor_q.x()                  = msg.pose.orientation.x;
+    m_sensor_q.y()                  = msg.pose.orientation.y;
+    m_sensor_q.z()                  = msg.pose.orientation.z;
   }
 
   void callbackTransformStamped(const geometry_msgs::TransformStamped& msg)
@@ -249,8 +280,8 @@ public:
 
   Vector3d getDriftedPose() const
   {
-    return m_est_quaternion_drift * m_sensor_transformed_position
-           + m_est_position_drift.translation();
+    return m_est_quaternion_drift.inverse()
+           * (m_sensor_transformed_position - m_est_position_drift.translation());
   }
   Quaterniond getDriftedRotation() const
   {
