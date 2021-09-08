@@ -12,12 +12,13 @@ windows:
         - waitForRos; sleep 5; rosparam set use_sim_time true; rosbag play $BAG_NAME --clock
           $BAG_POINT_TOPIC:=$POINT_TOPIC $BAG_IMU_TOPIC:=$IMU_TOPIC $BAG_TRANSFORM_TOPIC:=$TRANSFORM_TOPIC
           $BAG_CAMERA_ODOM_TOPIC:=$CAMERA_ODOM_TOPIC $BAG_CARTO_TOPIC:=$CARTO_TOPIC
+          $BAG_EKF_TOPIC:=$EKF_TOPIC
           /tf:=/tf_unused /tf_static:=/tf_static_unused
   - slam:
       layout: tiled
       panes:
         - waitForRos; rosparam set use_sim_time true; roslaunch uav_ros_general robot_state_publisher.launch
-          urdf:=$CARTO_URDF
+          urdf:=$CARTO_URDF namespace:=$TF_PREFIX
         - waitForRos; rosparam set use_sim_time true; 
           roslaunch uav_ros_general cartographer.launch 
           simulation:=false 
@@ -32,6 +33,8 @@ windows:
           transform:=$TRANSFORM_TOPIC
           cartographer_state_filename:=$PBSTREAM_NAME
           pure_localization:=$PURE_LOCALIZATION
+          namespace:=$CARTO_NAMESPACE
+          carto_pose:=$CARTO_POSE
         - waitForRos; rosrun cartographer_ros cartographer_occupancy_grid_node __ns:=$UAV_NAMESPACE
         - waitForRos; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/display_bag.rviz > custom_config/.display_bag.rviz;
@@ -68,3 +71,13 @@ windows:
         - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/sf_debug.perspective > custom_config/.sf_debug.perspective;
           rqt --perspective-file custom_config/.sf_debug.perspective
+        - history -s "rosbag record 
+          /danieli2/es_ekf/odom 
+          /danieli2/carto_transformed_pose
+          /danieli2/carto_state
+          /danieli2/pozyx_transformed_pose
+          /danieli2/pozyx_state
+          /danieli2/camera_transformed_pose
+          /danilei2/camera_state
+          /base_link/vrpn_client/estimated_odometry
+          -o $HOME/Bags/danieli1_compassless/clanak/pprocessed_measurements"

@@ -238,7 +238,12 @@ public:
     // Drift position checks
     if (estimateDrift()) {
       // TODO(lmark): Add drifted position outlier
-      checks.drifted_position_outlier = false;
+      auto abs_error = (position - m_sensor_transformed_position).cwiseAbs();
+      checks.drifted_position_outlier =
+        abs_error.x() > m_sensor_params.position_outlier_lim.x()
+        || abs_error.y() > m_sensor_params.position_outlier_lim.y()
+        || abs_error.z() > m_sensor_params.position_outlier_lim.z();
+
       if (checks.drifted_position_outlier) {
         ROS_WARN_STREAM_THROTTLE(
           2.0,

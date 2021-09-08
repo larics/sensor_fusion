@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export UAV_NAMESPACE=danieli2
+export TF_PREFIX=danieli2
 export BAG_NAME=$HOME/Bags/danieli1_compassless/sensor_fusion_ouster_slow.bag
 export CONFIGURATION_BASENAME=ouster_pozyx.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
