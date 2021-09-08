@@ -19,7 +19,6 @@ using SensorPtr = std::shared_ptr<Sensor>;
  * update the es-ekf state.
  */
 
-// TODO add sensor_state publishing
 class Sensor
 {
 private:

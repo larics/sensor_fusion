@@ -86,6 +86,11 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
   // 2. Propagate uncertainty
   // Components on pg. 60 (262-265)
   // Definition on pg. 70 (312)
+  // TODO(lmark): var_imu_f, var_imu_w, m_acc_bias_variance, m_gyro_bias_variance should be
+  // renamed to velocity varniance, orientation variance, acceleration bias variance,
+  // angular velocity bias variance
+  
+  // TODO(lmark): We should probably add sensor position and orientation drift variance
   Matrix<double, 12, 12> q_cov = Matrix<double, 12, 12>::Identity();
   q_cov.block<3, 3>(0, 0)      = var_imu_f * pow(delta_t, 2);
   q_cov.block<3, 3>(3, 3)      = var_imu_w * pow(delta_t, 2);
@@ -209,10 +214,14 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix3d&    R_cov,
   // Scola equation:(280)
   H_dx.block<6, 6>(POSITION_IDX, POSITION_IDX) = Matrix<double, 6, 6>::Identity(6, 6);
   H_dx.block<4, 3>(ANGLE_AXIS_IDX, ANGLE_AXIS_IDX) =
-    0.5 * sf::firstOrderApprox(m_est_quaternion);
+    0.5 * sf::firstOrderApproxLocal(m_est_quaternion);
   H_dx.block<12, 12>(ACC_BIAS_IDX + 1, ACC_BIAS_IDX) = MatrixXd::Identity(12, 12);
   H_dx.block<4, 3>(DRIFT_ROT_IDX + 1, DRIFT_ROT_IDX) =
     0.5 * sf::firstOrderApproxLocal(est_quaternion_drift);
+
+  // TODO(lmark): This covariance "switching" based on sensor is probably not right.
+  // What about prediction ? Which sensor drift covariance are we estimating there?
+  // Solution: Reserve a variable amount of space for sensor drift.
 
   // Set drift covariance, and save previously stored covariance
   auto ph_pos = m_p_covariance.block<3, 3>(DRIFT_TRANS_IDX, DRIFT_TRANS_IDX);
