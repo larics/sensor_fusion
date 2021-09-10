@@ -21,7 +21,7 @@ public:
    *
    * @param sensor Ovbject type Sensor.
    */
-  void publishSensorOrigin(const Sensor& sensor);
+  void publishSensorOrigin(const Sensor& sensor, const Quaterniond& ekf_orientation);
 
   /**
    * @brief Publish estimated origin from the odometry message.

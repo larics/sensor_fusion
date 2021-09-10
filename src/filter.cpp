@@ -269,7 +269,7 @@ void EsEkf2::poseMeasurementUpdateDrift(const Matrix3d&             R_cov,
   Matrix<double, N_STATES + 2, N_STATES> H_dx = MatrixXd::Zero(N_STATES + 2, N_STATES);
   // Scola equation:(280)
   H_dx.block<6, 6>(0, 0)    = MatrixXd::Identity(6, 6);
-  H_dx.block<4, 3>(6, 6)    = 0.5 * sf::firstOrderApprox(m_est_quaternion);
+  H_dx.block<4, 3>(6, 6)    = 0.5 * sf::firstOrderApproxLocal(m_est_quaternion);
   H_dx.block<12, 12>(10, 9) = MatrixXd::Identity(12, 12);
   H_dx.block<4, 3>(22, 21)  = 0.5 * sf::firstOrderApproxLocal(est_quaternion_drift);
 

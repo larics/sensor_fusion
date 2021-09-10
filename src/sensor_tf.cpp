@@ -10,7 +10,7 @@ sf::SensorTF::SensorTF(std::string base_link) : m_base_link(std::move(base_link)
   m_base_link_origin = m_base_link + "/robot";
 }
 
-void sf::SensorTF::publishSensorOrigin(const Sensor& sensor)
+void sf::SensorTF::publishSensorOrigin(const Sensor& sensor, const Quaterniond& ekf_orientation)
 {
   Eigen::Vector3d    position;
   Eigen::Quaterniond orientation;
@@ -21,6 +21,10 @@ void sf::SensorTF::publishSensorOrigin(const Sensor& sensor)
   } else {
     position    = sensor.getPose();
     orientation = sensor.getOrientation();
+  }
+
+  if (!sensor.isOrientationSensor()) {
+    orientation = ekf_orientation;
   }
 
   // Get the inverse transformation

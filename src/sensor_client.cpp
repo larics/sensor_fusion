@@ -158,7 +158,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     sensor_ptr->publishState(sensor_state);
     sensor_ptr->publishTransformedPose();
     sensor_ptr->publishDrift();
-    m_sensor_tf.publishSensorOrigin(*sensor_ptr);
+    m_sensor_tf.publishSensorOrigin(*sensor_ptr, m_es_ekf.getOrientation());
   }
 
   if (!measurement && !prediction) {
