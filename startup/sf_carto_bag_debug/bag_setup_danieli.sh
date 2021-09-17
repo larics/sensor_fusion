@@ -7,6 +7,7 @@ export CONFIGURATION_BASENAME=ouster_pozyx.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro
 export SF_CONFIG=$(realpath custom_config/sensor_client_carto_config.yaml)
+export SF_CARTO_MAP=
 
 export PURE_LOCALIZATION=false
 export PBSTREAM_NAME=

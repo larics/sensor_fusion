@@ -14,11 +14,15 @@
 
 include "ouster_pozyx.lua"
 namespace = os.getenv("TF_PREFIX")
+map_frame = os.getenv("SF_CARTO_MAP")
+if  map_frame == nil or map_frame == '' then
+  map_frame = namespace.."/map"
+end
 
 options = {
   map_builder = MAP_BUILDER,
   trajectory_builder = TRAJECTORY_BUILDER,
-  map_frame =  namespace.."/map",
+  map_frame =  map_frame,
   tracking_frame =  namespace.."/base_link",
   published_frame =  namespace.."/base_link",
   odom_frame = namespace.."/odom",

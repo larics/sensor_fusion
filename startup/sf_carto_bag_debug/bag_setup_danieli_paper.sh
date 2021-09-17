@@ -9,6 +9,7 @@ export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro
 export SF_CONFIG=$(realpath custom_config/sensor_client_paper_config.yaml)
 export CARTO_POSE=/$UAV_NAMESPACE/pproc/cartographer/pose
+export SF_CARTO_MAP=eagle/carto_raw
 
 export PURE_LOCALIZATION=false
 export PBSTREAM_NAME=
