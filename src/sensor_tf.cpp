@@ -1,4 +1,5 @@
 #include "sensor_tf.h"
+#include "Eigen/src/Geometry/Quaternion.h"
 
 #include <ros/ros.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -10,7 +11,9 @@ sf::SensorTF::SensorTF(std::string base_link) : m_base_link(std::move(base_link)
   m_base_link_origin = m_base_link + "/robot";
 }
 
-void sf::SensorTF::publishSensorOrigin(const Sensor& sensor, const Quaterniond& ekf_orientation)
+void sf::SensorTF::publishSensorOrigin(const Sensor&      sensor,
+                                       const Quaterniond& ekf_orientation,
+                                       const Quaterniond& main_sensor_q)
 {
   Eigen::Vector3d    position;
   Eigen::Quaterniond orientation;
@@ -23,9 +26,7 @@ void sf::SensorTF::publishSensorOrigin(const Sensor& sensor, const Quaterniond& 
     orientation = sensor.getOrientation();
   }
 
-  if (!sensor.isOrientationSensor()) {
-    orientation = ekf_orientation;
-  }
+  if (!sensor.isOrientationSensor()) { orientation = ekf_orientation; }
 
   // Get the inverse transformation
   tf2::Transform tf_inv(
@@ -48,6 +49,34 @@ void sf::SensorTF::publishSensorOrigin(const Sensor& sensor, const Quaterniond& 
   tf.transform.rotation.z = q.z();
   tf.transform.rotation.w = q.w();
   m_tf_broadcaster.sendTransform(tf);
+
+  // Get raw sensor data
+  auto&              raw_position    = sensor.getRawPosition();
+  Eigen::Quaterniond raw_orientation = sensor.getRawOrientation();
+  if (!sensor.isOrientationSensor()) { raw_orientation = main_sensor_q; }
+
+  // Get the inverse transformation
+  tf2::Transform tf_raw_inv(
+    tf2::Quaternion(
+      raw_orientation.x(), raw_orientation.y(), raw_orientation.z(), raw_orientation.w()),
+    tf2::Vector3(raw_position.x(), raw_position.y(), raw_position.z()));
+  tf_raw_inv = tf_raw_inv.inverse();
+
+  geometry_msgs::TransformStamped tf_raw;
+  tf_raw.header.stamp    = ros::Time::now();
+  tf_raw.header.frame_id = m_base_link_origin;
+  tf_raw.child_frame_id  = m_base_link + "/" + sensor.getName() + "_raw";
+
+  tf_raw.transform.translation.x = tf_raw_inv.getOrigin().x();
+  tf_raw.transform.translation.y = tf_raw_inv.getOrigin().y();
+  tf_raw.transform.translation.z = tf_raw_inv.getOrigin().z();
+
+  auto q_raw                  = tf_raw_inv.getRotation();
+  tf_raw.transform.rotation.x = q_raw.x();
+  tf_raw.transform.rotation.y = q_raw.y();
+  tf_raw.transform.rotation.z = q_raw.z();
+  tf_raw.transform.rotation.w = q_raw.w();
+  m_tf_broadcaster.sendTransform(tf_raw);
 }
 
 void sf::SensorTF::publishOrigin(const nav_msgs::Odometry& odom,

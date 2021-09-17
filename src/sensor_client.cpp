@@ -18,7 +18,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
   m_estimate_pub = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
 
   for (const auto& sensor_params : m_ekf_params.sensors) {
-    m_sensor_vector.push_back(std::make_shared<Sensor>(sensor_params));
+    m_sensor_vector.emplace(sensor_params.id, std::make_shared<Sensor>(sensor_params));
   }
 
   while (ros::ok()) {
@@ -26,7 +26,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
     ros::spinOnce();
     if (m_imu_sensor.isInit()) {
       bool all_sensor_initialized = true;
-      for (const auto& sensor_ptr : m_sensor_vector) {
+      for (const auto& [key, sensor_ptr] : m_sensor_vector) {
         if (sensor_ptr->newMeasurement()) {
           ROS_INFO_STREAM("SensorClient::SensorClient() - Sensor "
                           << sensor_ptr->getSensorID() << " initilized.");
@@ -57,18 +57,8 @@ SensorClient::SensorClient(const EsEkfParams& params,
 void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 {
   if (m_start_flag) {
-    auto sensor_it = std::find_if(
-      m_sensor_vector.begin(), m_sensor_vector.end(), [&](const auto& sensor_ptr) {
-        return sensor_ptr->getSensorID() == m_ekf_params.initial_sensor_id;
-      });
+    const auto& sensor = m_sensor_vector.at(m_ekf_params.initial_sensor_id);
 
-    if (sensor_it == m_sensor_vector.end()) {
-      ROS_WARN_STREAM_THROTTLE(
-        2.0, "Unable to initialize EKF with sensor: " << m_ekf_params.initial_sensor_id);
-      return;
-    }
-
-    const auto& sensor = *sensor_it;
     if (sensor->newMeasurement()) {
       m_es_ekf.setP(sensor->getPose());
       m_es_ekf.setQ(sensor->getOrientation());
@@ -97,7 +87,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     prediction = true;
   }
 
-  for (const auto& sensor_ptr : m_sensor_vector) {
+  for (const auto& [key, sensor_ptr] : m_sensor_vector) {
 
     int sensor_state = 0;
 
@@ -158,7 +148,10 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     sensor_ptr->publishState(sensor_state);
     sensor_ptr->publishTransformedPose();
     sensor_ptr->publishDrift();
-    m_sensor_tf.publishSensorOrigin(*sensor_ptr, m_es_ekf.getOrientation());
+    m_sensor_tf.publishSensorOrigin(
+      *sensor_ptr,
+      m_es_ekf.getOrientation(),  /* Estimated orientation */
+      m_sensor_vector.at(m_ekf_params.initial_sensor_id)->getRawOrientation()); /* Main sensor orientation */
   }
 
   if (!measurement && !prediction) {

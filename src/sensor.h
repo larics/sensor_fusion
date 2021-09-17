@@ -208,6 +208,16 @@ public:
     return m_sensor_transformed_position;
   }
 
+  const Translation3d& getRawPosition() const
+  {
+    return m_sensor_position;
+  }
+
+  const Quaterniond& getRawOrientation() const
+  {
+    return m_sensor_q;
+  }
+
   const Quaterniond& getOrientation()
   {
     if (isOrientationSensor() && m_fresh_orientation_measurement) {

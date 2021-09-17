@@ -28,7 +28,7 @@ g_p_cov: 0.1
 
 #position sensor params
 Sensor_prefix: [camera, pozyx, carto]
-initial_sensor: camera
+initial_sensor: carto
 
 #camera
 camera_is_orientation_sensor: true
