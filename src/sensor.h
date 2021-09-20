@@ -101,11 +101,11 @@ public:
   void publishTransformedPose()
   {
     geometry_msgs::PoseStamped transformed_msg;
-    Vector3d position = m_sensor_transformed_position;
-    Quaterniond orientation = m_sensor_transformed_q;
+    Vector3d                   position    = m_sensor_transformed_position;
+    Quaterniond                orientation = m_sensor_transformed_q;
 
     if (estimateDrift()) {
-      position = getDriftedPose();
+      position    = getDriftedPose();
       orientation = getDriftedRotation();
     }
     transformed_msg.header.frame_id    = "world";
@@ -248,17 +248,28 @@ public:
     // Drift position checks
     if (estimateDrift()) {
       // TODO(lmark): Add drifted position outlier
-      auto abs_error = (position - m_sensor_transformed_position).cwiseAbs();
+      const auto& drifted_pos = getDriftedPose();
+      auto abs_error = (position - drifted_pos).cwiseAbs();
       checks.drifted_position_outlier =
         abs_error.x() > m_sensor_params.position_outlier_lim.x()
         || abs_error.y() > m_sensor_params.position_outlier_lim.y()
         || abs_error.z() > m_sensor_params.position_outlier_lim.z();
 
       if (checks.drifted_position_outlier) {
-        ROS_WARN_STREAM_THROTTLE(
+        ROS_WARN_THROTTLE(
           2.0,
-          "Sensor::getOutlierChecks - drifted position outlier check failed for sensor: "
-            << getSensorID());
+          "Sensor::getOutlierChecks - drifted position outlier check [%.2f, %.2f, "
+          "%.2f]-[%.2f, %.2f, %.2f]=[%.2f, %.2f, %.2f] failed for sensor: %s",
+          position.x(),
+          position.y(),
+          position.z(),
+          drifted_pos.x(),
+          drifted_pos.y(),
+          drifted_pos.z(),
+          abs_error.x(),
+          abs_error.y(),
+          abs_error.z(),
+          getSensorID().c_str());
       }
     }
 
@@ -271,10 +282,20 @@ public:
         || abs_error.z() > m_sensor_params.position_outlier_lim.z();
 
       if (checks.position_outlier) {
-        ROS_WARN_STREAM_THROTTLE(
+        ROS_WARN_THROTTLE(
           2.0,
-          "Sensor::getOutlierChecks - position outlier check failed for sensor: "
-            << getSensorID());
+          "Sensor::getOutlierChecks - position outlier check [%.2f, %.2f, "
+          "%.2f]-[%.2f, %.2f, %.2f]=[%.2f, %.2f, %.2f] failed for sensor: %s",
+          position.x(),
+          position.y(),
+          position.z(),
+          m_sensor_transformed_position.x(),
+          m_sensor_transformed_position.y(),
+          m_sensor_transformed_position.z(),
+          abs_error.x(),
+          abs_error.y(),
+          abs_error.z(),
+          getSensorID().c_str());
       }
     }
 
@@ -299,7 +320,7 @@ public:
   }
   Quaterniond getDriftedRotation() const
   {
-    return m_est_quaternion_drift * m_sensor_transformed_q;
+    return m_est_quaternion_drift.inverse() * m_sensor_transformed_q;
   }
   const std::string& getName() const { return m_sensor_name; }
   const Vector3d&    getPose() const { return m_sensor_transformed_position; }
