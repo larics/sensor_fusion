@@ -4,11 +4,14 @@
 #include <Eigen/Geometry>
 
 #include "nav_msgs/Odometry.h"
+#include "ros/forwards.h"
 #include "ros/ros.h"
+#include "ros/timer.h"
 #include "structures.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "std_msgs/Int32.h"
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 using namespace Eigen;
 class Sensor;
@@ -22,10 +25,14 @@ using SensorPtr = std::shared_ptr<Sensor>;
 class Sensor
 {
 private:
+  static constexpr auto TIMEOUT = 2;
+
   ros::Subscriber m_sensor_sub;
+  double          m_last_message_time;
   ros::Publisher  m_sensor_drift_pub;
   ros::Publisher  m_sensor_state_pub;
   ros::Publisher  m_transformed_pub;
+  ros::Timer      m_watchdog_timer;
   ros::NodeHandle m_node_handle;
   SensorParams    m_sensor_params;
   Translation3d   m_sensor_position;
@@ -36,6 +43,7 @@ private:
   bool            m_fresh_position_measurement    = false;
   bool            m_fresh_orientation_measurement = false;
   bool            m_first_measurement             = false;
+  bool            m_sensor_responsive             = false;
   Vector3d        m_sensor_transformed_position;
   Translation3d   m_est_position_drift;
   Quaterniond     m_est_quaternion_drift;
@@ -60,7 +68,7 @@ private:
 public:
   Sensor(const SensorParams& params)
     : m_sensor_params(params), m_sensor_transformed_position(Vector3d::Zero()),
-      m_sensor_name(params.id)
+      m_sensor_name(params.id), m_last_message_time(0)
   {
     if (m_sensor_params.msg_type == SensorMsgType::ODOMETRY) {
       m_sensor_sub = m_node_handle.subscribe(
@@ -78,10 +86,13 @@ public:
       m_sensor_params.id + "_transformed_pose", 1);
 
     if (m_sensor_params.estimate_drift) {
-      m_sensor_drift_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
-        m_sensor_params.id + "_drift", 1);
+      m_sensor_drift_pub =
+        m_node_handle.advertise<geometry_msgs::PoseWithCovarianceStamped>(
+          m_sensor_params.id + "_drift", 1);
     }
 
+    m_watchdog_timer =
+      m_node_handle.createTimer(ros::Duration(TIMEOUT), &Sensor::watchdog_callback, this);
     m_sensor_q             = Quaterniond::Identity();
     m_sensor_transformed_q = Quaterniond::Identity();
     m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
@@ -89,6 +100,17 @@ public:
     m_est_quaternion_drift = Quaterniond::Identity();
     m_position_drift_cov   = Matrix3d::Identity() * 0.0001;
     m_rotation_drift_cov   = Matrix3d::Identity() * 0.0001;
+  }
+
+  void watchdog_callback(const ros::TimerEvent& /* unused */)
+  {
+    auto time_diff = ros::Time::now().toSec() - m_last_message_time;
+    if (time_diff > TIMEOUT) {
+      m_sensor_responsive = false;
+      ROS_FATAL("[Sensor] %s is unresponsive!", m_sensor_name.c_str());
+    } else {
+      m_sensor_responsive = true;
+    }
   }
 
   void publishState(int state)
@@ -123,16 +145,23 @@ public:
   void publishDrift()
   {
     if (!m_sensor_params.estimate_drift) { return; }
-    geometry_msgs::PoseStamped drift_pose;
-    drift_pose.header.frame_id    = "world";
-    drift_pose.header.stamp       = ros::Time::now();
-    drift_pose.pose.position.x    = m_est_position_drift.x();
-    drift_pose.pose.position.y    = m_est_position_drift.y();
-    drift_pose.pose.position.z    = m_est_position_drift.z();
-    drift_pose.pose.orientation.x = m_est_quaternion_drift.x();
-    drift_pose.pose.orientation.y = m_est_quaternion_drift.y();
-    drift_pose.pose.orientation.z = m_est_quaternion_drift.z();
-    drift_pose.pose.orientation.w = m_est_quaternion_drift.w();
+    geometry_msgs::PoseWithCovarianceStamped drift_pose;
+    drift_pose.header.frame_id         = "world";
+    drift_pose.header.stamp            = ros::Time::now();
+    drift_pose.pose.pose.position.x    = m_est_position_drift.x();
+    drift_pose.pose.pose.position.y    = m_est_position_drift.y();
+    drift_pose.pose.pose.position.z    = m_est_position_drift.z();
+    drift_pose.pose.pose.orientation.x = m_est_quaternion_drift.x();
+    drift_pose.pose.pose.orientation.y = m_est_quaternion_drift.y();
+    drift_pose.pose.pose.orientation.z = m_est_quaternion_drift.z();
+    drift_pose.pose.pose.orientation.w = m_est_quaternion_drift.w();
+    drift_pose.pose.covariance         = boost::array<double, 36>();
+    drift_pose.pose.covariance[0]      = m_position_drift_cov(0, 0);
+    drift_pose.pose.covariance[7]      = m_position_drift_cov(1, 1);
+    drift_pose.pose.covariance[14]     = m_position_drift_cov(2, 2);
+    drift_pose.pose.covariance[21]     = m_rotation_drift_cov(0, 0);
+    drift_pose.pose.covariance[27]     = m_rotation_drift_cov(1, 1);
+    drift_pose.pose.covariance[35]     = m_rotation_drift_cov(2, 2);
     m_sensor_drift_pub.publish(drift_pose);
   }
 
@@ -155,6 +184,8 @@ public:
     m_sensor_q.x()                  = msg.pose.orientation.x;
     m_sensor_q.y()                  = msg.pose.orientation.y;
     m_sensor_q.z()                  = msg.pose.orientation.z;
+
+    m_last_message_time = ros::Time::now().toSec();
   }
 
   void callbackTransformStamped(const geometry_msgs::TransformStamped& msg)
@@ -177,6 +208,8 @@ public:
     m_sensor_q.x()                  = msg.transform.rotation.x;
     m_sensor_q.y()                  = msg.transform.rotation.y;
     m_sensor_q.z()                  = msg.transform.rotation.z;
+
+    m_last_message_time = ros::Time::now().toSec();
   }
 
   void callbackOdometry(const nav_msgs::OdometryPtr& msg)
@@ -197,6 +230,8 @@ public:
     m_sensor_q.x()                  = msg->pose.pose.orientation.x;
     m_sensor_q.y()                  = msg->pose.pose.orientation.y;
     m_sensor_q.z()                  = msg->pose.pose.orientation.z;
+
+    m_last_message_time = ros::Time::now().toSec();
   }
 
   const Vector3d& getPose()
@@ -208,15 +243,9 @@ public:
     return m_sensor_transformed_position;
   }
 
-  const Translation3d& getRawPosition() const
-  {
-    return m_sensor_position;
-  }
+  const Translation3d& getRawPosition() const { return m_sensor_position; }
 
-  const Quaterniond& getRawOrientation() const
-  {
-    return m_sensor_q;
-  }
+  const Quaterniond& getRawOrientation() const { return m_sensor_q; }
 
   const Quaterniond& getOrientation()
   {
@@ -249,7 +278,7 @@ public:
     if (estimateDrift()) {
       // TODO(lmark): Add drifted position outlier
       const auto& drifted_pos = getDriftedPose();
-      auto abs_error = (position - drifted_pos).cwiseAbs();
+      auto        abs_error   = (position - drifted_pos).cwiseAbs();
       checks.drifted_position_outlier =
         abs_error.x() > m_sensor_params.position_outlier_lim.x()
         || abs_error.y() > m_sensor_params.position_outlier_lim.y()

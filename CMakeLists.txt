@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(sensor_fusion)
 
-find_package(catkin REQUIRED COMPONENTS geometry_msgs nav_msgs roscpp
-                                        sensor_msgs cmake_modules tf2_ros)
+find_package(
+  catkin REQUIRED
+  COMPONENTS geometry_msgs
+             nav_msgs
+             roscpp
+             sensor_msgs
+             cmake_modules
+             tf2_ros)
 
 find_package(Eigen3)
 if(NOT EIGEN3_FOUND)
@@ -26,7 +32,7 @@ include_directories(${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 add_library(sf_lib STATIC ${ALL_HEADERS} ${ALL_SOURCES})
 add_executable(sensor_fusion src/sensor_fusion_main.cpp)
 
-if (ASSERT_CHECKS)
+if(ASSERT_CHECKS)
   target_compile_definitions(sensor_fusion PUBLIC ENABLE_ASSERT=1)
 endif()
 
