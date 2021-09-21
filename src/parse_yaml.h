@@ -61,6 +61,7 @@ namespace sf_params {
 EsEkfParams get_rosparam(ros::NodeHandle& private_nh)
 {
   EsEkfParams params;
+  getParamOrThrow(private_nh, "expected_imu_dt", params.expected_imu_dt);
   getParamOrThrow(private_nh, "estimation_frequency", params.estimation_frequncy);
   getParamOrThrow(private_nh, "Q_acc_x", params.model.Q_f(0, 0));
   getParamOrThrow(private_nh, "Q_acc_y", params.model.Q_f(1, 1));

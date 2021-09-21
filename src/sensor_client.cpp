@@ -80,9 +80,12 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
   }
   if (m_imu_sensor.newMeasurement()) {
     auto delta_t = m_imu_sensor.getDeltaT();
-    if (delta_t > 0.02) {
-      //ROS_FATAL("[SensorClient] Imu delta t %.2f. Resetting to %.2f", delta_t, 0.02);
-      delta_t = 0.02;
+    if (delta_t > m_ekf_params.expected_imu_dt) {
+      ROS_WARN_THROTTLE(5.0,
+                        "[SensorClient] Imu delta t %.2f. Resetting to %.2f",
+                        delta_t,
+                        m_ekf_params.expected_imu_dt);
+      delta_t = m_ekf_params.expected_imu_dt;
     }
     m_es_ekf.prediction(m_imu_sensor.get_acc(),
                         m_ekf_params.model.Q_f,

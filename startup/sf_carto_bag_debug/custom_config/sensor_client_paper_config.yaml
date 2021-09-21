@@ -1,4 +1,5 @@
 estimation_frequency: 100
+expected_imu_dt: 0.02
 
 Q_acc_x: 0.0001
 Q_acc_y: 0.0001
@@ -36,7 +37,7 @@ camera_is_velocity_sensor: false
 camera_estimate_drift: true
 camera_topic: camera/odom/sample
 camera_msg_type: 0
-camera_R_pose: [0.2, 0.2, 0.2]
+camera_R_pose: [0.2, 0.2, 0.05]
 camera_R_angle: [0.2, 0.2, 0.2]
 camera_rotation: [1,0,0,0,1,0,0,0,1]
 camera_translation: [0,0,0]
@@ -45,7 +46,7 @@ camera_position_outlier_lim: [1, 1, 2]
 camera_orientation_outlier_lim: [0, 0, 0]
 
 #pozyx
-pozyx_R_pose: [0.15, 0.15, 0.2]
+pozyx_R_pose: [0.15, 0.15, 0.5]
 pozyx_R_angle: [0.01, 0.01, 0.01]
 pozyx_is_orientation_sensor: false
 pozyx_estimate_drift: true
@@ -59,7 +60,7 @@ pozyx_position_outlier_lim: [1, 1, 2]
 pozyx_orientation_outlier_lim: [0, 0, 0]
 
 #carto
-carto_R_pose: [0.3, 0.3, 0.5]
+carto_R_pose: [0.2, 0.2, 0.3]
 carto_R_angle: [0.5, 0.5, 0.5]
 carto_is_orientation_sensor: true
 carto_is_velocity_sensor: false

@@ -69,7 +69,7 @@ windows:
   - plot:
       layout: tiled
       panes:
-        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; 
+        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; sleep 2;
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/sf_debug.perspective > custom_config/.sf_debug.perspective;
           rqt --perspective-file custom_config/.sf_debug.perspective
         - history -s "rosbag record 
