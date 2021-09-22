@@ -265,12 +265,25 @@ public:
     // Orientation checks
     if (isOrientationSensor()) {
       // TODO(lmark): Calculate orientation checks
-      checks.orientation_outlier = false;
+      Quaterniond sensor_rotation = m_sensor_transformed_q;
+      if (estimateDrift()) { sensor_rotation = getDriftedRotation(); }
+      const auto rotation_error_diagonal =
+        (rotation.toRotationMatrix().transpose() * sensor_rotation.toRotationMatrix())
+          .diagonal()
+          .unaryExpr([&](double x) { return std::acos(x); });
+      // m_sensor_transformed_q
+      checks.orientation_outlier =
+        rotation_error_diagonal.x() > m_sensor_params.orientation_outlier_lim.x()
+        || rotation_error_diagonal.y() > m_sensor_params.orientation_outlier_lim.y()
+        || rotation_error_diagonal.z() > m_sensor_params.orientation_outlier_lim.z();
       if (checks.orientation_outlier) {
-        ROS_WARN_STREAM_THROTTLE(
-          2.0,
-          "Sensor::getOutlierChecks - orientation outlier check failed for sensor: "
-            << getSensorID());
+        ROS_WARN_THROTTLE(2.0,
+                          "Sensor::getOutlierChecks - orientation outlier check [%.2f, "
+                          "%.2f, %.2f] failed for sensor: %s",
+                          rotation_error_diagonal.x(),
+                          rotation_error_diagonal.y(),
+                          rotation_error_diagonal.z(),
+                          getSensorID().c_str());
       }
     }
 

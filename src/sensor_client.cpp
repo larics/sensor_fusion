@@ -116,6 +116,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       sensor_state += SensorState::ORIENTATION_UPDATE;
     }
 
+    // TODO(lmark) doesnt work!
     if (sensor_ptr->isOrientationSensor() && sensor_ptr->estimateDrift()
         && outlier_checks.orientationValid()) {
       m_es_ekf.angleMeasurementUpdateDrift(sensor_ptr->getROrientation(),
@@ -152,7 +153,11 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     }
 
     // Publish sensor information
-    if (sensor_state > 0) { measurement = true; }
+    if (sensor_state
+        > SensorState::ORIENTATION_AND_DRIFT_UPDATE + SensorState::ORIENTATION_UPDATE) {
+      m_last_good_correction = ros::Time::now().toSec();
+      measurement            = true;
+    }
     sensor_ptr->publishState(sensor_state);
     sensor_ptr->publishTransformedPose();
     sensor_ptr->publishDrift();
@@ -163,9 +168,10 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
         ->getRawOrientation()); /* Main sensor orientation */
   }
 
-  if (!measurement && !prediction) {
-    // TODO(lmark): dead time in state estimation
-    return;
+  if (!measurement && (ros::Time::now().toSec() - m_last_good_correction) > 1) {
+    const auto& sensor = m_sensor_vector.at(m_ekf_params.initial_sensor_id);
+
+    m_start_flag = true;
   }
 
   auto        state   = m_es_ekf.getState();

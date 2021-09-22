@@ -38,6 +38,7 @@ private:
   bool                             m_start_flag;
   std::string                      m_uav_name;
   sf::SensorTF                     m_sensor_tf;
+  double                           m_last_good_correction;
 };
 
 #endif// SENSOR_FUSION_SENSOR_CLIENT_H
