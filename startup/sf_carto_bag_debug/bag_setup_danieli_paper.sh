@@ -26,6 +26,7 @@ export BAG_TRANSFORM_TOPIC=/red/pozyx/measured
 export BAG_CAMERA_ODOM_TOPIC=/red/camera/odom/sample
 export BAG_CARTO_TOPIC=/red/uav/cartographer/pose
 export BAG_EKF_TOPIC=/red/es_ekf/odom
+export BAG_SUBMAP_CLOUD=/red/submap_cloud
 
 # Define cartographer topics
 export POINT_TOPIC=/$UAV_NAMESPACE/os_cloud_node/points
@@ -34,3 +35,4 @@ export TRANSFORM_TOPIC=/$UAV_NAMESPACE/pozyx/measured
 export CAMERA_ODOM_TOPIC=/$UAV_NAMESPACE/camera/odom/sample
 export CARTO_TOPIC=/unused/uav/cartographer/pose
 export EKF_TOPIC=/unused/es_ekf_odom
+export SUBMAP_CLOUD=/unused/submap_cloud
