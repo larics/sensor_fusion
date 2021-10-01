@@ -86,10 +86,10 @@ void EsEkf2::prediction(const Matrix<double, 3, 1>& imu_f,
   // 2. Propagate uncertainty
   // Components on pg. 60 (262-265)
   // Definition on pg. 70 (312)
-  // TODO(lmark): var_imu_f, var_imu_w, m_acc_bias_variance, m_gyro_bias_variance should be
-  // renamed to velocity varniance, orientation variance, acceleration bias variance,
+  // TODO(lmark): var_imu_f, var_imu_w, m_acc_bias_variance, m_gyro_bias_variance should
+  // be renamed to velocity varniance, orientation variance, acceleration bias variance,
   // angular velocity bias variance
-  
+
   // TODO(lmark): We should probably add sensor position and orientation drift variance
   Matrix<double, 12, 12> q_cov = Matrix<double, 12, 12>::Identity();
   q_cov.block<3, 3>(0, 0)      = var_imu_f * pow(delta_t, 2);
@@ -201,13 +201,13 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix3d&    R_cov,
                                          Matrix3d&          rotation_drift_cov)
 {
   // Sola equation:(278)
-  Matrix<double, 3, N_STATES + 2> H = MatrixXd::Zero(3, N_STATES + 2);
+  Matrix<double, 4, N_STATES + 2> H = MatrixXd::Zero(3, N_STATES + 2);
   // We measure quaternions directly this a standard
   // measurement model Jacobian for an extended Kalman filter
-
+  Matrix4d R_cov4 = Matrix4d::Identity() * R_cov(0,0);
   // These blocks are calculated according to pg. 44
-  H.block<3, 3>(0, ANGLE_AXIS_IDX) = Identity3x3;
-  H.block<3, 3>(0, DRIFT_ROT_IDX)  = y.normalized().toRotationMatrix().transpose();
+  H.block<4, 4>(0, ANGLE_AXIS_IDX)    = sf::rightQuatProdMat(est_quaternion_drift);
+  H.block<4, 4>(0, DRIFT_ROT_IDX + 1) = sf::leftQuatProdMat(m_est_quaternion);
 
   Matrix<double, N_STATES + 2, N_STATES> H_dx =
     Matrix<double, N_STATES + 2, N_STATES>::Zero(N_STATES + 2, N_STATES);
@@ -231,15 +231,17 @@ void EsEkf2::angleMeasurementUpdateDrift(const Matrix3d&    R_cov,
 
   auto h_jac = H * H_dx;
   auto K     = m_p_covariance * h_jac.transpose()
-           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov).inverse();
+           * (h_jac * m_p_covariance * h_jac.transpose() + R_cov4).inverse();
 
-  AngleAxisd angle_axis_error((est_quaternion_drift * m_est_quaternion).conjugate() * y);
+  auto       delta_q = (m_est_quaternion).conjugate() * y;
+  AngleAxisd angle_axis_error(delta_q);
   auto       delta_theta = angle_axis_error.angle() * angle_axis_error.axis();
-  Matrix<double, N_STATES, 1> delta_x = K * delta_theta;
+  Matrix<double, N_STATES, 1> delta_x =
+    K * Eigen::Vector4d{ delta_q.w(), delta_q.x(), delta_q.y(), delta_q.z() };
 
   m_p_covariance =
     (IdentityNxN - K * h_jac) * m_p_covariance * (IdentityNxN - K * h_jac).transpose()
-    + K * R_cov * K.transpose();
+    + K * R_cov4 * K.transpose();
 
   // Set new calculated covariance, restore previously stored
   position_drift_cov = m_p_covariance.block<3, 3>(DRIFT_TRANS_IDX, DRIFT_TRANS_IDX);

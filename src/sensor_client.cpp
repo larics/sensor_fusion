@@ -111,14 +111,13 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
       m_es_ekf.getP(), m_es_ekf.getLinVelocity(), m_es_ekf.getOrientation());
 
     // Update orientation
-    if (sensor_ptr->isOrientationSensor() && outlier_checks.orientationValid()) {
+    if (sensor_ptr->isOrientationSensor() && outlier_checks.orientationValid() && !sensor_ptr->estimateDrift()) {
       m_es_ekf.angleMeasurementUpdate(sensor_ptr->getROrientation(), sensor_orientation);
       sensor_state += SensorState::ORIENTATION_UPDATE;
     }
 
     // TODO(lmark) doesnt work!
-    if (sensor_ptr->isOrientationSensor() && sensor_ptr->estimateDrift()
-        && outlier_checks.orientationValid()) {
+    if (sensor_ptr->isOrientationSensor() && sensor_ptr->estimateDrift()) {
       m_es_ekf.angleMeasurementUpdateDrift(sensor_ptr->getROrientation(),
                                            sensor_orientation,
                                            sensor_ptr->getTranslationDrift(),

@@ -3,7 +3,7 @@
 export UAV_NAMESPACE=danieli2
 export TF_PREFIX=red
 export CARTO_NAMESPACE=red
-export BAG_NAME=/usr/local/games/compassless_t265_carto_pozyx_2021-09-06-16-21-18.bag
+export BAG_NAME=/usr/local/games/compassless_carto_no_pozyx_1024x10.bag
 export CONFIGURATION_BASENAME=ouster_local.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro
