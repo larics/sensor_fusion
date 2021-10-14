@@ -63,7 +63,6 @@ private:
   Matrix<double, N_STATES, N_STATES> m_p_covariance;
   Matrix3d                           m_acc_bias_variance;
   Matrix3d                           m_gyro_bias_variance;
-
   // m_jacobian -> pg. 61 (271)
   Matrix<double, N_STATES, N_STATES_2> m_jacobian;
 

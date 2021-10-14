@@ -9,6 +9,7 @@ export CARTO_URDF=$(rospack find uav_ros_general)/urdf/ouster-imu.urdf.xacro
 export SF_CONFIG=$(realpath custom_config/sensor_client_carto_config.yaml)
 export PURE_LOCALIZATION=true
 export PBSTREAM_NAME=$(pwd)/custom_config/hangar_map_1.pbstream
+export SF_CARTO_MAP=
 
 # Starter parameters
 export ENABLE_STARTER=true

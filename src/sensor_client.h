@@ -15,6 +15,7 @@
 #include "sensor.h"
 #include "sensor_tf.h"
 #include <memory>
+#include <map>
 
 class SensorClient
 {
@@ -27,16 +28,16 @@ public:
   void stateEstimation(const ros::TimerEvent& msg);
 
 private:
-  ros::Publisher         m_estimate_pub;
-  ros::Timer             m_update_timer;
-  EsEkfParams            m_ekf_params;
-  EsEkf2                 m_es_ekf;
-  Imu                    m_imu_sensor;
-  std::vector<SensorPtr> m_sensor_vector;
-  ros::NodeHandle        m_node_handle;
-  bool                   m_start_flag;
-  std::string            m_uav_name;
-  sf::SensorTF           m_sensor_tf;
+  ros::Publisher                   m_estimate_pub;
+  ros::Timer                       m_update_timer;
+  EsEkfParams                      m_ekf_params;
+  EsEkf2                           m_es_ekf;
+  Imu                              m_imu_sensor;
+  std::map<std::string, SensorPtr> m_sensor_vector;
+  ros::NodeHandle                  m_node_handle;
+  bool                             m_start_flag;
+  std::string                      m_uav_name;
+  sf::SensorTF                     m_sensor_tf;
 };
 
 #endif// SENSOR_FUSION_SENSOR_CLIENT_H

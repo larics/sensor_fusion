@@ -35,6 +35,7 @@ windows:
           pure_localization:=$PURE_LOCALIZATION
           namespace:=$CARTO_NAMESPACE
           carto_pose:=$CARTO_POSE
+          map_frame:=$SF_CARTO_MAP
         - waitForRos; rosrun cartographer_ros cartographer_occupancy_grid_node __ns:=$UAV_NAMESPACE
         - waitForRos; 
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/display_bag.rviz > custom_config/.display_bag.rviz;
