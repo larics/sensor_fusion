@@ -12,7 +12,7 @@ windows:
         - waitForRos; sleep 5; rosparam set use_sim_time true; rosbag play $BAG_NAME --clock
           $BAG_POINT_TOPIC:=$POINT_TOPIC $BAG_IMU_TOPIC:=$IMU_TOPIC $BAG_TRANSFORM_TOPIC:=$TRANSFORM_TOPIC
           $BAG_CAMERA_ODOM_TOPIC:=$CAMERA_ODOM_TOPIC $BAG_CARTO_TOPIC:=$CARTO_TOPIC
-          $BAG_EKF_TOPIC:=$EKF_TOPIC
+          $BAG_EKF_TOPIC:=$EKF_TOPIC $BAG_SUBMAP_CLOUD:=$SUBMAP_CLOUD
           /tf:=/tf_unused /tf_static:=/tf_static_unused
   - slam:
       layout: tiled
@@ -69,7 +69,7 @@ windows:
   - plot:
       layout: tiled
       panes:
-        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; 
+        - waitForRos; waitFor /$UAV_NAMESPACE/ekf_euler; sleep 2;
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/sf_debug.perspective > custom_config/.sf_debug.perspective;
           rqt --perspective-file custom_config/.sf_debug.perspective
         - history -s "rosbag record 

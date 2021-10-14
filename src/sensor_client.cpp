@@ -79,11 +79,19 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     return;
   }
   if (m_imu_sensor.newMeasurement()) {
+    auto delta_t = m_imu_sensor.getDeltaT();
+    if (delta_t > m_ekf_params.expected_imu_dt) {
+      ROS_WARN_THROTTLE(5.0,
+                        "[SensorClient] Imu delta t %.2f. Resetting to %.2f",
+                        delta_t,
+                        m_ekf_params.expected_imu_dt);
+      delta_t = m_ekf_params.expected_imu_dt;
+    }
     m_es_ekf.prediction(m_imu_sensor.get_acc(),
                         m_ekf_params.model.Q_f,
                         m_imu_sensor.get_angular_vel(),
                         m_ekf_params.model.Q_w,
-                        m_imu_sensor.getDeltaT());
+                        delta_t);
     prediction = true;
   }
 
@@ -150,8 +158,9 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     sensor_ptr->publishDrift();
     m_sensor_tf.publishSensorOrigin(
       *sensor_ptr,
-      m_es_ekf.getOrientation(),  /* Estimated orientation */
-      m_sensor_vector.at(m_ekf_params.initial_sensor_id)->getRawOrientation()); /* Main sensor orientation */
+      m_es_ekf.getOrientation(), /* Estimated orientation */
+      m_sensor_vector.at(m_ekf_params.initial_sensor_id)
+        ->getRawOrientation()); /* Main sensor orientation */
   }
 
   if (!measurement && !prediction) {

@@ -97,6 +97,7 @@ struct EsEkfParams
   bool                      estimate_gravity;
   Matrix3d                  acc_bias_variance;
   Matrix3d                  gyro_bias_variance;
+  double                    expected_imu_dt;
 
   EsEkfParams()
   {
