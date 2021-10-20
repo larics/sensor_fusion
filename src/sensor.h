@@ -63,6 +63,7 @@ private:
     m_sensor_params.translation.x() = x;
     m_sensor_params.translation.y() = y;
     m_sensor_params.translation.z() = z;
+    m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
   }
 
 public:
