@@ -63,7 +63,7 @@ private:
     m_sensor_params.translation.x() = x;
     m_sensor_params.translation.y() = y;
     m_sensor_params.translation.z() = z;
-    m_rotated_translation  = m_sensor_params.rotation_mat * m_sensor_params.translation;
+    m_rotated_translation = m_sensor_params.rotation_mat * m_sensor_params.translation;
   }
 
 public:
@@ -343,6 +343,7 @@ public:
     return checks;
   }
 
+
   Vector3d getDriftedPose() const
   {
     return m_est_quaternion_drift.inverse()
@@ -352,6 +353,7 @@ public:
   {
     return m_est_quaternion_drift.inverse() * m_sensor_transformed_q;
   }
+  bool               isResponsive() const { return m_sensor_responsive; }
   const std::string& getName() const { return m_sensor_name; }
   const Vector3d&    getPose() const { return m_sensor_transformed_position; }
   const Quaterniond& getOrientation() const { return m_sensor_transformed_q; }

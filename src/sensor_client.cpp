@@ -100,7 +100,12 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
     int sensor_state = 0;
 
     // There are no new measurements
-    if (!sensor_ptr->newMeasurement()) { continue; }
+    if (!sensor_ptr->newMeasurement()) {
+
+      // If there are no new sensor measurements
+      if (!sensor_ptr->isResponsive()) { sensor_ptr->publishState(0); }
+      continue;
+    }
 
     // Get All the measurements
     const auto& sensor_transformed_position = sensor_ptr->getPose();
