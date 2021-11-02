@@ -199,7 +199,7 @@
                   "type": "repr"
                 },
                 "topics": {
-                  "repr": "['/PLACEHOLDER_NS/es_ekf/odom/pose/pose/position/x', '/PLACEHOLDER_NS/pozyx_transformed_pose/pose/position/x', '/PLACEHOLDER_NS/camera_transformed_pose/pose/position/x', '/PLACEHOLDER_NS/carto_transformed_pose/pose/position/x']",
+                  "repr": "['/PLACEHOLDER_NS/es_ekf/odom/pose/pose/position/x', '/PLACEHOLDER_NS/gps_transformed_pose/pose/position/x', '/PLACEHOLDER_NS/pozyx_transformed_pose/pose/position/x', '/PLACEHOLDER_NS/camera_transformed_pose/pose/position/x', '/PLACEHOLDER_NS/carto_transformed_pose/pose/position/x']",
                   "type": "repr"
                 },
                 "x_limits": {
@@ -246,7 +246,7 @@
                   "type": "repr"
                 },
                 "topics": {
-                  "repr": "['/PLACEHOLDER_NS/es_ekf/odom/pose/pose/position/y', '/PLACEHOLDER_NS/camera_transformed_pose/pose/position/y', '/PLACEHOLDER_NS/pozyx_transformed_pose/pose/position/y', '/PLACEHOLDER_NS/carto_transformed_pose/pose/position/y']",
+                  "repr": "['/PLACEHOLDER_NS/es_ekf/odom/pose/pose/position/y', '/PLACEHOLDER_NS/gps_transformed_pose/pose/position/y', '/PLACEHOLDER_NS/camera_transformed_pose/pose/position/y', '/PLACEHOLDER_NS/pozyx_transformed_pose/pose/position/y', '/PLACEHOLDER_NS/carto_transformed_pose/pose/position/y']",
                   "type": "repr"
                 },
                 "x_limits": {
@@ -293,7 +293,7 @@
                   "type": "repr"
                 },
                 "topics": {
-                  "repr": "['/PLACEHOLDER_NS/camera_state/data', '/PLACEHOLDER_NS/pozyx_state/data', '/PLACEHOLDER_NS/carto_state/data']",
+                  "repr": "['/PLACEHOLDER_NS/camera_state/data', '/PLACEHOLDER_NS/pozyx_state/data', '/PLACEHOLDER_NS/carto_state/data', '/PLACEHOLDER_NS/gps_state/data']",
                   "type": "repr"
                 },
                 "x_limits": {
@@ -340,7 +340,7 @@
                   "type": "repr"
                 },
                 "topics": {
-                  "repr": "['/PLACEHOLDER_NS/es_ekf/odom/pose/pose/position/z', '/PLACEHOLDER_NS/pozyx_transformed_pose/pose/position/z', '/PLACEHOLDER_NS/camera_transformed_pose/pose/position/z', '/PLACEHOLDER_NS/carto_transformed_pose/pose/position/z']",
+                  "repr": "['/PLACEHOLDER_NS/es_ekf/odom/pose/pose/position/z',  '/PLACEHOLDER_NS/gps_transformed_pose/pose/position/z', '/PLACEHOLDER_NS/pozyx_transformed_pose/pose/position/z', '/PLACEHOLDER_NS/camera_transformed_pose/pose/position/z', '/PLACEHOLDER_NS/carto_transformed_pose/pose/position/z']",
                   "type": "repr"
                 },
                 "x_limits": {

@@ -346,8 +346,7 @@ public:
 
   Vector3d getDriftedPose() const
   {
-    return m_est_quaternion_drift.inverse()
-           * (m_sensor_transformed_position - m_est_position_drift.translation());
+    return m_est_quaternion_drift.inverse() * (m_sensor_transformed_position);
   }
   Quaterniond getDriftedRotation() const
   {

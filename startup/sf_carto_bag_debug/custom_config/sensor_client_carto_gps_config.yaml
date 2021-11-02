@@ -1,0 +1,60 @@
+estimation_frequency: 100
+expected_imu_dt: 0.02
+
+Q_acc_x: 0.0001
+Q_acc_y: 0.0001
+Q_acc_z: 0.0001
+Q_angular_x: 0.00001
+Q_angular_y: 0.00001
+Q_angular_z: 0.00001
+
+pose_p_cov: 0.01
+vel_p_cov: 0.001
+angle_p_cov: 0.01
+
+p_drift_p_cov: 0.0001
+q_drift_p_cov: 0.0001
+
+estimate_acc_bias: true
+acc_bias_var: [ 0.001,0.001,0.001]
+acc_bias_p_cov: 0.001
+
+estimate_gyro_bias: true
+gyro_bias_var: [ 0.001,0.001,0.001]
+gyro_bias_p_cov: 0.001
+
+estimate_gravity: true
+g: [0,0,-10.34]
+g_p_cov: 0.1
+
+#position sensor params
+Sensor_prefix: [gps, carto]
+initial_sensor: gps
+
+#gps
+gps_R_pose: [0.3, 0.3, 1]
+gps_R_angle: [0.01, 0.01, 0.01]
+gps_is_orientation_sensor: true
+gps_estimate_drift: true
+gps_is_velocity_sensor: false
+gps_topic: mavros/global_position/local
+gps_msg_type: 0
+gps_rotation: [1.0, 0.0, 0.0, 0.0, 1.0, 0, 0, 0.0, 1.0]
+gps_translation: [-4.048,3.654,0.176]
+gps_origin_at_first_measurement: true
+gps_position_outlier_lim: [1, 1, 2]
+gps_orientation_outlier_lim: [0, 0, 0]
+
+#carto
+carto_R_pose: [0.1, 0.1, 0.01]
+carto_R_angle: [0.01, 0.01, 0.01]
+carto_is_orientation_sensor: true
+carto_is_velocity_sensor: false
+carto_estimate_drift: true
+carto_topic: uav/cartographer/transform
+carto_msg_type: 1
+carto_rotation: [1.0, 0.0, 0.0, 0.0, 1.0, 0, 0, 0.0, 1.0]
+carto_translation: [-4.048,3.654,0.176]
+carto_origin_at_first_measurement: true
+carto_position_outlier_lim: [1, 1, 2]
+carto_orientation_outlier_lim: [0, 0, 0]

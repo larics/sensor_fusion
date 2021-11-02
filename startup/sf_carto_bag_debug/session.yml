@@ -26,6 +26,7 @@ windows:
           use_fixed_yaw:=$USE_FIXED_YAW
           fixed_yaw:=$FIXED_YAW
           starter_transform:=$TRANSFORM_TOPIC
+          starter_odom:=$STARTER_ODOM_TOPIC
           configuration_directory:=$CONFIGURATION_DIRECTORY
           configuration_basename:=$CONFIGURATION_BASENAME
           imu:=$IMU_TOPIC
@@ -61,10 +62,13 @@ windows:
           rosrun topic_tools transform /$UAV_NAMESPACE/carto_transformed_pose/pose/orientation /$UAV_NAMESPACE/carto_euler 
           geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
         - waitForRos; waitFor /$UAV_NAMESPACE/carto_drift;
-          rosrun topic_tools transform /$UAV_NAMESPACE/carto_drift/pose/orientation /$UAV_NAMESPACE/carto_drift_euler 
+          rosrun topic_tools transform /$UAV_NAMESPACE/carto_drift/pose/pose/orientation /$UAV_NAMESPACE/carto_drift_euler 
           geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
         - waitForRos; waitFor /$UAV_NAMESPACE/camera_drift;
-          rosrun topic_tools transform /$UAV_NAMESPACE/camera_drift/pose/orientation /$UAV_NAMESPACE/camera_drift_euler 
+          rosrun topic_tools transform /$UAV_NAMESPACE/camera_drift/pose/pose/orientation /$UAV_NAMESPACE/camera_drift_euler 
+          geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
+        - waitForRos; waitFor /$UAV_NAMESPACE/gps_drift;
+          rosrun topic_tools transform /$UAV_NAMESPACE/gps_drift/pose/pose/orientation /$UAV_NAMESPACE/gps_drift_euler 
           geometry_msgs/Vector3 'tf.transformations.euler_from_quaternion([m.x, m.y, m.z, m.w])' --import tf
   - plot:
       layout: tiled
@@ -73,12 +77,16 @@ windows:
           sed "s/PLACEHOLDER_NS/$UAV_NAMESPACE/g" custom_config/sf_debug.perspective > custom_config/.sf_debug.perspective;
           rqt --perspective-file custom_config/.sf_debug.perspective
         - history -s "rosbag record 
-          /danieli2/es_ekf/odom 
-          /danieli2/carto_transformed_pose
-          /danieli2/carto_state
-          /danieli2/pozyx_transformed_pose
-          /danieli2/pozyx_state
-          /danieli2/camera_transformed_pose
-          /danilei2/camera_state
-          /base_link/vrpn_client/estimated_odometry
-          -o $HOME/Bags/danieli1_compassless/clanak/pprocessed_measurements"
+          /red/es_ekf/odom 
+          /red/carto_transformed_pose
+          /red/carto_state
+          /red/carto_drift_euler
+          /red/carto_euler
+          /red/gps_transformed_pose
+          /red/gps_state
+          /red/gps_drift_euler
+          /red/gps_euler
+          /red/mavros/imu/data
+          /red/mavros/global_position/local
+          /red/uav/cartographer/transform
+          -o $HOME/Bags/danieli1_compassless/clanak/carto_gps_fusion"
