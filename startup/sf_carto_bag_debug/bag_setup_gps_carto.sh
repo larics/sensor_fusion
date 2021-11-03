@@ -3,7 +3,7 @@
 export UAV_NAMESPACE=red
 export TF_PREFIX=red
 export CARTO_NAMESPACE=red
-export BAG_NAME=/usr/local/games/encore_dataset_2021-07-12-11-57_22_no_camera.bag
+export BAG_NAME=/usr/local/games/encore_building_2021-09-22-17-34-32.bag
 export CONFIGURATION_BASENAME=velodyne_local.lua
 export CONFIGURATION_DIRECTORY=$(pwd)/custom_config
 export CARTO_URDF=custom_config/vlp16-no-ns-imu.urdf.xacro
