@@ -2,6 +2,7 @@
 #define SENSOR_FUSION_SENSOR_H
 
 #include <Eigen/Geometry>
+#include <cmath>
 
 #include "nav_msgs/Odometry.h"
 #include "ros/forwards.h"
@@ -168,6 +169,15 @@ public:
 
   void callbackPoseStamped(const geometry_msgs::PoseStamped& msg)
   {
+    if (!std::isfinite(msg.pose.position.x) || !std::isfinite(msg.pose.position.y)
+        || !std::isfinite(msg.pose.position.z) || !std::isfinite(msg.pose.orientation.x)
+        || !std::isfinite(msg.pose.orientation.y)
+        || !std::isfinite(msg.pose.orientation.z)
+        || !std::isfinite(msg.pose.orientation.w)) {
+      ROS_FATAL("[Sensor] %c returned invalid measurement.", m_sensor_name.c_str());
+      return;
+    }
+
     // ROS_INFO("camera_posix_callback");
     if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
       m_first_measurement = true;
@@ -191,6 +201,17 @@ public:
 
   void callbackTransformStamped(const geometry_msgs::TransformStamped& msg)
   {
+    if (!std::isfinite(msg.transform.translation.x)
+        || !std::isfinite(msg.transform.translation.y)
+        || !std::isfinite(msg.transform.translation.z)
+        || !std::isfinite(msg.transform.rotation.x)
+        || !std::isfinite(msg.transform.rotation.y)
+        || !std::isfinite(msg.transform.rotation.z)
+        || !std::isfinite(msg.transform.rotation.w)) {
+      ROS_FATAL("[Sensor] %c returned invalid measurement.", m_sensor_name.c_str());
+      return;
+    }
+
     // ROS_INFO("camera_posix_callback");
     if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
       m_first_measurement = true;
@@ -215,6 +236,17 @@ public:
 
   void callbackOdometry(const nav_msgs::OdometryPtr& msg)
   {
+    if (!std::isfinite(msg->pose.pose.position.x)
+        || !std::isfinite(msg->pose.pose.position.y)
+        || !std::isfinite(msg->pose.pose.position.z)
+        || !std::isfinite(msg->pose.pose.orientation.x)
+        || !std::isfinite(msg->pose.pose.orientation.y)
+        || !std::isfinite(msg->pose.pose.orientation.z)
+        || !std::isfinite(msg->pose.pose.orientation.w)) {
+      ROS_FATAL("[Sensor] %c returned invalid measurement.", m_sensor_name.c_str());
+      return;
+    }
+
     if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
       m_first_measurement = true;
       initialize_sensor_origin(
@@ -342,7 +374,6 @@ public:
 
     return checks;
   }
-
 
   Vector3d getDriftedPose() const
   {
