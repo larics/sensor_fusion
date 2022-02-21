@@ -174,7 +174,7 @@ public:
         || !std::isfinite(msg.pose.orientation.y)
         || !std::isfinite(msg.pose.orientation.z)
         || !std::isfinite(msg.pose.orientation.w)) {
-      ROS_FATAL("[Sensor] %c returned invalid measurement.", m_sensor_name.c_str());
+      ROS_FATAL("[Sensor] %s returned invalid measurement.", m_sensor_name.c_str());
       return;
     }
 
@@ -208,7 +208,7 @@ public:
         || !std::isfinite(msg.transform.rotation.y)
         || !std::isfinite(msg.transform.rotation.z)
         || !std::isfinite(msg.transform.rotation.w)) {
-      ROS_FATAL("[Sensor] %c returned invalid measurement.", m_sensor_name.c_str());
+      ROS_FATAL("[Sensor] %s returned invalid measurement.", m_sensor_name.c_str());
       return;
     }
 
@@ -243,7 +243,7 @@ public:
         || !std::isfinite(msg->pose.pose.orientation.y)
         || !std::isfinite(msg->pose.pose.orientation.z)
         || !std::isfinite(msg->pose.pose.orientation.w)) {
-      ROS_FATAL("[Sensor] %c returned invalid measurement.", m_sensor_name.c_str());
+      ROS_FATAL("[Sensor] %s returned invalid measurement.", m_sensor_name.c_str());
       return;
     }
 
