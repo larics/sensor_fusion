@@ -15,15 +15,15 @@ angle_p_cov: 0.01
 p_drift_p_cov: 0.0001
 q_drift_p_cov: 0.0001
 
-estimate_acc_bias: 1
+estimate_acc_bias: true
 acc_bias_var: [ 0.001,0.001,0.001]
 acc_bias_p_cov: 0.001
 
-estimate_gyro_bias: 1
+estimate_gyro_bias: true
 gyro_bias_var: [ 0.001,0.001,0.001]
 gyro_bias_p_cov: 0.001
 
-estimate_gravity: 1
+estimate_gravity: true
 g: [0,0,-10.34]
 g_p_cov: 0.1
 
@@ -33,26 +33,26 @@ initial_sensor: pozyx
 
 #pozyx
 pozyx_R_pose: [1, 1, 3]
-pozyx_is_orientation_sensor: 0
-pozyx_estimate_drift: 0
-pozyx_is_velocity_sensor: 0
+pozyx_is_orientation_sensor: false
+pozyx_estimate_drift: false
+pozyx_is_velocity_sensor: false
 pozyx_topic: /pozyx/measured
 pozyx_msg_type: 1
 pozyx_rotation: [0.0, 1.0, 0.0,1.0, 0.0, 0,0, 0.0, 1.0]
 pozyx_translation: [-5.071980,-3.987154,-0.2]
-pozyx_origin_at_first_measurement: 1
+pozyx_origin_at_first_measurement: true
 pozyx_position_outlier_lim: [1, 1, 5]
 
 #camera
-camera_is_orientation_sensor: 1
-camera_is_velocity_sensor: 0
-camera_estimate_drift: 1
+camera_is_orientation_sensor: true
+camera_is_velocity_sensor: false
+camera_estimate_drift: true
 camera_topic: /camera/odom/sample
 camera_msg_type: 0
 camera_R_pose: [0.05, 0.05, 0.01]
-camera_R_angle: [0.01, 0.01, 0.01, 0.01]
+camera_R_angle: [0.01, 0.01, 0.01]
 camera_rotation: [1,0,0,0,1,0,0,0,1]
 camera_translation: [0,0,0]
-camera_origin_at_first_measurement: 0
+camera_origin_at_first_measurement: false
 camera_position_outlier_lim: [0.5, 0.5, 0.5]
 camera_orientation_outlier_lim: [0, 0, 0]
