@@ -44,7 +44,7 @@ struct SensorCovariance
   SensorCovariance()
   {
     R_pose        = Matrix3d::Zero();
-    R_orientation = MatrixXd::Zero(4, 4);
+    R_orientation = Matrix3d::Zero();
   }
 };
 struct SensorParams
