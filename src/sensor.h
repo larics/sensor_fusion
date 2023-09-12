@@ -411,12 +411,15 @@ public:
   {
     return m_est_quaternion_drift.inverse() * m_sensor_transformed_q;
   }
+  bool newMeasurement() const
+  {
+    return m_fresh_position_measurement || m_fresh_orientation_measurement;
+  }
   bool               isResponsive() const { return m_sensor_responsive; }
   const std::string& getName() const { return m_sensor_name; }
   const Vector3d&    getPose() const { return m_sensor_transformed_position; }
   const Quaterniond& getOrientation() const { return m_sensor_transformed_q; }
   void               setR(Matrix3d R) { m_sensor_params.cov.R_pose = std::move(R); }
-  bool               newMeasurement() const { return m_fresh_position_measurement; }
   bool isPositionSensor() const { return m_sensor_params.is_position_sensor; }
   bool isOrientationSensor() const { return m_sensor_params.is_orientation_sensor; }
   bool isVelocitySensor() const { return false; }
