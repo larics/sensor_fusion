@@ -135,12 +135,6 @@ EsEkfParams get_rosparam(ros::NodeHandle& private_nh)
     sensor_params.id = id;
     getParamOrThrow(private_nh, id + "_topic", sensor_params.topic);
 
-    {
-      auto R_pose = getParamOrThrow<std::vector<double>>(private_nh, id + "_R_pose");
-      MY_ASSERT(R_pose.size() == 3);
-      sensor_params.cov.R_pose.diagonal() = Vector3d(R_pose.data());
-    }
-
     // Check if it's a position sensor
     bool is_position_sensor = true;
     bool is_position_sensor_defined =
@@ -148,6 +142,12 @@ EsEkfParams get_rosparam(ros::NodeHandle& private_nh)
     if (is_position_sensor_defined) {
       // If information about position sensor is defined then save it
       sensor_params.is_position_sensor = is_position_sensor;
+    }
+
+    if (sensor_params.is_position_sensor) {
+      auto R_pose = getParamOrThrow<std::vector<double>>(private_nh, id + "_R_pose");
+      MY_ASSERT(R_pose.size() == 3);
+      sensor_params.cov.R_pose.diagonal() = Vector3d(R_pose.data());
     }
 
     // Check if it's an orientation sensor
