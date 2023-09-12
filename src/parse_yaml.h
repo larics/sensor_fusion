@@ -190,7 +190,7 @@ EsEkfParams get_rosparam(ros::NodeHandle& private_nh)
     getParamOrThrow(private_nh, id + "_msg_type", sensor_params.msg_type);
 
     // Get outliers limits
-    {
+    if (sensor_params.is_position_sensor) {
       auto position_outlier_lim =
         getParamOrThrow<std::vector<double>>(private_nh, id + "_position_outlier_lim");
       MY_ASSERT(position_outlier_lim.size() == 3);
