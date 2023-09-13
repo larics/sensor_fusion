@@ -42,6 +42,29 @@ void getParamOrThrow(ros::NodeHandle&   t_nh,
 }
 
 /**
+ * @brief Attempt to get a value from the ROS parameter server or throws a runtime_error.
+ *
+ * @tparam T Value Typename
+ * @param t_nh A ROS node handle
+ * @param t_paramName ROS Parameter name.
+ * @param t_paramContainer Variable where the parameter value will be saved.
+ *
+ * @return true if got param, false otherwise
+ */
+template<class T>
+bool getParamDontThrow(ros::NodeHandle&   t_nh,
+                       const std::string& t_paramName,
+                       T&                 t_paramContainer)
+{
+  bool gotParam = t_nh.getParam(t_paramName, t_paramContainer);
+  ROS_INFO_STREAM("Got param [" << t_paramName << "] = " << t_paramContainer);
+  if (!gotParam) {
+    ROS_FATAL_STREAM("Unable to get param: [" << t_paramName << "]. Not Throwing...");
+  }
+  return gotParam;
+}
+
+/**
  * @brief Attemps to return a value from the ROS parameter server or throws a
  * runtime_error.
  *
@@ -112,7 +135,16 @@ EsEkfParams get_rosparam(ros::NodeHandle& private_nh)
     sensor_params.id = id;
     getParamOrThrow(private_nh, id + "_topic", sensor_params.topic);
 
-    {
+    // Check if it's a position sensor
+    bool is_position_sensor = true;
+    bool is_position_sensor_defined =
+      getParamDontThrow(private_nh, id + "_is_position_sensor", is_position_sensor);
+    if (is_position_sensor_defined) {
+      // If information about position sensor is defined then save it
+      sensor_params.is_position_sensor = is_position_sensor;
+    }
+
+    if (sensor_params.is_position_sensor) {
       auto R_pose = getParamOrThrow<std::vector<double>>(private_nh, id + "_R_pose");
       MY_ASSERT(R_pose.size() == 3);
       sensor_params.cov.R_pose.diagonal() = Vector3d(R_pose.data());
@@ -158,7 +190,7 @@ EsEkfParams get_rosparam(ros::NodeHandle& private_nh)
     getParamOrThrow(private_nh, id + "_msg_type", sensor_params.msg_type);
 
     // Get outliers limits
-    {
+    if (sensor_params.is_position_sensor) {
       auto position_outlier_lim =
         getParamOrThrow<std::vector<double>>(private_nh, id + "_position_outlier_lim");
       MY_ASSERT(position_outlier_lim.size() == 3);

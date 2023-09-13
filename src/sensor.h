@@ -10,6 +10,7 @@
 #include "ros/timer.h"
 #include "structures.h"
 #include "geometry_msgs/TransformStamped.h"
+#include <sensor_msgs/Imu.h>
 #include "std_msgs/Int32.h"
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -81,7 +82,16 @@ public:
     } else if (m_sensor_params.msg_type == SensorMsgType::POSE_STAMPED) {
       m_sensor_sub = m_node_handle.subscribe(
         m_sensor_params.topic, 1, &Sensor::callbackPoseStamped, this);
+    } else if (m_sensor_params.msg_type == SensorMsgType::IMU) {
+      m_sensor_sub =
+        m_node_handle.subscribe(m_sensor_params.topic, 1, &Sensor::callbackImu, this);
+    } else {
+      ROS_FATAL("[Sensor] Unknown sensor type [%d] for topic [%s]",
+                m_sensor_params.msg_type,
+                m_sensor_params.topic.c_str());
+      throw std::runtime_error("Unknown sensor type.");
     }
+
     m_sensor_state_pub =
       m_node_handle.advertise<std_msgs::Int32>(m_sensor_params.id + "_state", 1);
     m_transformed_pub = m_node_handle.advertise<geometry_msgs::PoseStamped>(
@@ -165,6 +175,24 @@ public:
     drift_pose.pose.covariance[27]     = m_rotation_drift_cov(1, 1);
     drift_pose.pose.covariance[35]     = m_rotation_drift_cov(2, 2);
     m_sensor_drift_pub.publish(drift_pose);
+  }
+
+  void callbackImu(const sensor_msgs::Imu& msg)
+  {
+    if (!std::isfinite(msg.orientation.x) || !std::isfinite(msg.orientation.y)
+        || !std::isfinite(msg.orientation.z) || !std::isfinite(msg.orientation.w)) {
+      ROS_FATAL("[Sensor] %s returned invalid measurement.", m_sensor_name.c_str());
+      return;
+    }
+
+    m_fresh_position_measurement    = false;
+    m_fresh_orientation_measurement = true;
+    m_sensor_q.w()                  = msg.orientation.w;
+    m_sensor_q.x()                  = msg.orientation.x;
+    m_sensor_q.y()                  = msg.orientation.y;
+    m_sensor_q.z()                  = msg.orientation.z;
+
+    m_last_message_time = ros::Time::now().toSec();
   }
 
   void callbackPoseStamped(const geometry_msgs::PoseStamped& msg)
@@ -383,12 +411,16 @@ public:
   {
     return m_est_quaternion_drift.inverse() * m_sensor_transformed_q;
   }
+  bool newMeasurement() const
+  {
+    return m_fresh_position_measurement || m_fresh_orientation_measurement;
+  }
   bool               isResponsive() const { return m_sensor_responsive; }
   const std::string& getName() const { return m_sensor_name; }
   const Vector3d&    getPose() const { return m_sensor_transformed_position; }
   const Quaterniond& getOrientation() const { return m_sensor_transformed_q; }
   void               setR(Matrix3d R) { m_sensor_params.cov.R_pose = std::move(R); }
-  bool               newMeasurement() const { return m_fresh_position_measurement; }
+  bool isPositionSensor() const { return m_sensor_params.is_position_sensor; }
   bool isOrientationSensor() const { return m_sensor_params.is_orientation_sensor; }
   bool isVelocitySensor() const { return false; }
   bool estimateDrift() const { return m_sensor_params.estimate_drift; }

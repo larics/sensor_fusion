@@ -28,7 +28,7 @@ struct ModelCovariance
   }
 };
 
-enum SensorMsgType { ODOMETRY = 0, TRANSFORM_STAMPED = 1, POSE_STAMPED = 2 };
+enum SensorMsgType { ODOMETRY = 0, TRANSFORM_STAMPED = 1, POSE_STAMPED = 2, IMU = 3 };
 enum SensorState {
   ORIENTATION_UPDATE           = 2,
   ORIENTATION_AND_DRIFT_UPDATE = 4,
@@ -49,8 +49,10 @@ struct SensorCovariance
 };
 struct SensorParams
 {
-  std::string          topic;
-  std::string          id;
+  std::string topic;
+  std::string id;
+  // Assume all sensors are position sensors unless specified otherwise
+  bool                 is_position_sensor = true;
   bool                 is_orientation_sensor;
   bool                 is_velocity_sensor;
   bool                 estimate_drift;

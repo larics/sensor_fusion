@@ -49,6 +49,7 @@ int main(int argc, char** argv)
   for (const auto& sensor : params.sensors) {
     std::cout << "\n\nTopic: " << sensor.topic << "\n"
               << "Msg Type: " << sensor.msg_type << '\n'
+              << "Position: " << sensor.is_position_sensor << "\n"
               << "Orientation: " << sensor.is_orientation_sensor << "\n"
               << "Drift: " << sensor.estimate_drift << "\n"
               << "R: \n"
