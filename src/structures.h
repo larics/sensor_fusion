@@ -28,7 +28,14 @@ struct ModelCovariance
   }
 };
 
-enum SensorMsgType { ODOMETRY = 0, TRANSFORM_STAMPED = 1, POSE_STAMPED = 2, IMU = 3 };
+enum SensorMsgType {
+  ODOMETRY                  = 0,
+  TRANSFORM_STAMPED         = 1,
+  POSE_STAMPED              = 2,
+  IMU                       = 3,
+  POSE_W_COVARIANCE_STAMPED = 4
+};
+
 enum SensorState {
   ORIENTATION_UPDATE           = 2,
   ORIENTATION_AND_DRIFT_UPDATE = 4,

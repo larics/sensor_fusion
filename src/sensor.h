@@ -85,6 +85,9 @@ public:
     } else if (m_sensor_params.msg_type == SensorMsgType::IMU) {
       m_sensor_sub =
         m_node_handle.subscribe(m_sensor_params.topic, 1, &Sensor::callbackImu, this);
+    } else if (m_sensor_params.msg_type == SensorMsgType::POSE_W_COVARIANCE_STAMPED) {
+      m_sensor_sub = m_node_handle.subscribe(
+        m_sensor_params.topic, 1, &Sensor::callbackPoseWithCovarianceStapmed, this);
     } else {
       ROS_FATAL("[Sensor] Unknown sensor type [%d] for topic [%s]",
                 m_sensor_params.msg_type,
@@ -223,6 +226,34 @@ public:
     m_sensor_q.x()                  = msg.pose.orientation.x;
     m_sensor_q.y()                  = msg.pose.orientation.y;
     m_sensor_q.z()                  = msg.pose.orientation.z;
+
+    m_last_message_time = ros::Time::now().toSec();
+  }
+
+  void callbackPoseWithCovarianceStapmed(
+    const geometry_msgs::PoseWithCovarianceStamped& msg)
+  {
+    if (!std::isfinite(msg.pose.pose.position.x)
+        || !std::isfinite(msg.pose.pose.position.y)
+        || !std::isfinite(msg.pose.pose.position.z)
+        || !std::isfinite(msg.pose.pose.orientation.x)
+        || !std::isfinite(msg.pose.pose.orientation.y)
+        || !std::isfinite(msg.pose.pose.orientation.z)
+        || !std::isfinite(msg.pose.pose.orientation.w)) {
+      ROS_FATAL("[Sensor] %s returned invalid measurement.", m_sensor_name.c_str());
+      return;
+    }
+
+    if (!m_first_measurement && m_sensor_params.origin_at_first_measurement) {
+      m_first_measurement = true;
+      initialize_sensor_origin(
+        msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z);
+    }
+
+    m_fresh_position_measurement = true;
+    m_sensor_position.x()        = msg.pose.pose.position.x;
+    m_sensor_position.y()        = msg.pose.pose.position.y;
+    m_sensor_position.z()        = msg.pose.pose.position.z;
 
     m_last_message_time = ros::Time::now().toSec();
   }
