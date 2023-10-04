@@ -5,6 +5,9 @@
   <arg name="config_yaml"   default="$(find sensor_fusion)/config/sensor_client_config.yaml"/>
   <arg name="es_ekf_topic"  default="es_ekf/odom"/>
   <arg name="uav_name"      default="eagle"/>
+  
+  <arg name="odom_helper_enable"  default="false"/>
+  <arg name="odom_helper_topic"   default="mavros/global_position/local"/>
 
   <!-- Debug arguments -->
   <arg name="debug"           default="false" />
@@ -18,6 +21,9 @@
     <param name="imu_topic"       value="$(arg imu_topic)" />
     <param name="es_ekf_topic"    value="$(arg es_ekf_topic)" />
     <param name="uav_name"        value="$(arg uav_name)" />
+
+    <param name="odom_helper_enable"  value="$(arg odom_helper_enable)" />
+    <param name="odom_helper_topic"   value="$(arg odom_helper_topic)" />
   </node>
 
 </launch>

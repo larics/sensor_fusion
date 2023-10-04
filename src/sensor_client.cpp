@@ -15,7 +15,16 @@ SensorClient::SensorClient(const EsEkfParams& params,
   // TODO makni flag
   std::string es_ekf_topic;
   nh_private.getParam("es_ekf_topic", es_ekf_topic);
-  m_estimate_pub = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
+
+  nh_private.getParam("odom_helper_enable", this->m_odom_helper_enable);
+  nh_private.getParam("odom_helper_topic", this->m_odom_helper_topic);
+  ROS_WARN_COND(this->m_odom_helper_enable,
+                "[SensorClient] Odom helper topic enabled %s",
+                this->m_odom_helper_topic.c_str());
+
+  m_estimate_pub    = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
+  m_helper_odom_sub = m_node_handle.subscribe(
+    "mavros/global_position/local", 1, &SensorClient::helper_odom_cb, this);
 
   for (const auto& sensor_params : m_ekf_params.sensors) {
     m_sensor_vector.emplace(sensor_params.id, std::make_shared<Sensor>(sensor_params));
@@ -204,6 +213,14 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
   ekf_pose_.twist.covariance[0]     = vel_cov(0, 0);
   ekf_pose_.twist.covariance[7]     = vel_cov(1, 1);
   ekf_pose_.twist.covariance[14]    = vel_cov(2, 2);
+
+  if (m_odom_helper_enable) {
+    ekf_pose_.pose.pose.position.z = m_helper_odom.pose.pose.position.z;
+    ekf_pose_.twist.twist.linear.z = -m_helper_odom.twist.twist.linear.z;
+  }
+
   m_estimate_pub.publish(ekf_pose_);
   m_sensor_tf.publishOrigin(ekf_pose_, "ekf");
 }
+
+void SensorClient::helper_odom_cb(const nav_msgs::Odometry& msg) { m_helper_odom = msg; }
