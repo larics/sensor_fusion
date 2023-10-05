@@ -42,7 +42,6 @@ private:
   std::string                      m_uav_name;
   sf::SensorTF                     m_sensor_tf;
 
-  std::string m_odom_helper_topic  = "unused/global_position/local";
   bool        m_odom_helper_enable = false;
 };
 

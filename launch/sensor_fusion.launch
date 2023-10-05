@@ -23,7 +23,7 @@
     <param name="uav_name"        value="$(arg uav_name)" />
 
     <param name="odom_helper_enable"  value="$(arg odom_helper_enable)" />
-    <param name="odom_helper_topic"   value="$(arg odom_helper_topic)" />
+    <remap from="odom_helper_topic"   to="$(arg odom_helper_topic)" />
   </node>
 
 </launch>
