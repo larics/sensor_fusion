@@ -1,0 +1,4 @@
+<launch>
+  <arg name="namespace"     default="$(env UAV_NAMESPACE)"/>
+  <node pkg="sensor_fusion" type="baro_to_alt.py" name="baro_to_alt" output="screen" ns="$(arg namespace)"/>
+</launch>
