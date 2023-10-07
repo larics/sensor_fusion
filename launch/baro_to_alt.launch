@@ -2,6 +2,6 @@
   <arg name="namespace"     default="$(env UAV_NAMESPACE)"/>
   <arg name="dummy_pub_topic"     default="$(env LOCATION_REMAP)"/>
 
-  <remap from="/$(arg namespace)/dummy_altitude" to="/dummy_pub_topic"/>
+  <remap from="/$(arg namespace)/dummy_altitude" to="$(arg dummy_pub_topic)"/>
   <node pkg="sensor_fusion" type="baro_to_alt.py" name="baro_to_alt" output="screen" ns="$(arg namespace)"/>
 </launch>
