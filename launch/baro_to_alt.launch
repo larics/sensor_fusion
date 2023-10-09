@@ -3,7 +3,8 @@
   <arg name="namespace_uav"     default="$(env UAV_NAMESPACE)"/> 
   <arg name="dummy_pub_topic"     default="$(env LOCATION_REMAP)"/>
 
-  <remap from="/$(arg namespace)/dummy_altitude" to="$(arg dummy_pub_topic)"/>
+  <remap from="/$(arg namespace)/dummy_altitude"             to="$(arg dummy_pub_topic)"/>
   <remap from="/$(arg namespace)/mavros/imu/static_pressure" to="/$(arg namespace_uav)/mavros/imu/static_pressure"/>
+  <remap from="/$(arg namespace)/location"                   to="/$(arg namespace_uav)/location"/>
   <node pkg="sensor_fusion" type="baro_to_alt.py" name="baro_to_alt" output="screen" ns="$(arg namespace)"/>
 </launch>
