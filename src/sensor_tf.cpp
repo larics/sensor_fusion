@@ -35,13 +35,11 @@ void sf::SensorTF::publishSensorOrigin(const Sensor&      sensor,
     tf2::Vector3(position.x(), position.y(), position.z()));
   tf_inv = tf_inv.inverse();
 
-  if (!std::isfinite(tf_inv.getRotation().x()) || !std::isfinite(tf_inv.getRotation().x())
-      || !std::isfinite(tf_inv.getRotation().x())
-      || !std::isfinite(tf_inv.getRotation().x())) {
-    orientation.x() = 0;
-    orientation.y() = 0;
-    orientation.z() = 0;
-    orientation.w() = 1;
+  if (!std::isfinite(tf_inv.getRotation().x()) || !std::isfinite(tf_inv.getRotation().y())
+      || !std::isfinite(tf_inv.getRotation().z())
+      || !std::isfinite(tf_inv.getRotation().w())) {
+    tf2::Quaternion q(0, 0, 0, 1);
+    tf_inv.setRotation(q);
     ROS_ERROR_THROTTLE(
       5.0, "[SensorTF::publishSensorOrigin] - tf_inv is infinite, publishing [0,0,0,1]");
   }
@@ -73,6 +71,17 @@ void sf::SensorTF::publishSensorOrigin(const Sensor&      sensor,
       raw_orientation.x(), raw_orientation.y(), raw_orientation.z(), raw_orientation.w()),
     tf2::Vector3(raw_position.x(), raw_position.y(), raw_position.z()));
   tf_raw_inv = tf_raw_inv.inverse();
+
+  if (!std::isfinite(tf_raw_inv.getRotation().x())
+      || !std::isfinite(tf_raw_inv.getRotation().y())
+      || !std::isfinite(tf_raw_inv.getRotation().z())
+      || !std::isfinite(tf_raw_inv.getRotation().w())) {
+    tf2::Quaternion q(0, 0, 0, 1);
+    tf_raw_inv.setRotation(q);
+    ROS_ERROR_THROTTLE(
+      5.0,
+      "[SensorTF::publishSensorOrigin] - tf_raw_inv is infinite, publishing [0,0,0,1]");
+  }
 
   geometry_msgs::TransformStamped tf_raw;
   tf_raw.header.stamp    = ros::Time::now();
