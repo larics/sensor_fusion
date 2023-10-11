@@ -17,13 +17,11 @@ SensorClient::SensorClient(const EsEkfParams& params,
   nh_private.getParam("es_ekf_topic", es_ekf_topic);
 
   nh_private.getParam("odom_helper_enable", this->m_odom_helper_enable);
-  ROS_WARN_COND(this->m_odom_helper_enable,
-                "[SensorClient] Odom helper topic enabled %s",
-                this->m_odom_helper_topic.c_str());
+  ROS_WARN_COND(this->m_odom_helper_enable, "[SensorClient] Odom helper topic enabled");
 
-  m_estimate_pub    = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
-  m_helper_odom_sub = m_node_handle.subscribe(
-    "odom_helper_topic", 1, &SensorClient::helper_odom_cb, this);
+  m_estimate_pub = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
+  m_helper_odom_sub =
+    m_node_handle.subscribe("odom_helper_topic", 1, &SensorClient::helper_odom_cb, this);
 
   for (const auto& sensor_params : m_ekf_params.sensors) {
     m_sensor_vector.emplace(sensor_params.id, std::make_shared<Sensor>(sensor_params));
@@ -214,6 +212,7 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
   ekf_pose_.twist.covariance[14]    = vel_cov(2, 2);
 
   if (m_odom_helper_enable) {
+    ROS_INFO_THROTTLE(2.0, "[SensorClient] - Helper enabled");
     ekf_pose_.pose.pose.position.z = m_helper_odom.pose.pose.position.z;
     ekf_pose_.twist.twist.linear.z = -m_helper_odom.twist.twist.linear.z;
     ekf_pose_.twist.twist.linear.y = 0;
