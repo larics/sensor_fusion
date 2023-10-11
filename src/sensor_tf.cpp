@@ -28,11 +28,23 @@ void sf::SensorTF::publishSensorOrigin(const Sensor&      sensor,
 
   if (!sensor.isOrientationSensor()) { orientation = ekf_orientation; }
 
+
   // Get the inverse transformation
   tf2::Transform tf_inv(
     tf2::Quaternion(orientation.x(), orientation.y(), orientation.z(), orientation.w()),
     tf2::Vector3(position.x(), position.y(), position.z()));
   tf_inv = tf_inv.inverse();
+
+  if (!std::isfinite(tf_inv.getRotation().x()) || !std::isfinite(tf_inv.getRotation().x())
+      || !std::isfinite(tf_inv.getRotation().x())
+      || !std::isfinite(tf_inv.getRotation().x())) {
+    orientation.x() = 0;
+    orientation.y() = 0;
+    orientation.z() = 0;
+    orientation.w() = 1;
+    ROS_ERROR_THROTTLE(
+      5.0, "[SensorTF::publishSensorOrigin] - tf_inv is infinite, publishing [0,0,0,1]");
+  }
 
   // Publish inverted sensor sensor origin
   geometry_msgs::TransformStamped tf;
