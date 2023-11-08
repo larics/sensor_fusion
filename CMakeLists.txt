@@ -39,3 +39,16 @@ endif()
 # Specify libraries to link a library or executable target against
 target_link_libraries(sf_lib ${catkin_LIBRARIES} ${YAMLCPP_LIBRARY})
 target_link_libraries(sensor_fusion sf_lib)
+
+# Mark executables and/or libraries for installation
+install(
+  TARGETS sensor_fusion sf_lib
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+# Mark launch folder for installation
+install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+# Mark config folder for installation
+install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
