@@ -9,6 +9,8 @@
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Bool.h"
 
+#include <tf2_ros/transform_listener.h>
+
 #include "structures.h"
 #include "imu.h"
 #include "filter.cpp"
@@ -42,7 +44,15 @@ private:
   std::string                      m_uav_name;
   sf::SensorTF                     m_sensor_tf;
 
+  tf2_ros::Buffer                  m_tf_buffer;
+  tf2_ros::TransformListener       m_tf_listener;
+  std::vector<ros::Publisher>      m_estimate_pubs;
+  std::vector<std::string>         m_odom_topics;
+  std::vector<std::string>         m_frame_ids;
+
   bool        m_odom_helper_enable = false;
+
+  inline void transformAndPublishInFrames(const nav_msgs::Odometry& ekf_pose_);
 };
 
 #endif// SENSOR_FUSION_SENSOR_CLIENT_H

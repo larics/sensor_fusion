@@ -10,7 +10,7 @@ SensorClient::SensorClient(const EsEkfParams& params,
                            std::string        uav_name)
   : m_ekf_params(params), m_es_ekf(params), m_start_flag(true),
     m_imu_sensor(params.model, nh_private), m_uav_name(std::move(uav_name)),
-    m_sensor_tf(m_uav_name)
+    m_sensor_tf(m_uav_name), m_tf_listener(m_tf_buffer)
 {
   // TODO makni flag
   std::string es_ekf_topic;
@@ -18,6 +18,21 @@ SensorClient::SensorClient(const EsEkfParams& params,
 
   nh_private.getParam("odom_helper_enable", this->m_odom_helper_enable);
   ROS_WARN_COND(this->m_odom_helper_enable, "[SensorClient] Odom helper topic enabled");
+
+  //std::vector<double> my_double_list;
+  nh_private.getParam("odom_topics", m_odom_topics);
+  nh_private.getParam("frame_ids", m_frame_ids);
+  if (m_odom_topics.size() != m_frame_ids.size()) {
+    ROS_FATAL("SensorClient::SensorClient() odom_topics is not the same as frame_ids. Throwing.");
+    throw;
+  }
+  for (auto topic : m_odom_topics) {
+    ROS_INFO_STREAM("Adding topic " << topic << " to list of publishers.");
+    ros::Publisher topic_pub;
+    topic_pub = m_node_handle.advertise<nav_msgs::Odometry>(topic, 1);
+    m_estimate_pubs.push_back(topic_pub);
+  }
+  ROS_INFO_STREAM("Finished adding additional frames to the list of publishers.\n");
 
   m_estimate_pub = m_node_handle.advertise<nav_msgs::Odometry>(es_ekf_topic, 1);
   m_helper_odom_sub =
@@ -221,6 +236,30 @@ void SensorClient::stateEstimation(const ros::TimerEvent& /* unused */)
 
   m_estimate_pub.publish(ekf_pose_);
   m_sensor_tf.publishOrigin(ekf_pose_, "ekf");
+
+  this->transformAndPublishInFrames(ekf_pose_);
+  
 }
 
 void SensorClient::helper_odom_cb(const nav_msgs::Odometry& msg) { m_helper_odom = msg; }
+
+inline void SensorClient::transformAndPublishInFrames(const nav_msgs::Odometry& ekf_pose_)
+{
+  for (int i=0; i<m_frame_ids.size(); i++) {
+    // Transform and publish additional sensors
+    geometry_msgs::TransformStamped transform_stamped;
+    try {
+      transform_stamped = m_tf_buffer.lookupTransform(m_frame_ids[i], "eagle/ekf",
+                                  ros::Time(0));
+      Eigen::Vector3d     position;
+      Eigen::Quaterniond  orientation;
+      Eigen::Vector3d     linear_velocity;
+      Eigen::Vector3d     angular_velocity;  
+    }
+    catch (tf2::TransformException &ex) {
+      // Warn user if the transform does not exist
+      ROS_WARN_THROTTLE(5.0, "Could NOT transform %s to eagle/ekf: %s", m_frame_ids[i], ex.what());
+      continue;
+    }
+  }
+}
