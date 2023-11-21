@@ -49,6 +49,7 @@ private:
   std::vector<ros::Publisher>      m_estimate_pubs;
   std::vector<std::string>         m_odom_topics;
   std::vector<std::string>         m_frame_ids;
+  std::string                      m_base_frame;
 
   bool        m_odom_helper_enable = false;
 

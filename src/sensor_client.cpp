@@ -19,7 +19,8 @@ SensorClient::SensorClient(const EsEkfParams& params,
   nh_private.getParam("odom_helper_enable", this->m_odom_helper_enable);
   ROS_WARN_COND(this->m_odom_helper_enable, "[SensorClient] Odom helper topic enabled");
 
-  //std::vector<double> my_double_list;
+  // Get params for multiframe publishers
+  nh_private.getParam("base_frame", m_base_frame);
   nh_private.getParam("odom_topics", m_odom_topics);
   nh_private.getParam("frame_ids", m_frame_ids);
   if (m_odom_topics.size() != m_frame_ids.size()) {
@@ -249,7 +250,7 @@ inline void SensorClient::transformAndPublishInFrames(const nav_msgs::Odometry& 
     // Transform and publish additional sensors
     geometry_msgs::TransformStamped transform_stamped;
     try {
-      transform_stamped = m_tf_buffer.lookupTransform(m_frame_ids[i], "eagle/ekf",
+      transform_stamped = m_tf_buffer.lookupTransform(m_frame_ids[i], m_base_frame,
                                   ros::Time(0));
       Eigen::Vector3d     position;
       Eigen::Quaterniond  orientation;
