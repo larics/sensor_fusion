@@ -252,15 +252,84 @@ inline void SensorClient::transformAndPublishInFrames(const nav_msgs::Odometry& 
     try {
       transform_stamped = m_tf_buffer.lookupTransform(m_frame_ids[i], m_base_frame,
                                   ros::Time(0));
-      Eigen::Vector3d     position;
-      Eigen::Quaterniond  orientation;
-      Eigen::Vector3d     linear_velocity;
-      Eigen::Vector3d     angular_velocity;  
+      m_estimate_pubs[i].publish(transformOdom(ekf_pose_, transform_stamped));
     }
     catch (tf2::TransformException &ex) {
       // Warn user if the transform does not exist
-      ROS_WARN_THROTTLE(5.0, "Could NOT transform %s to eagle/ekf: %s", m_frame_ids[i], ex.what());
+      ROS_WARN_THROTTLE(5.0, "SensorClient::transformAndPublishInFrames() Could not transform between frames: %s",
+        ex.what());
       continue;
     }
   }
+}
+
+nav_msgs::Odometry transformOdom(const nav_msgs::Odometry& odom_in,
+  const geometry_msgs::TransformStamped& transform)
+{
+  nav_msgs::Odometry odom_out;
+
+  // Set up the transform as affine
+  Eigen::Affine3d transform_affine;
+  transform_affine = Eigen::Affine3d::Identity();
+  Eigen::Quaterniond transform_q;
+  transform_q.x() = transform.transform.rotation.x;
+  transform_q.y() = transform.transform.rotation.y;
+  transform_q.z() = transform.transform.rotation.z;
+  transform_q.w() = transform.transform.rotation.w;
+  transform_affine.translate(Eigen::Vector3d(transform.transform.translation.x,
+    transform.transform.translation.y,
+    transform.transform.translation.z));
+  transform_affine.rotate(transform_q.normalized().toRotationMatrix());
+
+  // Put odometry into eigen stuff
+  Eigen::Affine3d odom_in_affine;
+  odom_in_affine = Eigen::Affine3d::Identity();
+  Eigen::Quaterniond odom_in_q;
+  odom_in_q.x() = odom_in.pose.pose.orientation.x;
+  odom_in_q.y() = odom_in.pose.pose.orientation.y;
+  odom_in_q.z() = odom_in.pose.pose.orientation.z;
+  odom_in_q.w() = odom_in.pose.pose.orientation.w;
+  odom_in_affine.translate(Eigen::Vector3d(odom_in.pose.pose.position.x,
+    odom_in.pose.pose.position.y,
+    odom_in.pose.pose.position.z));
+  odom_in_affine.rotate(odom_in_q.normalized().toRotationMatrix());
+  // Velocities
+  Eigen::Vector3d odom_in_linear_velocity;
+  odom_in_linear_velocity(0) = odom_in.twist.twist.linear.x;
+  odom_in_linear_velocity(1) = odom_in.twist.twist.linear.y;
+  odom_in_linear_velocity(2) = odom_in.twist.twist.linear.z;
+  Eigen::Vector3d odom_in_angular_velocity;
+  odom_in_angular_velocity(0) = odom_in.twist.twist.angular.x;
+  odom_in_angular_velocity(1) = odom_in.twist.twist.angular.y;
+  odom_in_angular_velocity(2) = odom_in.twist.twist.angular.z;
+  
+  // Transform everything
+  // TODO: transform covariance. I think you just put two 3x3 rotation matrices
+  // diagonally into 6x6 and transform the 6x6 covariance matrix.
+  // Cov_out = R*Cov_in*R_transpose
+  Eigen::Affine3d odom_out_affine;
+  odom_out_affine = transform_affine*odom_in_affine;
+  Eigen::Vector3d odom_out_linear_velocity;
+  odom_out_linear_velocity = transform_affine.matrix().block<3,3>(0,0)*odom_in_linear_velocity;
+  Eigen::Vector3d odom_out_angular_velocity;
+  odom_out_angular_velocity = transform_affine.matrix().block<3,3>(0,0)*odom_in_angular_velocity;
+
+  // Put everything back into odometry
+  odom_out.pose.pose.position.x = odom_out_affine.translation().x();
+  odom_out.pose.pose.position.y = odom_out_affine.translation().y();
+  odom_out.pose.pose.position.z = odom_out_affine.translation().z();
+  Eigen::Quaterniond q;
+  q = odom_out_affine.matrix().block<3,3>(0,0);
+  odom_out.pose.pose.orientation.x = q.x();
+  odom_out.pose.pose.orientation.y = q.y();
+  odom_out.pose.pose.orientation.z = q.z();
+  odom_out.pose.pose.orientation.w = q.w();
+  odom_out.twist.twist.linear.x = odom_out_linear_velocity(0);
+  odom_out.twist.twist.linear.y = odom_out_linear_velocity(1);
+  odom_out.twist.twist.linear.z = odom_out_linear_velocity(2);
+  odom_out.twist.twist.angular.x = odom_out_angular_velocity(0);
+  odom_out.twist.twist.angular.y = odom_out_angular_velocity(1);
+  odom_out.twist.twist.angular.z = odom_out_angular_velocity(2);
+
+  return odom_out;
 }

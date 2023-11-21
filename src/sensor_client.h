@@ -56,4 +56,7 @@ private:
   inline void transformAndPublishInFrames(const nav_msgs::Odometry& ekf_pose_);
 };
 
+nav_msgs::Odometry transformOdom(const nav_msgs::Odometry& odom_in,
+  const geometry_msgs::TransformStamped& transform);
+
 #endif// SENSOR_FUSION_SENSOR_CLIENT_H
