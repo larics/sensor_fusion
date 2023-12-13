@@ -5,6 +5,9 @@
   <arg name="config_yaml"   default="$(find sensor_fusion)/config/sensor_client_config.yaml"/>
   <arg name="es_ekf_topic"  default="es_ekf/odom"/>
   <arg name="uav_name"      default="eagle"/>
+  <arg name="odom_topics"   default=""/>
+  <arg name="frame_ids"     default=""/>
+  <arg name="base_frame"    default=""/>
   
   <arg name="odom_helper_enable"  default="false"/>
   <arg name="odom_helper_topic"   default="mavros/global_position/local"/>
@@ -24,6 +27,11 @@
 
     <param name="odom_helper_enable"  value="$(arg odom_helper_enable)" />
     <remap from="odom_helper_topic"   to="$(arg odom_helper_topic)" />
+
+    <!-- In command line: odom_topics:="[topic1,topic2]" -->
+    <rosparam param="odom_topics"   subst_value="True">$(arg odom_topics)</rosparam>
+    <rosparam param="frame_ids"     subst_value="True">$(arg frame_ids)</rosparam>
+    <param name="base_frame"        value="$(arg base_frame)"/>
   </node>
 
 </launch>
