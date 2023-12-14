@@ -267,7 +267,7 @@ nav_msgs::Odometry transformOdom(const nav_msgs::Odometry& odom_in,
   const geometry_msgs::TransformStamped& transform)
 {
   nav_msgs::Odometry odom_out;
-
+  odom_out.header.stamp = odom_in.header.stamp;
   // Set up the transform as affine
   Eigen::Affine3d transform_affine;
   transform_affine = Eigen::Affine3d::Identity();
